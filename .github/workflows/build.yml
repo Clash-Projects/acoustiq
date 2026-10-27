@@ -30,7 +30,7 @@ jobs:
 
       - name: Build APK with Buildozer
         run: |
-          buildozer android debug
+          yes | buildozer android debug
 
       - name: Upload APK to GitHub Artifacts
         uses: actions/upload-artifact@v4
