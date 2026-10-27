@@ -24,7 +24,6 @@ from kivy.core.window import Window
 from kivy.utils import get_color_from_hex
 
 from mutagen.flac import FLAC
-import numpy as np
 
 # Background color: modern dark theme
 Window.clearcolor = get_color_from_hex("#121212")
