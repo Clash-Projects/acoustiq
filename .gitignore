@@ -1,5 +1,17 @@
+# Flutter & Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+.gradle/
+local.properties
+**/android/**/gradle-wrapper.jar
+
+# Legacy
 .buildozer/
 bin/
 __pycache__/
 *.pyc
-

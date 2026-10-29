@@ -549,12 +549,10 @@ class FlacToolkitApp(App):
             background_normal="", background_color=(0, 0, 0, 0),
             color=get_color_from_hex(COLOR_ACCENT if active else COLOR_TEXT_MUTED)
         )
-        btn._is_active = active
-
         def draw(inst, val):
             inst.canvas.before.clear()
             with inst.canvas.before:
-                if getattr(inst, "_is_active", False):
+                if active:
                     Color(0.0, 0.78, 1.0, 0.18)
                     RoundedRectangle(pos=inst.pos, size=inst.size, radius=[20, 20, 20, 20])
                     Color(0.0, 0.78, 1.0, 0.55)
@@ -562,7 +560,7 @@ class FlacToolkitApp(App):
                 else:
                     Color(1, 1, 1, 0.04)
                     RoundedRectangle(pos=inst.pos, size=inst.size, radius=[20, 20, 20, 20])
-
+        btn._is_active = active
         btn.bind(pos=draw, size=draw)
         return btn
 
@@ -570,16 +568,9 @@ class FlacToolkitApp(App):
         btn._is_active = active
         btn.bold  = active
         btn.color = get_color_from_hex(COLOR_ACCENT if active else COLOR_TEXT_MUTED)
-        btn.canvas.before.clear()
-        with btn.canvas.before:
-            if active:
-                Color(0.0, 0.78, 1.0, 0.18)
-                RoundedRectangle(pos=btn.pos, size=btn.size, radius=[20, 20, 20, 20])
-                Color(0.0, 0.78, 1.0, 0.55)
-                Line(rounded_rectangle=[btn.x, btn.y, btn.width, btn.height, 20], width=1.2)
-            else:
-                Color(1, 1, 1, 0.04)
-                RoundedRectangle(pos=btn.pos, size=btn.size, radius=[20, 20, 20, 20])
+        # Re-trigger draw by faking size change
+        btn.size = (btn.width + 0.001, btn.height)
+        btn.size = (btn.width - 0.001, btn.height)
 
     def _glass_card(self, widget, status="neutral"):
         """
