@@ -241,7 +241,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               ),
                               child: Text(
                                 'Wasted: ${_totalWastedMb.toStringAsFixed(1)} MB',
-                                style: GoogleFonts.jetbrainsMono(
+                                style: GoogleFonts.jetBrainsMono(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w800,
                                   color: const Color(0xFFFF3D3D),

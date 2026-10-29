@@ -321,7 +321,7 @@ class _InspectScreenState extends State<InspectScreen> {
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.jetbrainsMono(
+            style: GoogleFonts.jetBrainsMono(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: textColor,

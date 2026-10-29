@@ -123,7 +123,7 @@ class SettingsScreen extends StatelessWidget {
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
                     _buildInfoRow(context, 'Cutoff Heuristic', 'Spectral Frequency Roll-off Analysis'),
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
-                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 2)'),
+                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 4)'),
                   ],
                 ),
               ),
@@ -298,7 +298,7 @@ class SettingsScreen extends StatelessWidget {
         Text(
           value,
           style: value.startsWith('v') || value.contains('.')
-              ? GoogleFonts.jetbrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)
+              ? GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)
               : GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: textColor),
         ),
       ],

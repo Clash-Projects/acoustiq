@@ -48,7 +48,7 @@ class ScoreGauge extends StatelessWidget {
                     children: [
                       Text(
                         '$score',
-                        style: GoogleFonts.jetbrainsMono(
+                        style: GoogleFonts.jetBrainsMono(
                           fontSize: 48,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -64,7 +64,7 @@ class ScoreGauge extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '%',
-                        style: GoogleFonts.jetbrainsMono(
+                        style: GoogleFonts.jetBrainsMono(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: statusColor,
@@ -104,7 +104,7 @@ class ScoreGauge extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'Cutoff: ${cutoffKhz.toStringAsFixed(1)} kHz',
-              style: GoogleFonts.jetbrainsMono(
+              style: GoogleFonts.jetBrainsMono(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Colors.white.withOpacity(0.90),
@@ -113,7 +113,7 @@ class ScoreGauge extends StatelessWidget {
             ),
             Text(
               '  /  Max: ${maxKhz.toStringAsFixed(1)} kHz',
-              style: GoogleFonts.jetbrainsMono(
+              style: GoogleFonts.jetBrainsMono(
                 fontSize: 11,
                 color: Colors.white.withOpacity(0.40),
               ),

@@ -365,7 +365,7 @@ class _AuditScreenState extends State<AuditScreen> {
           children: [
             Text(
               value,
-              style: GoogleFonts.jetbrainsMono(
+              style: GoogleFonts.jetBrainsMono(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 color: color,
@@ -609,7 +609,7 @@ class _TrackDetailModal extends StatelessWidget {
           const SizedBox(width: 8),
           Text(label, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
           const Spacer(),
-          Text(value, style: GoogleFonts.jetbrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
+          Text(value, style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
         ],
       ),
     );
