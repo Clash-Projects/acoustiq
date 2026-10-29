@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../widgets/glass_card.dart';
 
@@ -293,8 +294,13 @@ class SettingsScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 12.5, color: subTextColor)),
-        Text(value, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: textColor)),
+        Text(label, style: GoogleFonts.inter(fontSize: 12.5, color: subTextColor)),
+        Text(
+          value,
+          style: value.startsWith('v') || value.contains('.')
+              ? GoogleFonts.jetbrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)
+              : GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: textColor),
+        ),
       ],
     );
   }

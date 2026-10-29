@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ScoreGauge extends StatelessWidget {
   final int score;
@@ -47,9 +48,9 @@ class ScoreGauge extends StatelessWidget {
                     children: [
                       Text(
                         '$score',
-                        style: TextStyle(
+                        style: GoogleFonts.jetbrainsMono(
                           fontSize: 48,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
                           letterSpacing: -1.0,
                           shadows: [
@@ -63,7 +64,7 @@ class ScoreGauge extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '%',
-                        style: TextStyle(
+                        style: GoogleFonts.jetbrainsMono(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: statusColor,
@@ -81,7 +82,7 @@ class ScoreGauge extends StatelessWidget {
                     ),
                     child: Text(
                       status.toUpperCase(),
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: statusColor,
@@ -103,17 +104,17 @@ class ScoreGauge extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'Cutoff: ${cutoffKhz.toStringAsFixed(1)} kHz',
-              style: TextStyle(
-                fontSize: 12.5,
+              style: GoogleFonts.jetbrainsMono(
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Colors.white.withOpacity(0.90),
-                letterSpacing: 0.3,
+                letterSpacing: 0.2,
               ),
             ),
             Text(
               '  /  Max: ${maxKhz.toStringAsFixed(1)} kHz',
-              style: TextStyle(
-                fontSize: 11.5,
+              style: GoogleFonts.jetbrainsMono(
+                fontSize: 11,
                 color: Colors.white.withOpacity(0.40),
               ),
             ),

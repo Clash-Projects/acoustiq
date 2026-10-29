@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 
 class LiquidLensNavBar extends StatefulWidget {
@@ -20,11 +21,13 @@ class LiquidLensNavBar extends StatefulWidget {
 
 class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProviderStateMixin {
   late AnimationController _springController;
-  late AnimationController _morphController; // 0.0 resting -> 1.0 active hold
+  late AnimationController _expansionController;
+  late Animation<double> _expansionAnimation;
+
   double _currentX = 0.0;
   double _targetX = 0.0;
   double _dragVelocityX = 0.0;
-  bool _isInteracting = false;
+  bool _isDragging = false;
 
   final List<({IconData icon, String label})> _tabs = const [
     (icon: Icons.graphic_eq_rounded, label: 'Inspect'),
@@ -38,18 +41,25 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
     super.initState();
     _springController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 320),
     );
-    _morphController = AnimationController(
+
+    _expansionController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 200),
+    );
+
+    _expansionAnimation = CurvedAnimation(
+      parent: _expansionController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
     );
   }
 
   @override
   void dispose() {
     _springController.dispose();
-    _morphController.dispose();
+    _expansionController.dispose();
     super.dispose();
   }
 
@@ -69,8 +79,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
     });
 
     _springController.forward(from: 0.0);
-    _morphController.reverse(); // Fade out the 3D liquid bubble back to resting state
-    _isInteracting = false;
+    _expansionController.reverse();
+    _isDragging = false;
 
     if (tabIndex != widget.currentIndex) {
       if (appState.hapticsEnabled) {
@@ -83,7 +93,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([appState, _springController, _morphController]),
+      animation: Listenable.merge([appState, _springController, _expansionAnimation]),
       builder: (context, _) {
         final isDark = appState.isCurrentDark(context);
 
@@ -93,7 +103,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
             const barHeight = 58.0;
             final tabWidth = totalWidth / _tabs.length;
 
-            if (!_isInteracting && !_springController.isAnimating) {
+            if (!_isDragging && !_springController.isAnimating) {
               _currentX = widget.currentIndex * tabWidth;
             }
 
@@ -105,50 +115,52 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
             double bulgeY = 1.0;
 
             if (_currentX < minX) {
-              // Left wall collision squeeze
+              // Left wall collision squeeze: compresses horizontally, bulges vertically
               final overshoot = (minX - _currentX).clamp(0.0, 40.0);
-              squeezeX = 1.0 - (overshoot / 40.0) * 0.32; // squeeze width up to 32%
-              bulgeY = 1.0 + (overshoot / 40.0) * 0.16;   // bulge height
+              squeezeX = 1.0 - (overshoot / 40.0) * 0.32;
+              bulgeY = 1.0 + (overshoot / 40.0) * 0.20;
             } else if (_currentX > maxX) {
-              // Right wall collision squeeze
+              // Right wall collision squeeze: compresses horizontally, bulges vertically
               final overshoot = (_currentX - maxX).clamp(0.0, 40.0);
               squeezeX = 1.0 - (overshoot / 40.0) * 0.32;
-              bulgeY = 1.0 + (overshoot / 40.0) * 0.16;
+              bulgeY = 1.0 + (overshoot / 40.0) * 0.20;
             } else if (_dragVelocityX.abs() > 0.5) {
-              // Fluid velocity stretch along movement axis
-              final vFactor = (_dragVelocityX.abs() / 15.0).clamp(0.0, 0.25);
+              // Fluid velocity elongation along direction of drag
+              final vFactor = (_dragVelocityX.abs() / 14.0).clamp(0.0, 0.25);
               squeezeX = 1.0 + vFactor;
-              bulgeY = 1.0 - (vFactor * 0.4);
+              bulgeY = 1.0 - (vFactor * 0.35);
             }
 
-            // Lens dimensions
-            final lensWidth = (tabWidth - 6.0) * squeezeX;
-            final lensHeight = 52.0 * bulgeY;
+            // Dynamic morph: Resting pill (height 42) -> 3D Liquid Lens bubble (height 54) on hold/drag
+            final expansion = _expansionAnimation.value;
+            final baseHeight = 42.0 + (12.0 * expansion);
+            final baseWidth = (tabWidth - (12.0 * (1.0 - expansion))) * squeezeX;
+            final lensHeight = baseHeight * bulgeY;
+            final lensWidth = baseWidth;
             final lensLeft = _currentX + (tabWidth - lensWidth) / 2;
 
             return Listener(
               onPointerDown: (event) {
-                _isInteracting = true;
+                _isDragging = true;
                 _springController.stop();
-                _morphController.forward(); // Expand the 3D liquid bubble
+                _expansionController.forward();
                 if (appState.hapticsEnabled) {
                   HapticFeedback.lightImpact();
                 }
                 setState(() {
                   _dragVelocityX = 0.0;
-                  final localX = (event.localPosition.dx - (tabWidth / 2)).clamp(-30.0, maxX + 30.0);
+                  final localX = (event.localPosition.dx - (tabWidth / 2)).clamp(-32.0, maxX + 32.0);
                   _currentX = localX;
                 });
               },
               onPointerMove: (event) {
                 setState(() {
                   _dragVelocityX = event.delta.dx;
-                  // Rubber band resistance past edges
                   double newX = _currentX + event.delta.dx;
                   if (newX < minX) {
-                    newX = minX - (minX - newX) * 0.45;
+                    newX = minX - (minX - newX) * 0.38;
                   } else if (newX > maxX) {
-                    newX = maxX + (newX - maxX) * 0.45;
+                    newX = maxX + (newX - maxX) * 0.38;
                   }
                   _currentX = newX;
                 });
@@ -162,12 +174,12 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
                 _snapToTab(nearestTab, tabWidth);
               },
               child: SizedBox(
-                height: barHeight + 6,
+                height: barHeight + 8,
                 child: Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
-                    // 1. Frosted Translucent Capsule Bar
+                    // 1. Sleek Frosted Translucent Track Capsule
                     ClipRRect(
                       borderRadius: BorderRadius.circular(30),
                       child: BackdropFilter(
@@ -177,13 +189,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
                           decoration: BoxDecoration(
                             color: isDark
                                 ? (appState.isAmoled
-                                    ? Colors.white.withOpacity(0.04)
-                                    : const Color(0xFF141824).withOpacity(0.85))
-                                : Colors.white.withOpacity(0.85),
+                                    ? Colors.black.withOpacity(0.55)
+                                    : const Color(0xFF101420).withOpacity(0.82))
+                                : Colors.white.withOpacity(0.88),
                             borderRadius: BorderRadius.circular(30),
                             border: Border(
                               top: BorderSide(
-                                color: Colors.white.withOpacity(isDark ? 0.16 : 0.40),
+                                color: Colors.white.withOpacity(isDark ? 0.22 : 0.45),
                                 width: 1.2,
                               ),
                               left: BorderSide(color: Colors.white.withOpacity(isDark ? 0.08 : 0.20), width: 1.0),
@@ -192,8 +204,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(isDark ? 0.40 : 0.10),
-                                blurRadius: 20,
+                                color: Colors.black.withOpacity(isDark ? 0.50 : 0.12),
+                                blurRadius: 22,
                                 offset: const Offset(0, 6),
                               ),
                             ],
@@ -202,88 +214,45 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
                       ),
                     ),
 
-                    // 2. Resting Pill Indicator (KowSU Image 2 style: subtle cyan pill behind active tab)
-                    if (!_isInteracting && _morphController.value < 0.1)
-                      Positioned(
-                        left: widget.currentIndex * tabWidth + (tabWidth - (tabWidth - 10)) / 2,
-                        width: tabWidth - 10,
-                        height: barHeight - 12,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00D2FF).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFF00D2FF).withOpacity(0.25),
-                              width: 1.0,
+                    // 2. THE 100% GENUINE 3D OPTICAL LIQUID LENS
+                    Positioned(
+                      left: lensLeft,
+                      width: lensWidth,
+                      height: lensHeight,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(lensHeight / 2),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 18 + (6 * expansion), sigmaY: 18 + (6 * expansion)),
+                          child: CustomPaint(
+                            painter: _GenuineOpticalLiquidLensPainter(
+                              isDark: isDark,
+                              expansion: expansion,
                             ),
-                          ),
-                        ),
-                      ),
-
-                    // 3. Dynamic 3D Liquid Glass Drop (emerges during touch/hold/drag with refraction)
-                    if (_morphController.value > 0.01)
-                      Positioned(
-                        left: lensLeft,
-                        width: lensWidth,
-                        height: lensHeight,
-                        child: Opacity(
-                          opacity: _morphController.value.clamp(0.0, 1.0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(24),
-                                  // Translucent liquid refraction gradient
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.white.withOpacity(0.22),
-                                      Colors.white.withOpacity(0.04),
-                                      Colors.white.withOpacity(0.02),
-                                    ],
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(lensHeight / 2),
+                                boxShadow: [
+                                  // Prismatic Caustic Ambient Glow
+                                  BoxShadow(
+                                    color: const Color(0xFF00D2FF).withOpacity(0.12 + (0.16 * expansion)),
+                                    blurRadius: 14 + (10 * expansion),
+                                    spreadRadius: -2,
                                   ),
-                                  // Specular top optical rim reflection & bottom bounce
-                                  border: Border(
-                                    top: BorderSide(
-                                      color: Colors.white.withOpacity(0.92),
-                                      width: 1.4,
-                                    ),
-                                    bottom: BorderSide(
-                                      color: Colors.white.withOpacity(0.35),
-                                      width: 1.0,
-                                    ),
-                                    left: BorderSide(
-                                      color: Colors.white.withOpacity(0.20),
-                                      width: 1.0,
-                                    ),
-                                    right: BorderSide(
-                                      color: Colors.white.withOpacity(0.20),
-                                      width: 1.0,
-                                    ),
+                                  // Deep Floating Contact Shadow for authentic 3D optical elevation
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.35 + (0.25 * expansion)),
+                                    blurRadius: 10 + (12 * expansion),
+                                    offset: Offset(0, 2 + (4 * expansion)),
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF00D2FF).withOpacity(0.25),
-                                      blurRadius: 14,
-                                      spreadRadius: -2,
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.40),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
+                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
+                    ),
 
-                    // 4. Tab Items (Icons + Labels)
+                    // 3. Tab Items (Icons + Inter Labels)
                     Row(
                       children: List.generate(_tabs.length, (index) {
                         final isSelected = index == widget.currentIndex;
@@ -304,20 +273,20 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
                                     size: 21,
                                     color: isSelected
                                         ? const Color(0xFF00D2FF)
-                                        : (isDark ? Colors.white60 : Colors.black54),
+                                        : (isDark ? Colors.white54 : Colors.black45),
                                   ),
                                   const SizedBox(height: 2.5),
                                   Text(
                                     tab.label,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
+                                    style: GoogleFonts.inter(
                                       fontSize: 10,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                       color: isSelected
-                                          ? const Color(0xFF00D2FF)
+                                          ? (isDark ? Colors.white : Colors.black87)
                                           : (isDark ? Colors.white54 : Colors.black45),
-                                      letterSpacing: 0.15,
+                                      letterSpacing: 0.1,
                                     ),
                                   ),
                                 ],
@@ -335,5 +304,115 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> with TickerProvider
         );
       },
     );
+  }
+}
+
+// ── Genuine 3D Optical Liquid Lens Painter ──────────────────────────────────
+class _GenuineOpticalLiquidLensPainter extends CustomPainter {
+  final bool isDark;
+  final double expansion;
+
+  _GenuineOpticalLiquidLensPainter({
+    required this.isDark,
+    required this.expansion,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final radius = Radius.circular(size.height / 2);
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+
+    // 1. Water-Clear Optical Fresnel Fill
+    // In real water/glass, center has almost 0 opacity (<0.04) and glances have soft Fresnel sheen
+    final fillPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.0, -0.35),
+        radius: 1.15,
+        colors: [
+          Colors.white.withOpacity(isDark ? (0.12 + 0.08 * expansion) : (0.35 + 0.10 * expansion)),
+          Colors.white.withOpacity(isDark ? 0.03 : 0.10),
+          Colors.white.withOpacity(isDark ? (0.015 + 0.03 * expansion) : 0.05),
+        ],
+        stops: const [0.0, 0.60, 1.0],
+      ).createShader(rect);
+    canvas.drawRRect(rrect, fillPaint);
+
+    // 2. Prismatic / Chromatic Dispersion Outer Caustic Rim
+    // KowSU Reference: Amber/Gold reflection at top-right, Sky-Cyan reflection at bottom-left
+    final chromaticGradient = LinearGradient(
+      begin: Alignment.topRight,
+      end: Alignment.bottomLeft,
+      colors: [
+        Color(0xFFFFA726).withOpacity((0.35 + 0.35 * expansion).clamp(0.0, 1.0)), // Warm amber flare
+        Colors.white.withOpacity(0.92), // Hot specular crest
+        Color(0xFF00D2FF).withOpacity((0.30 + 0.40 * expansion).clamp(0.0, 1.0)), // Cool sky cyan
+        Colors.white.withOpacity(isDark ? 0.12 : 0.25),
+      ],
+      stops: const [0.0, 0.28, 0.72, 1.0],
+    );
+
+    final chromaticPaint = Paint()
+      ..shader = chromaticGradient.createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3 + (0.5 * expansion);
+    canvas.drawRRect(rrect, chromaticPaint);
+
+    // 3. Top Specular Convex Highlight Arc (Simulates overhead keylight on curved dome)
+    final topHighlightPath = Path();
+    final arcWidth = size.width * 0.68;
+    final arcLeft = (size.width - arcWidth) / 2;
+    topHighlightPath.moveTo(arcLeft, 1.2);
+    topHighlightPath.quadraticBezierTo(
+      size.width / 2,
+      -0.8,
+      arcLeft + arcWidth,
+      1.2,
+    );
+
+    final topHighlightPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.0),
+          Colors.white.withOpacity(0.95),
+          Colors.white.withOpacity(0.0),
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(arcLeft, 0, arcWidth, 4))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8 + (0.6 * expansion)
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(topHighlightPath, topHighlightPaint);
+
+    // 4. Bottom Ground Bounce Reflection Arc
+    final bottomBouncePath = Path();
+    final bArcWidth = size.width * 0.52;
+    final bArcLeft = (size.width - bArcWidth) / 2;
+    bottomBouncePath.moveTo(bArcLeft, size.height - 1.2);
+    bottomBouncePath.quadraticBezierTo(
+      size.width / 2,
+      size.height + 0.8,
+      bArcLeft + bArcWidth,
+      size.height - 1.2,
+    );
+
+    final bottomBouncePaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.0),
+          Colors.white.withOpacity(0.38 + (0.22 * expansion)),
+          Colors.white.withOpacity(0.0),
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(bArcLeft, size.height - 4, bArcWidth, 4))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(bottomBouncePath, bottomBouncePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GenuineOpticalLiquidLensPainter oldDelegate) {
+    return oldDelegate.isDark != isDark || oldDelegate.expansion != expansion;
   }
 }

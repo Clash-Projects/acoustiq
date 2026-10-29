@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
@@ -364,16 +365,16 @@ class _AuditScreenState extends State<AuditScreen> {
           children: [
             Text(
               value,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w900,
+              style: GoogleFonts.jetbrainsMono(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
                 color: color,
               ),
             ),
             const SizedBox(height: 1),
             Text(
               label,
-              style: TextStyle(fontSize: 8.5, color: Colors.white.withOpacity(0.4)),
+              style: GoogleFonts.inter(fontSize: 8.5, color: Colors.white.withOpacity(0.4)),
             ),
           ],
         ),
@@ -606,9 +607,9 @@ class _TrackDetailModal extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: subTextColor),
           const SizedBox(width: 8),
-          Text(label, style: TextStyle(fontSize: 11.5, color: subTextColor)),
+          Text(label, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
           const Spacer(),
-          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
+          Text(value, style: GoogleFonts.jetbrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
         ],
       ),
     );

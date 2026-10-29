@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'flac_info.dart';
 
 class AppState extends ChangeNotifier {
-  bool _isAmoled = true;
+  bool _isAmoled = false; // Default to Deep Cosmic Obsidian for genuine glass refraction
   bool _isLiquidGlass = true;
   bool _hapticsEnabled = true;
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
@@ -24,32 +24,34 @@ class AppState extends ChangeNotifier {
   }
 
   Color getBgColor(BuildContext context) {
-    if (!isCurrentDark(context)) return const Color(0xFFF2F4F8);
-    return _isAmoled ? Colors.black : const Color(0xFF0D1017);
+    if (!isCurrentDark(context)) return const Color(0xFFF0F3F8);
+    // Deep Cosmic Obsidian allows true light refraction through glass
+    return _isAmoled ? Colors.black : const Color(0xFF080B11);
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.white.withOpacity(_isLiquidGlass ? 0.80 : 0.95);
+      return Colors.white.withOpacity(_isLiquidGlass ? 0.85 : 0.98);
     }
+    // Luminous glass core: translucent, never solid muddy grey
     return _isLiquidGlass
-        ? Colors.white.withOpacity(0.055)
-        : const Color(0xFF131722);
+        ? Colors.white.withOpacity(0.065)
+        : const Color(0xFF111520);
   }
 
   Color getBorderColor(BuildContext context) {
     if (!isCurrentDark(context)) {
       return Colors.black.withOpacity(0.08);
     }
-    return Colors.white.withOpacity(0.09);
+    return Colors.white.withOpacity(0.12);
   }
 
   Color getTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white : const Color(0xFF11141A);
+    return isCurrentDark(context) ? Colors.white : const Color(0xFF0F131C);
   }
 
   Color getSubTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white.withOpacity(0.55) : const Color(0xFF5A6272);
+    return isCurrentDark(context) ? Colors.white.withOpacity(0.55) : const Color(0xFF5E6778);
   }
 
   void setAmoled(bool value) {

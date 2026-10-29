@@ -1,7 +1,7 @@
 name: flac_toolkit
 description: "Smart FLAC Audio Quality Analyzer and Duplicate Manager"
 publish_to: 'none'
-version: 1.1.0+2
+version: 1.1.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -13,6 +13,7 @@ dependencies:
   permission_handler: ^11.3.1
   path: ^1.9.0
   intl: ^0.19.0
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

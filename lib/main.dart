@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'models/app_settings.dart';
 import 'screens/inspect_screen.dart';
@@ -46,7 +47,7 @@ class FlacToolkitApp extends StatelessWidget {
               secondary: Color(0xFF00C853),
               surface: Colors.white,
             ),
-            fontFamily: 'Roboto',
+            textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
           ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
@@ -56,7 +57,7 @@ class FlacToolkitApp extends StatelessWidget {
               secondary: const Color(0xFF00E676),
               surface: appState.isAmoled ? const Color(0xFF0A0D14) : const Color(0xFF131722),
             ),
-            fontFamily: 'Roboto',
+            textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
           ),
           home: const MainShell(),
         );
@@ -136,7 +137,7 @@ class _MainShellState extends State<MainShell> {
                             children: [
                               Text(
                                 'FLAC TOOLKIT',
-                                style: TextStyle(
+                                style: GoogleFonts.inter(
                                   fontSize: 15.5,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.1,
@@ -145,8 +146,9 @@ class _MainShellState extends State<MainShell> {
                               ),
                               Text(
                                 'Pro Audio Quality Analyzer',
-                                style: TextStyle(
+                                style: GoogleFonts.inter(
                                   fontSize: 10,
+                                  fontWeight: FontWeight.w500,
                                   color: subTextColor,
                                   letterSpacing: 0.4,
                                 ),

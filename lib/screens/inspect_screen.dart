@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
@@ -316,11 +317,11 @@ class _InspectScreenState extends State<InspectScreen> {
         children: [
           Icon(icon, size: 14, color: subTextColor),
           const SizedBox(width: 8),
-          Text(label, style: TextStyle(fontSize: 11.5, color: subTextColor)),
+          Text(label, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
           const Spacer(),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.jetbrainsMono(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: textColor,

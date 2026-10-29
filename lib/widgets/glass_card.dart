@@ -38,18 +38,28 @@ class GlassCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(borderRadius),
+            gradient: isDark && useGlass
+                ? LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withOpacity(0.09),
+                      Colors.white.withOpacity(0.025),
+                    ],
+                  )
+                : null,
             border: isDark && useGlass
                 ? Border(
-                    top: BorderSide(color: Colors.white.withOpacity(0.18), width: 1.2),
-                    left: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
-                    right: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
-                    bottom: BorderSide(color: Colors.white.withOpacity(0.05), width: 1.0),
+                    top: BorderSide(color: Colors.white.withOpacity(0.26), width: 1.2),
+                    left: BorderSide(color: Colors.white.withOpacity(0.09), width: 1.0),
+                    right: BorderSide(color: Colors.white.withOpacity(0.09), width: 1.0),
+                    bottom: BorderSide(color: Colors.white.withOpacity(0.04), width: 1.0),
                   )
                 : Border.all(color: baseBorder, width: 1.0),
             boxShadow: [
               BoxShadow(
-                color: isDark ? Colors.black.withOpacity(0.35) : Colors.black.withOpacity(0.06),
-                blurRadius: 16,
+                color: isDark ? Colors.black.withOpacity(0.40) : Colors.black.withOpacity(0.06),
+                blurRadius: 18,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -62,7 +72,7 @@ class GlassCard extends StatelessWidget {
           card = ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
               child: content,
             ),
           );

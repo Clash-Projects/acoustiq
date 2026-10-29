@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
@@ -240,10 +241,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               ),
                               child: Text(
                                 'Wasted: ${_totalWastedMb.toStringAsFixed(1)} MB',
-                                style: const TextStyle(
+                                style: GoogleFonts.jetbrainsMono(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFFFF3D3D),
+                                  color: const Color(0xFFFF3D3D),
                                 ),
                               ),
                             ),
