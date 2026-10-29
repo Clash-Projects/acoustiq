@@ -5,12 +5,10 @@ import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
 import '../widgets/glass_card.dart';
-import 'inspect_screen.dart';
+import '../widgets/score_gauge.dart';
 
 class AuditScreen extends StatefulWidget {
-  final ValueChanged<FlacInfo>? onInspectTrack;
-
-  const AuditScreen({super.key, this.onInspectTrack});
+  const AuditScreen({super.key});
 
   @override
   State<AuditScreen> createState() => _AuditScreenState();
@@ -72,37 +70,12 @@ class _AuditScreenState extends State<AuditScreen> {
     }
   }
 
-  void _openTrackModal(FlacInfo track) {
+  void _openTrackDetail(FlacInfo track) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: appState.isAmoled ? const Color(0xFF07090F) : const Color(0xFF101420),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.15))),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Expanded(
-              child: InspectScreen(initialTrack: track),
-            ),
-          ],
-        ),
-      ),
+      builder: (ctx) => _TrackDetailModal(track: track),
     );
   }
 
@@ -122,6 +95,10 @@ class _AuditScreenState extends State<AuditScreen> {
     return AnimatedBuilder(
       animation: appState,
       builder: (context, _) {
+        final isDark = appState.isCurrentDark(context);
+        final textColor = appState.getTextColor(context);
+        final subTextColor = appState.getSubTextColor(context);
+
         final tracks = appState.sharedLibrary;
         final filteredTracks = _filter == 'all'
             ? tracks
@@ -164,10 +141,10 @@ class _AuditScreenState extends State<AuditScreen> {
                         children: [
                           Text(
                             _isScanning ? 'Scanning Library...' : 'Scan Music Folder',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: textColor,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -179,7 +156,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                     : 'Select folder to batch audit FLACs',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.55)),
+                            style: TextStyle(fontSize: 11.5, color: subTextColor),
                           ),
                         ],
                       ),
@@ -191,19 +168,19 @@ class _AuditScreenState extends State<AuditScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF8E85FF)),
                       )
                     else
-                      const Icon(Icons.search_rounded, color: Colors.white70, size: 22),
+                      Icon(Icons.search_rounded, color: subTextColor, size: 22),
                   ],
                 ),
               ),
             ),
 
-            // 5 Summary Metrics Bar (Scanned, Genuine, Suspicious, Fake, Avg Score)
+            // 5 Summary Metrics Bar
             if (tracks.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Row(
                   children: [
-                    _buildStatPill('Total', '${tracks.length}', Colors.white70),
+                    _buildStatPill('Total', '${tracks.length}', isDark ? Colors.white70 : Colors.black87),
                     const SizedBox(width: 6),
                     _buildStatPill('Genuine', '$genuineCount', const Color(0xFF00E676)),
                     const SizedBox(width: 6),
@@ -223,17 +200,17 @@ class _AuditScreenState extends State<AuditScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Row(
                   children: [
-                    _buildFilterChip('All (${tracks.length})', 'all'),
+                    _buildFilterChip('All (${tracks.length})', 'all', isDark),
                     const SizedBox(width: 8),
-                    _buildFilterChip('Genuine ($genuineCount)', 'genuine'),
+                    _buildFilterChip('Genuine ($genuineCount)', 'genuine', isDark),
                     const SizedBox(width: 8),
-                    _buildFilterChip('Suspicious ($suspiciousCount)', 'suspicious'),
+                    _buildFilterChip('Suspicious ($suspiciousCount)', 'suspicious', isDark),
                     const SizedBox(width: 8),
-                    _buildFilterChip('Fake ($fakeCount)', 'fake'),
+                    _buildFilterChip('Fake ($fakeCount)', 'fake', isDark),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
             ],
 
             // Scanned Tracks List with Album Art Thumbnails
@@ -243,28 +220,28 @@ class _AuditScreenState extends State<AuditScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.library_music_rounded, size: 52, color: Colors.white.withOpacity(0.15)),
+                          Icon(Icons.library_music_rounded, size: 50, color: subTextColor.withOpacity(0.3)),
                           const SizedBox(height: 12),
                           Text(
                             'No folder scanned yet',
-                            style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.5)),
+                            style: TextStyle(fontSize: 14, color: subTextColor),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Tap the scan button above to audit your music collection',
-                            style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.35)),
+                            style: TextStyle(fontSize: 11.5, color: subTextColor.withOpacity(0.7)),
                           ),
                         ],
                       ),
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                      itemCount: filteredTracks.length + 1, // +1 for bottom buffer
+                      itemCount: filteredTracks.length + 1,
                       physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
                         if (index == filteredTracks.length) {
-                          // CRITICAL: 120px Bottom buffer so floating nav bar never overlaps!
-                          return const SizedBox(height: 120);
+                          // CRITICAL: 140px Bottom buffer so floating nav bar never collides
+                          return const SizedBox(height: 140);
                         }
 
                         final item = filteredTracks[index];
@@ -275,10 +252,10 @@ class _AuditScreenState extends State<AuditScreen> {
                           padding: const EdgeInsets.all(10),
                           borderRadius: 16,
                           borderColor: color.withOpacity(0.22),
-                          onTap: () => _openTrackModal(item),
+                          onTap: () => _openTrackDetail(item),
                           child: Row(
                             children: [
-                              // 42px Album Art Thumbnail or Icon
+                              // 44px Album Art Thumbnail
                               Stack(
                                 alignment: Alignment.bottomRight,
                                 children: [
@@ -294,11 +271,10 @@ class _AuditScreenState extends State<AuditScreen> {
                                         : Container(
                                             width: 44,
                                             height: 44,
-                                            color: Colors.white.withOpacity(0.06),
-                                            child: const Icon(Icons.music_note_rounded, color: Colors.white38, size: 24),
+                                            color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                                            child: Icon(Icons.music_note_rounded, color: subTextColor, size: 24),
                                           ),
                                   ),
-                                  // Tiny circular score pill on top of artwork
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                     decoration: BoxDecoration(
@@ -325,10 +301,10 @@ class _AuditScreenState extends State<AuditScreen> {
                                       item.title,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: textColor,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -338,7 +314,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: Colors.white.withOpacity(0.55),
+                                        color: subTextColor,
                                       ),
                                     ),
                                   ],
@@ -353,18 +329,18 @@ class _AuditScreenState extends State<AuditScreen> {
                                     style: TextStyle(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white.withOpacity(0.85),
+                                      color: textColor.withOpacity(0.85),
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     item.durationStr,
-                                    style: TextStyle(fontSize: 10.5, color: Colors.white.withOpacity(0.35)),
+                                    style: TextStyle(fontSize: 10.5, color: subTextColor),
                                   ),
                                 ],
                               ),
                               const SizedBox(width: 4),
-                              Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white.withOpacity(0.25)),
+                              Icon(Icons.chevron_right_rounded, size: 16, color: subTextColor.withOpacity(0.5)),
                             ],
                           ),
                         );
@@ -405,17 +381,19 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, String value) {
+  Widget _buildFilterChip(String label, String value, bool isDark) {
     final isSelected = _filter == value;
     return GestureDetector(
       onTap: () => setState(() => _filter = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00D2FF).withOpacity(0.18) : Colors.white.withOpacity(0.04),
+          color: isSelected
+              ? const Color(0xFF00D2FF).withOpacity(0.18)
+              : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFF00D2FF) : Colors.white10,
+            color: isSelected ? const Color(0xFF00D2FF) : (isDark ? Colors.white10 : Colors.black12),
             width: 1.0,
           ),
         ),
@@ -424,9 +402,214 @@ class _AuditScreenState extends State<AuditScreen> {
           style: TextStyle(
             fontSize: 10.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? const Color(0xFF00D2FF) : Colors.white70,
+            color: isSelected ? const Color(0xFF00D2FF) : (isDark ? Colors.white70 : Colors.black87),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// DEDICATED TRACK DETAIL MODAL (No "Change Audio File" button!)
+class _TrackDetailModal extends StatelessWidget {
+  final FlacInfo track;
+
+  const _TrackDetailModal({required this.track});
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'genuine':
+        return const Color(0xFF00E676);
+      case 'suspicious':
+        return const Color(0xFFFFB300);
+      default:
+        return const Color(0xFFFF3D3D);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = appState.isCurrentDark(context);
+    final textColor = appState.getTextColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+    final statusColor = _getStatusColor(track.status);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: appState.getBgColor(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.16))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: subTextColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Header: Title & Close
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Track Inspection',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: textColor),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subTextColor),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Score Gauge
+              GlassCard(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                borderColor: statusColor.withOpacity(0.25),
+                child: ScoreGauge(
+                  score: track.score,
+                  status: track.status,
+                  cutoffKhz: track.cutoffKhz,
+                  maxKhz: track.maxKhz,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Verdict Card
+              GlassCard(
+                padding: const EdgeInsets.all(12),
+                backgroundColor: statusColor.withOpacity(0.07),
+                borderColor: statusColor.withOpacity(0.30),
+                child: Row(
+                  children: [
+                    Icon(
+                      track.status == 'genuine'
+                          ? Icons.verified_rounded
+                          : track.status == 'suspicious'
+                              ? Icons.warning_amber_rounded
+                              : Icons.cancel_rounded,
+                      color: statusColor,
+                      size: 26,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AUDIT VERDICT',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.1,
+                              color: statusColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            track.verdict,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Track & Specs Card
+              GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: track.coverBytes != null
+                              ? Image.memory(track.coverBytes!, width: 52, height: 52, fit: BoxFit.cover)
+                              : Container(
+                                  width: 52,
+                                  height: 52,
+                                  color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                                  child: Icon(Icons.album_rounded, color: subTextColor, size: 30),
+                                ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                track.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                track.artist,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 12, color: subTextColor),
+                              ),
+                              Text(
+                                track.album,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 10.5, color: subTextColor.withOpacity(0.7)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Divider(color: isDark ? Colors.white10 : Colors.black12, height: 22),
+                    _specRow(Icons.speed_rounded, 'Format & Bitrate', '${track.bitrateKbps} kbps FLAC', textColor, subTextColor),
+                    _specRow(Icons.tune_rounded, 'Bit Depth & Sample Rate', '${track.bitDepth}-bit / ${track.sampleRate} Hz', textColor, subTextColor),
+                    _specRow(Icons.schedule_rounded, 'Duration & Channels', '${track.durationStr} (${track.channels == 2 ? "Stereo" : "${track.channels}ch"})', textColor, subTextColor),
+                    _specRow(Icons.storage_rounded, 'File Size', '${track.fileSizeMb} MB', textColor, subTextColor),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _specRow(IconData icon, String label, String value, Color textColor, Color subTextColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: subTextColor),
+          const SizedBox(width: 8),
+          Text(label, style: TextStyle(fontSize: 11.5, color: subTextColor)),
+          const Spacer(),
+          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
+        ],
       ),
     );
   }

@@ -17,6 +17,41 @@ class AppState extends ChangeNotifier {
   List<FlacInfo> get sharedLibrary => _sharedLibrary;
   String? get lastScannedFolder => _lastScannedFolder;
 
+  bool isCurrentDark(BuildContext context) {
+    if (_themeMode == 'light') return false;
+    if (_themeMode == 'dark') return true;
+    return MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+  }
+
+  Color getBgColor(BuildContext context) {
+    if (!isCurrentDark(context)) return const Color(0xFFF2F4F8);
+    return _isAmoled ? Colors.black : const Color(0xFF0D1017);
+  }
+
+  Color getCardBgColor(BuildContext context) {
+    if (!isCurrentDark(context)) {
+      return Colors.white.withOpacity(_isLiquidGlass ? 0.80 : 0.95);
+    }
+    return _isLiquidGlass
+        ? Colors.white.withOpacity(0.055)
+        : const Color(0xFF131722);
+  }
+
+  Color getBorderColor(BuildContext context) {
+    if (!isCurrentDark(context)) {
+      return Colors.black.withOpacity(0.08);
+    }
+    return Colors.white.withOpacity(0.09);
+  }
+
+  Color getTextColor(BuildContext context) {
+    return isCurrentDark(context) ? Colors.white : const Color(0xFF11141A);
+  }
+
+  Color getSubTextColor(BuildContext context) {
+    return isCurrentDark(context) ? Colors.white.withOpacity(0.55) : const Color(0xFF5A6272);
+  }
+
   void setAmoled(bool value) {
     _isAmoled = value;
     notifyListeners();
@@ -49,5 +84,4 @@ class AppState extends ChangeNotifier {
   }
 }
 
-// Global singleton instance for clean cross-tab sharing
 final appState = AppState();

@@ -28,26 +28,27 @@ class GlassCard extends StatelessWidget {
       animation: appState,
       builder: (context, _) {
         final useGlass = appState.isLiquidGlass;
-        final isAmoled = appState.isAmoled;
+        final isDark = appState.isCurrentDark(context);
 
-        final defaultBg = backgroundColor ?? (isAmoled
-            ? const Color(0xFF0F1218).withOpacity(useGlass ? 0.75 : 0.98)
-            : const Color(0xFF161B26).withOpacity(useGlass ? 0.75 : 0.98));
-
-        final defaultBorder = borderColor ?? Colors.white.withOpacity(0.08);
+        final bg = backgroundColor ?? appState.getCardBgColor(context);
+        final baseBorder = borderColor ?? appState.getBorderColor(context);
 
         Widget content = Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: defaultBg,
+            color: bg,
             borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(
-              color: defaultBorder,
-              width: 1.0,
-            ),
+            border: isDark && useGlass
+                ? Border(
+                    top: BorderSide(color: Colors.white.withOpacity(0.18), width: 1.2),
+                    left: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
+                    right: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
+                    bottom: BorderSide(color: Colors.white.withOpacity(0.05), width: 1.0),
+                  )
+                : Border.all(color: baseBorder, width: 1.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.35),
+                color: isDark ? Colors.black.withOpacity(0.35) : Colors.black.withOpacity(0.06),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -61,7 +62,7 @@ class GlassCard extends StatelessWidget {
           card = ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: content,
             ),
           );

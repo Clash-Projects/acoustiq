@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
 import '../widgets/glass_card.dart';
@@ -68,188 +69,127 @@ class _InspectScreenState extends State<InspectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Select File Button / Action Card
-          GlassCard(
-            borderRadius: 22,
-            borderColor: const Color(0xFF00D2FF).withOpacity(0.25),
-            backgroundColor: const Color(0xFF00D2FF).withOpacity(0.06),
-            onTap: _isLoading ? null : _pickAndAnalyzeFile,
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00D2FF).withOpacity(0.16),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.audio_file_rounded, color: Color(0xFF00D2FF), size: 26),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _info == null ? 'Select FLAC File' : 'Change Audio File',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+    return AnimatedBuilder(
+      animation: appState,
+      builder: (context, _) {
+        final isDark = appState.isCurrentDark(context);
+        final textColor = appState.getTextColor(context);
+        final subTextColor = appState.getSubTextColor(context);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Select File Action Card
+              GlassCard(
+                borderRadius: 22,
+                borderColor: const Color(0xFF00D2FF).withOpacity(0.25),
+                backgroundColor: const Color(0xFF00D2FF).withOpacity(0.06),
+                onTap: _isLoading ? null : _pickAndAnalyzeFile,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00D2FF).withOpacity(0.16),
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _info == null ? 'Tap to browse and inspect purity' : _info!.fileName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withOpacity(0.55),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_isLoading)
-                  const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF00D2FF)),
-                  )
-                else
-                  const Icon(Icons.folder_open_rounded, color: Colors.white70, size: 22),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          if (_info != null) ...[
-            // Score Arc Meter & Cutoff Indicator
-            GlassCard(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-              borderColor: _getStatusColor(_info!.status).withOpacity(0.25),
-              child: ScoreGauge(
-                score: _info!.score,
-                status: _info!.status,
-                cutoffKhz: _info!.cutoffKhz,
-                maxKhz: _info!.maxKhz,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Verdict Box
-            GlassCard(
-              padding: const EdgeInsets.all(14),
-              backgroundColor: _getStatusColor(_info!.status).withOpacity(0.07),
-              borderColor: _getStatusColor(_info!.status).withOpacity(0.30),
-              child: Row(
-                children: [
-                  Icon(
-                    _info!.status == 'genuine'
-                        ? Icons.verified_rounded
-                        : _info!.status == 'suspicious'
-                            ? Icons.warning_amber_rounded
-                            : Icons.cancel_rounded,
-                    color: _getStatusColor(_info!.status),
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'AUDIT VERDICT',
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                            color: _getStatusColor(_info!.status),
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _info!.verdict,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                      child: const Icon(Icons.audio_file_rounded, color: Color(0xFF00D2FF), size: 24),
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Track & Metadata Info
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      // Album Cover or Music Icon
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: _info!.coverBytes != null
-                            ? Image.memory(
-                                _info!.coverBytes!,
-                                width: 56,
-                                height: 56,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(
-                                width: 56,
-                                height: 56,
-                                color: Colors.white.withOpacity(0.08),
-                                child: const Icon(Icons.album_rounded, color: Colors.white54, size: 32),
-                              ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _info == null ? 'Select FLAC File' : 'Change Audio File',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _info == null ? 'Tap to browse and inspect purity' : _info!.fileName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: subTextColor,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 14),
+                    ),
+                    if (_isLoading)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF00D2FF)),
+                      )
+                    else
+                      Icon(Icons.folder_open_rounded, color: subTextColor, size: 22),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              if (_info != null) ...[
+                // Score Arc Meter & Cutoff Indicator
+                GlassCard(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                  borderColor: _getStatusColor(_info!.status).withOpacity(0.25),
+                  child: ScoreGauge(
+                    score: _info!.score,
+                    status: _info!.status,
+                    cutoffKhz: _info!.cutoffKhz,
+                    maxKhz: _info!.maxKhz,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // Verdict Box
+                GlassCard(
+                  padding: const EdgeInsets.all(12),
+                  backgroundColor: _getStatusColor(_info!.status).withOpacity(0.07),
+                  borderColor: _getStatusColor(_info!.status).withOpacity(0.30),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _info!.status == 'genuine'
+                            ? Icons.verified_rounded
+                            : _info!.status == 'suspicious'
+                                ? Icons.warning_amber_rounded
+                                : Icons.cancel_rounded,
+                        color: _getStatusColor(_info!.status),
+                        size: 26,
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _info!.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              _info!.artist,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              'AUDIT VERDICT',
                               style: TextStyle(
-                                fontSize: 12.5,
-                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.1,
+                                color: _getStatusColor(_info!.status),
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _info!.album,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              _info!.verdict,
                               style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.white.withOpacity(0.4),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
                               ),
                             ),
                           ],
@@ -257,64 +197,133 @@ class _InspectScreenState extends State<InspectScreen> {
                       ),
                     ],
                   ),
-
-                  const Divider(color: Colors.white10, height: 24),
-
-                  // Technical Specs Grid
-                  _buildSpecRow(Icons.speed_rounded, 'Format & Bitrate', '${_info!.bitrateKbps} kbps FLAC'),
-                  _buildSpecRow(Icons.tune_rounded, 'Bit Depth & Sample Rate', '${_info!.bitDepth}-bit / ${_info!.sampleRate} Hz'),
-                  _buildSpecRow(Icons.schedule_rounded, 'Duration & Channels', '${_info!.durationStr} (${_info!.channels == 2 ? "Stereo" : "${_info!.channels}ch"})'),
-                  _buildSpecRow(Icons.storage_rounded, 'File Size', '${_info!.fileSizeMb} MB'),
-                ],
-              ),
-            ),
-          ] else ...[
-            // Empty State
-            Padding(
-              padding: const EdgeInsets.only(top: 40),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.graphic_eq_rounded, size: 56, color: Colors.white.withOpacity(0.15)),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Ready to inspect audio purity',
-                      style: TextStyle(fontSize: 14.5, color: Colors.white.withOpacity(0.6)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pick any .flac track to view spectrum cutoff & purity',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.35)),
-                    ),
-                  ],
                 ),
-              ),
-            ),
-          ],
 
-          // CRITICAL: 120px Bottom buffer so floating nav bar never overlaps!
-          const SizedBox(height: 120),
-        ],
-      ),
+                const SizedBox(height: 10),
+
+                // Track & Metadata Info
+                GlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: _info!.coverBytes != null
+                                ? Image.memory(
+                                    _info!.coverBytes!,
+                                    width: 52,
+                                    height: 52,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    width: 52,
+                                    height: 52,
+                                    color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                                    child: Icon(Icons.album_rounded, color: subTextColor, size: 30),
+                                  ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _info!.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: textColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _info!.artist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: subTextColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  _info!.album,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: subTextColor.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      Divider(color: isDark ? Colors.white10 : Colors.black12, height: 22),
+
+                      // Technical Specs Grid
+                      _buildSpecRow(Icons.speed_rounded, 'Format & Bitrate', '${_info!.bitrateKbps} kbps FLAC', textColor, subTextColor),
+                      _buildSpecRow(Icons.tune_rounded, 'Bit Depth & Sample Rate', '${_info!.bitDepth}-bit / ${_info!.sampleRate} Hz', textColor, subTextColor),
+                      _buildSpecRow(Icons.schedule_rounded, 'Duration & Channels', '${_info!.durationStr} (${_info!.channels == 2 ? "Stereo" : "${_info!.channels}ch"})', textColor, subTextColor),
+                      _buildSpecRow(Icons.storage_rounded, 'File Size', '${_info!.fileSizeMb} MB', textColor, subTextColor),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                // Empty State
+                Padding(
+                  padding: const EdgeInsets.only(top: 40),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.graphic_eq_rounded, size: 52, color: subTextColor.withOpacity(0.2)),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Ready to inspect audio purity',
+                          style: TextStyle(fontSize: 14, color: subTextColor),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Pick any .flac track to view spectrum cutoff & purity',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11.5, color: subTextColor.withOpacity(0.6)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
+              // CRITICAL: 140px Bottom buffer so floating nav bar never collides
+              const SizedBox(height: 140),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSpecRow(IconData icon, String label, String value) {
+  Widget _buildSpecRow(IconData icon, String label, String value, Color textColor, Color subTextColor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 4.5),
       child: Row(
         children: [
-          Icon(icon, size: 15, color: Colors.white.withOpacity(0.4)),
+          Icon(icon, size: 14, color: subTextColor),
           const SizedBox(width: 8),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5))),
+          Text(label, style: TextStyle(fontSize: 11.5, color: subTextColor)),
           const Spacer(),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 12.5,
+            style: TextStyle(
+              fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: textColor,
             ),
           ),
         ],
