@@ -31,7 +31,7 @@ class FlacToolkitApp extends StatelessWidget {
       animation: appState,
       builder: (context, _) {
         final isDark = appState.themeMode != 'light';
-        final bgColor = appState.isAmoled && isDark ? Colors.black : (isDark ? const Color(0xFF0D1017) : const Color(0xFFF2F4F8));
+        const bgColor = Color(0xFF090D16);
 
         return MaterialApp(
           title: 'FLAC Toolkit',
@@ -41,7 +41,7 @@ class FlacToolkitApp extends StatelessWidget {
               : (appState.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.system),
           theme: ThemeData(
             brightness: Brightness.light,
-            scaffoldBackgroundColor: const Color(0xFFF2F4F8),
+            scaffoldBackgroundColor: const Color(0xFFF2F5FA),
             colorScheme: const ColorScheme.light(
               primary: Color(0xFF007AFF),
               secondary: Color(0xFF00C853),
@@ -52,10 +52,10 @@ class FlacToolkitApp extends StatelessWidget {
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             scaffoldBackgroundColor: bgColor,
-            colorScheme: ColorScheme.dark(
-              primary: const Color(0xFF00D2FF),
-              secondary: const Color(0xFF00E676),
-              surface: appState.isAmoled ? const Color(0xFF0A0D14) : const Color(0xFF131722),
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF00D2FF),
+              secondary: Color(0xFF00E676),
+              surface: Color(0xFF121726),
             ),
             textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
           ),
@@ -104,6 +104,7 @@ class _MainShellState extends State<MainShell> {
     return AnimatedBuilder(
       animation: appState,
       builder: (context, _) {
+        final isDark = appState.isCurrentDark(context);
         final bgColor = appState.getBgColor(context);
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
@@ -112,12 +113,70 @@ class _MainShellState extends State<MainShell> {
           backgroundColor: bgColor,
           body: Stack(
             children: [
+              // Atmospheric Aurora Light Spheres (Provides ambient light for BackdropFilter to diffuse!)
+              if (isDark) ...[
+                Positioned(
+                  top: -50,
+                  right: -40,
+                  child: Container(
+                    width: 290,
+                    height: 290,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFF1E2D4A).withOpacity(0.38),
+                          const Color(0xFF141D30).withOpacity(0.12),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 100,
+                  left: -60,
+                  child: Container(
+                    width: 320,
+                    height: 320,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFF1B243B).withOpacity(0.32),
+                          const Color(0xFF101524).withOpacity(0.10),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Positioned(
+                  top: -40,
+                  right: -30,
+                  child: Container(
+                    width: 260,
+                    height: 260,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFFD8E4F8).withOpacity(0.60),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
               // Main Scrollable Area & Screens
               SafeArea(
                 bottom: false,
                 child: Column(
                   children: [
-                    // Clean Modern Header Bar (No tacky PRO v1.0 watermark!)
+                    // Clean Modern Header Bar
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       child: Row(
@@ -125,11 +184,15 @@ class _MainShellState extends State<MainShell> {
                           Container(
                             padding: const EdgeInsets.all(7.5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00D2FF).withOpacity(0.14),
+                              color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF00D2FF).withOpacity(0.35)),
+                              border: Border.all(color: isDark ? Colors.white.withOpacity(0.18) : Colors.black.withOpacity(0.10)),
                             ),
-                            child: const Icon(Icons.waves_rounded, color: Color(0xFF00D2FF), size: 19),
+                            child: Icon(
+                              Icons.waves_rounded,
+                              color: isDark ? Colors.white : Colors.black87,
+                              size: 19,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Column(
@@ -170,16 +233,21 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
 
-              // Floating 4-Tab Liquid Lens Navigation Bar
+              // Floating Centered KowSU-style Liquid Lens Navigation Bar
               Positioned(
-                left: 18,
-                right: 18,
-                bottom: 16,
-                child: LiquidLensNavBar(
-                  currentIndex: _currentIndex,
-                  onTabSelected: (index) {
-                    setState(() => _currentIndex = index);
-                  },
+                left: 0,
+                right: 0,
+                bottom: 18,
+                child: Center(
+                  child: SizedBox(
+                    width: 316,
+                    child: LiquidLensNavBar(
+                      currentIndex: _currentIndex,
+                      onTabSelected: (index) {
+                        setState(() => _currentIndex = index);
+                      },
+                    ),
+                  ),
                 ),
               ),
             ],

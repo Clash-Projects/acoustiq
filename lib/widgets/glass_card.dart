@@ -43,22 +43,22 @@ class GlassCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withOpacity(0.09),
-                      Colors.white.withOpacity(0.025),
+                      Colors.white.withOpacity(0.10),
+                      Colors.white.withOpacity(0.03),
                     ],
                   )
                 : null,
             border: isDark && useGlass
                 ? Border(
-                    top: BorderSide(color: Colors.white.withOpacity(0.26), width: 1.2),
-                    left: BorderSide(color: Colors.white.withOpacity(0.09), width: 1.0),
-                    right: BorderSide(color: Colors.white.withOpacity(0.09), width: 1.0),
-                    bottom: BorderSide(color: Colors.white.withOpacity(0.04), width: 1.0),
+                    top: BorderSide(color: Colors.white.withOpacity(0.32), width: 1.3),
+                    left: BorderSide(color: Colors.white.withOpacity(0.14), width: 1.0),
+                    right: BorderSide(color: Colors.white.withOpacity(0.14), width: 1.0),
+                    bottom: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
                   )
                 : Border.all(color: baseBorder, width: 1.0),
             boxShadow: [
               BoxShadow(
-                color: isDark ? Colors.black.withOpacity(0.40) : Colors.black.withOpacity(0.06),
+                color: isDark ? Colors.black.withOpacity(0.48) : Colors.black.withOpacity(0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 4),
               ),
@@ -72,7 +72,7 @@ class GlassCard extends StatelessWidget {
           card = ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
               child: content,
             ),
           );

@@ -93,7 +93,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: appState.isAmoled ? const Color(0xFF0F1522) : const Color(0xFF161E2E),
+        backgroundColor: const Color(0xFF131826),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         title: const Text('Delete Duplicate?', style: TextStyle(color: Colors.white, fontSize: 16)),
         content: Text(

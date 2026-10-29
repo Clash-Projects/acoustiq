@@ -81,17 +81,8 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     _buildSwitchTile(
                       context,
-                      icon: Icons.contrast_rounded,
-                      title: 'AMOLED Mode',
-                      subtitle: 'Pure pitch black background (#000000)',
-                      value: appState.isAmoled,
-                      onChanged: (val) => appState.setAmoled(val),
-                    ),
-                    Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 1),
-                    _buildSwitchTile(
-                      context,
                       icon: Icons.blur_on_rounded,
-                      title: 'Liquid Glass',
+                      title: 'Frosted Liquid Glass',
                       subtitle: 'iOS-style translucent materials across the app',
                       value: appState.isLiquidGlass,
                       onChanged: (val) => appState.setLiquidGlass(val),
@@ -123,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
                     _buildInfoRow(context, 'Cutoff Heuristic', 'Spectral Frequency Roll-off Analysis'),
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
-                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 4)'),
+                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 5)'),
                   ],
                 ),
               ),

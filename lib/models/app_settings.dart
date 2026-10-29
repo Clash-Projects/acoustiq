@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'flac_info.dart';
 
 class AppState extends ChangeNotifier {
-  bool _isAmoled = false; // Default to Deep Cosmic Obsidian for genuine glass refraction
   bool _isLiquidGlass = true;
   bool _hapticsEnabled = true;
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
@@ -10,7 +9,6 @@ class AppState extends ChangeNotifier {
   List<FlacInfo> _sharedLibrary = [];
   String? _lastScannedFolder;
 
-  bool get isAmoled => _isAmoled;
   bool get isLiquidGlass => _isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
   String get themeMode => _themeMode;
@@ -24,26 +22,26 @@ class AppState extends ChangeNotifier {
   }
 
   Color getBgColor(BuildContext context) {
-    if (!isCurrentDark(context)) return const Color(0xFFF0F3F8);
-    // Deep Cosmic Obsidian allows true light refraction through glass
-    return _isAmoled ? Colors.black : const Color(0xFF080B11);
+    if (!isCurrentDark(context)) return const Color(0xFFF2F5FA);
+    // Deep Frosted Obsidian canvas allowing true optical light diffusion
+    return const Color(0xFF090D16);
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.white.withOpacity(_isLiquidGlass ? 0.85 : 0.98);
+      return Colors.white.withOpacity(_isLiquidGlass ? 0.82 : 0.96);
     }
-    // Luminous glass core: translucent, never solid muddy grey
+    // Luminous frosted core: translucent, never flat muddy grey
     return _isLiquidGlass
         ? Colors.white.withOpacity(0.065)
-        : const Color(0xFF111520);
+        : const Color(0xFF131826);
   }
 
   Color getBorderColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.black.withOpacity(0.08);
+      return Colors.black.withOpacity(0.10);
     }
-    return Colors.white.withOpacity(0.12);
+    return Colors.white.withOpacity(0.16);
   }
 
   Color getTextColor(BuildContext context) {
@@ -51,12 +49,7 @@ class AppState extends ChangeNotifier {
   }
 
   Color getSubTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white.withOpacity(0.55) : const Color(0xFF5E6778);
-  }
-
-  void setAmoled(bool value) {
-    _isAmoled = value;
-    notifyListeners();
+    return isCurrentDark(context) ? Colors.white.withOpacity(0.58) : const Color(0xFF5E6778);
   }
 
   void setLiquidGlass(bool value) {
