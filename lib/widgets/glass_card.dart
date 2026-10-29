@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../models/app_settings.dart';
 
 class GlassCard extends StatelessWidget {
   final Widget child;
@@ -15,7 +16,7 @@ class GlassCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.margin,
-    this.borderRadius = 20,
+    this.borderRadius = 22,
     this.borderColor,
     this.backgroundColor,
     this.onTap,
@@ -23,38 +24,65 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget card = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
+    return AnimatedBuilder(
+      animation: appState,
+      builder: (context, _) {
+        final useGlass = appState.isLiquidGlass;
+        final isAmoled = appState.isAmoled;
+
+        final defaultBg = backgroundColor ?? (isAmoled
+            ? const Color(0xFF0F1218).withOpacity(useGlass ? 0.75 : 0.98)
+            : const Color(0xFF161B26).withOpacity(useGlass ? 0.75 : 0.98));
+
+        final defaultBorder = borderColor ?? Colors.white.withOpacity(0.08);
+
+        Widget content = Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: backgroundColor ?? Colors.white.withOpacity(0.05),
+            color: defaultBg,
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: borderColor ?? Colors.white.withOpacity(0.12),
-              width: 1.2,
+              color: defaultBorder,
+              width: 1.0,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: child,
-        ),
-      ),
+        );
+
+        Widget card;
+        if (useGlass) {
+          card = ClipRRect(
+            borderRadius: BorderRadius.circular(borderRadius),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: content,
+            ),
+          );
+        } else {
+          card = content;
+        }
+
+        if (margin != null) {
+          card = Padding(padding: margin!, child: card);
+        }
+
+        if (onTap != null) {
+          card = GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: card,
+          );
+        }
+
+        return card;
+      },
     );
-
-    if (margin != null) {
-      card = Padding(padding: margin!, child: card);
-    }
-
-    if (onTap != null) {
-      card = GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: card,
-      );
-    }
-
-    return card;
   }
 }
-

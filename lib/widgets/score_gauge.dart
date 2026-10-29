@@ -24,10 +24,11 @@ class ScoreGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 200,
-          height: 180,
+          width: 190,
+          height: 150,
           child: CustomPaint(
             painter: _ArcPainter(
               score: score,
@@ -37,50 +38,54 @@ class ScoreGauge extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
+                  // Number + % Baseline Aligned
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
                         '$score',
                         style: TextStyle(
-                          fontSize: 52,
+                          fontSize: 48,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
-                          letterSpacing: -1.5,
+                          letterSpacing: -1.0,
                           shadows: [
                             Shadow(
-                              color: statusColor.withOpacity(0.5),
-                              blurRadius: 18,
+                              color: statusColor.withOpacity(0.4),
+                              blurRadius: 16,
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 4),
                       Text(
                         '%',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: statusColor,
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 2),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: statusColor.withOpacity(0.4)),
+                      color: statusColor.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: statusColor.withOpacity(0.35)),
                     ),
                     child: Text(
                       status.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: statusColor,
-                        letterSpacing: 1.5,
+                        letterSpacing: 1.2,
                       ),
                     ),
                   ),
@@ -89,27 +94,27 @@ class ScoreGauge extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         // Cutoff Frequency Indicator
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.graphic_eq_rounded, size: 16, color: Colors.white.withOpacity(0.5)),
+            Icon(Icons.graphic_eq_rounded, size: 15, color: Colors.white.withOpacity(0.6)),
             const SizedBox(width: 6),
             Text(
               'Cutoff: ${cutoffKhz.toStringAsFixed(1)} kHz',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w600,
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withOpacity(0.90),
                 letterSpacing: 0.3,
               ),
             ),
             Text(
               '  /  Max: ${maxKhz.toStringAsFixed(1)} kHz',
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.4),
+                fontSize: 11.5,
+                color: Colors.white.withOpacity(0.40),
               ),
             ),
           ],
@@ -127,8 +132,8 @@ class _ArcPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2 + 10);
-    final radius = size.width / 2 - 16;
+    final center = Offset(size.width / 2, size.height / 2 + 8);
+    final radius = size.width / 2 - 14;
     const startAngle = 135 * (math.pi / 180);
     const sweepTotal = 270 * (math.pi / 180);
     final currentSweep = sweepTotal * (score.clamp(0, 100) / 100);
@@ -137,7 +142,7 @@ class _ArcPainter extends CustomPainter {
     final bgPaint = Paint()
       ..color = Colors.white.withOpacity(0.08)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
+      ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
@@ -148,18 +153,18 @@ class _ArcPainter extends CustomPainter {
       bgPaint,
     );
 
-    // Progress Arc
+    // Progress Arc with glowing gradient
     final progressPaint = Paint()
       ..shader = SweepGradient(
         colors: [
-          color.withOpacity(0.4),
+          color.withOpacity(0.3),
           color,
         ],
         startAngle: startAngle,
         endAngle: startAngle + sweepTotal,
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
+      ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
@@ -170,19 +175,19 @@ class _ArcPainter extends CustomPainter {
       progressPaint,
     );
 
-    // Tip dot on progress arc
-    if (score > 2) {
+    // Glowing tip dot locked to exact end of progress arc
+    if (score > 1) {
       final tipAngle = startAngle + currentSweep;
       final tipX = center.dx + radius * math.cos(tipAngle);
       final tipY = center.dy + radius * math.sin(tipAngle);
 
       final glowPaint = Paint()
-        ..color = color.withOpacity(0.4)
+        ..color = color.withOpacity(0.5)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-      canvas.drawCircle(Offset(tipX, tipY), 9, glowPaint);
+      canvas.drawCircle(Offset(tipX, tipY), 8, glowPaint);
 
       final dotPaint = Paint()..color = Colors.white;
-      canvas.drawCircle(Offset(tipX, tipY), 5, dotPaint);
+      canvas.drawCircle(Offset(tipX, tipY), 4.5, dotPaint);
     }
   }
 
@@ -191,4 +196,3 @@ class _ArcPainter extends CustomPainter {
     return oldDelegate.score != score || oldDelegate.color != color;
   }
 }
-

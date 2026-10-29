@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
 import '../services/duplicate_detector.dart';
@@ -17,6 +18,22 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   List<DuplicateGroup> _groups = [];
   bool _isScanning = false;
   int _scannedCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSharedLibrary();
+  }
+
+  void _checkSharedLibrary() {
+    if (appState.sharedLibrary.isNotEmpty) {
+      final detected = DuplicateDetector.findDuplicates(appState.sharedLibrary);
+      setState(() {
+        _groups = detected;
+        _scannedCount = appState.sharedLibrary.length;
+      });
+    }
+  }
 
   Future<void> _scanForDuplicates() async {
     final dirPath = await FilePicker.platform.getDirectoryPath();
@@ -47,6 +64,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         }
       }
 
+      appState.setSharedLibrary(tracks, dirPath);
       final detected = DuplicateDetector.findDuplicates(tracks);
       if (mounted) {
         setState(() {
@@ -75,11 +93,11 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0F1522),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Duplicate?', style: TextStyle(color: Colors.white, fontSize: 17)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text('Delete Duplicate?', style: TextStyle(color: Colors.white, fontSize: 16)),
         content: Text(
           'Delete "${item.info.fileName}" (${item.info.fileSizeMb} MB)?\n\nThis cannot be undone.',
-          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12.5),
         ),
         actions: [
           TextButton(
@@ -90,6 +108,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF3D3D),
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
@@ -104,6 +123,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         if (await file.exists()) {
           await file.delete();
         }
+        appState.removeTrackFromLibrary(item.info.filePath);
         setState(() {
           group.items.remove(item);
           if (group.items.length <= 1) {
@@ -131,23 +151,23 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       children: [
         // Action Card
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           child: GlassCard(
-            borderRadius: 24,
-            borderColor: const Color(0xFFFFB300).withOpacity(0.3),
+            borderRadius: 22,
+            borderColor: const Color(0xFFFFB300).withOpacity(0.25),
             backgroundColor: const Color(0xFFFFB300).withOpacity(0.06),
             onTap: _isScanning ? null : _scanForDuplicates,
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(11),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFB300).withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                  child: const Icon(Icons.copy_all_rounded, color: Color(0xFFFFB300), size: 26),
+                  child: const Icon(Icons.copy_all_rounded, color: Color(0xFFFFB300), size: 24),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,27 +175,33 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       Text(
                         _isScanning ? 'Analyzing Duplicates...' : 'Find Audio Duplicates',
                         style: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _isScanning ? 'Scanned $_scannedCount tracks' : 'Scan folder to identify redundant tracks',
-                        style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
+                        _isScanning
+                            ? 'Scanned $_scannedCount tracks'
+                            : appState.lastScannedFolder != null
+                                ? 'Analyzed from current library (${appState.sharedLibrary.length} tracks)'
+                                : 'Scan folder to identify redundant tracks',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.55)),
                       ),
                     ],
                   ),
                 ),
                 if (_isScanning)
                   const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFFFFB300)),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFFFFB300)),
                   )
                 else
-                  const Icon(Icons.search_rounded, color: Colors.white70),
+                  const Icon(Icons.search_rounded, color: Colors.white70, size: 22),
               ],
             ),
           ),
@@ -184,32 +210,32 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         // Summary Bar if duplicates found
         if (_groups.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             child: Row(
               children: [
                 Expanded(
                   child: GlassCard(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    borderRadius: 16,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    borderRadius: 14,
                     borderColor: const Color(0xFFFFB300).withOpacity(0.25),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           '${_groups.length} Duplicate Sets Found',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFF3D3D).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: const Color(0xFFFF3D3D).withOpacity(0.4)),
                           ),
                           child: Text(
                             'Wasted: ${_totalWastedMb.toStringAsFixed(1)} MB',
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFFFF3D3D),
                             ),
@@ -223,7 +249,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             ),
           ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         // Duplicates List
         Expanded(
@@ -232,29 +258,34 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.cleaning_services_rounded, size: 54, color: Colors.white.withOpacity(0.15)),
-                      const SizedBox(height: 14),
+                      Icon(Icons.cleaning_services_rounded, size: 52, color: Colors.white.withOpacity(0.15)),
+                      const SizedBox(height: 12),
                       Text(
                         'No duplicate sets detected',
                         style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.5)),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Select a directory to compare track purity and bitrates',
-                        style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.3)),
+                        'Select a directory or audit your library to find copies',
+                        style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.35)),
                       ),
                     ],
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  itemCount: _groups.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                  itemCount: _groups.length + 1, // +1 for bottom buffer
                   physics: const BouncingScrollPhysics(),
                   itemBuilder: (context, gIndex) {
+                    if (gIndex == _groups.length) {
+                      // CRITICAL: 120px Bottom buffer so floating nav bar never overlaps!
+                      return const SizedBox(height: 120);
+                    }
+
                     final group = _groups[gIndex];
                     return GlassCard(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
                       borderRadius: 18,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,38 +300,38 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                     Text(
                                       group.title,
                                       style: const TextStyle(
-                                        fontSize: 15,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),
                                     ),
                                     Text(
                                       group.artist,
-                                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.55)),
+                                      style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.55)),
                                     ),
                                   ],
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   '${group.items.length} copies',
-                                  style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.7)),
+                                  style: TextStyle(fontSize: 10.5, color: Colors.white.withOpacity(0.7)),
                                 ),
                               ),
                             ],
                           ),
-                          const Divider(color: Colors.white12, height: 20),
+                          const Divider(color: Colors.white10, height: 18),
 
                           // List items in this group
                           ...group.items.map((item) {
                             return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
+                              margin: const EdgeInsets.only(bottom: 7),
+                              padding: const EdgeInsets.all(9),
                               decoration: BoxDecoration(
                                 color: item.isBest
                                     ? const Color(0xFF00E676).withOpacity(0.08)
@@ -308,30 +339,30 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: item.isBest
-                                      ? const Color(0xFF00E676).withOpacity(0.4)
+                                      ? const Color(0xFF00E676).withOpacity(0.35)
                                       : Colors.white10,
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                                     decoration: BoxDecoration(
                                       color: item.isBest
                                           ? const Color(0xFF00E676)
                                           : const Color(0xFFFFB300).withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(7),
                                     ),
                                     child: Text(
                                       item.isBest ? 'KEEP' : 'DUP',
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: 9.5,
                                         fontWeight: FontWeight.w900,
                                         color: item.isBest ? Colors.black : const Color(0xFFFFB300),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,19 +371,19 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                           item.info.fileName,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.white),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           '${item.reason} • ${item.info.fileSizeMb} MB',
-                                          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.5)),
+                                          style: TextStyle(fontSize: 10.5, color: Colors.white.withOpacity(0.5)),
                                         ),
                                       ],
                                     ),
                                   ),
                                   if (!item.isBest)
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF3D3D), size: 20),
+                                      icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF3D3D), size: 19),
                                       onPressed: () => _confirmDelete(item, group),
                                       tooltip: 'Delete Duplicate',
                                     ),
@@ -370,4 +401,3 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     );
   }
 }
-
