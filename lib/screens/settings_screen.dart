@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/app_settings.dart';
-import '../widgets/glass_card.dart';
+import '../ui/theme/colors.dart';
+import '../ui/theme/shape.dart';
 
+/// 1:1 Port of LastWave's Expressive Settings Screen Architecture
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -15,18 +17,27 @@ class SettingsScreen extends StatelessWidget {
         final subTextColor = appState.getSubTextColor(context);
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 90),
           physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Appearance Section Header
+              // 1. Appearance Section Header
               _buildSectionHeader('APPEARANCE & VISUALS', subTextColor),
               const SizedBox(height: 8),
 
-              // Theme Mode Selector Card
-              GlassCard(
-                borderRadius: 20,
+              // Theme Mode Selector Card (28dp Outer Radius)
+              Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceContainer : AppColors.lightSurface,
+                  borderRadius: ExpressiveShapes.heroInner,
+                  border: Border.all(
+                    color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
+                    width: 0.5,
+                  ),
+                  boxShadow: AppColors.softElevation(elevation: 3.0),
+                ),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -35,26 +46,26 @@ class SettingsScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00D2FF).withOpacity(0.14),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppColors.accentPrimary.withOpacity(isDark ? 0.20 : 0.14),
+                            borderRadius: ExpressiveShapes.artwork,
                           ),
-                          child: const Icon(Icons.palette_rounded, color: Color(0xFF00D2FF), size: 20),
+                          child: const Icon(Icons.palette_rounded, color: AppColors.accentPrimary, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Theme Mode',
+                              'Theme Appearance',
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w700,
                                 color: textColor,
                               ),
                             ),
                             Text(
-                              'Choose system, light, or dark look',
+                              'Obsidian AMOLED dark or porcelain light look',
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 11,
@@ -81,60 +92,74 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Toggles Group
-              GlassCard(
-                borderRadius: 20,
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    _buildSwitchTile(
-                      context,
-                      icon: Icons.blur_on_rounded,
-                      title: 'Frosted Liquid Glass',
-                      subtitle: 'Translucent optical diffusion across the app',
+              // Connected Settings Group (Visuals & Haptics)
+              _buildConnectedGroup(
+                isDark: isDark,
+                items: [
+                  (
+                    icon: Icons.blur_on_rounded,
+                    title: 'Frosted Liquid Glass',
+                    subtitle: 'Translucent optical diffusion across dock & cards',
+                    trailing: Switch.adaptive(
                       value: appState.isLiquidGlass,
+                      activeColor: AppColors.accentPrimary,
                       onChanged: (val) => appState.setLiquidGlass(val),
                     ),
-                    Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 1),
-                    _buildSwitchTile(
-                      context,
-                      icon: Icons.vibration_rounded,
-                      title: 'Haptic Feedback',
-                      subtitle: 'Tactile vibration on tab slide & actions',
+                  ),
+                  (
+                    icon: Icons.vibration_rounded,
+                    title: 'Haptic Feedback',
+                    subtitle: 'Tactile selection clicks on tab transitions',
+                    trailing: Switch.adaptive(
                       value: appState.hapticsEnabled,
+                      activeColor: AppColors.accentPrimary,
                       onChanged: (val) => appState.setHaptics(val),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
 
-              // Audio Engine Section Header
-              _buildSectionHeader('AUDIO ANALYSIS ENGINE', subTextColor),
+              // 2. Audio Engine Section Header
+              _buildSectionHeader('AUDIO ENGINE & HEURISTICS', subTextColor),
               const SizedBox(height: 8),
 
-              GlassCard(
-                borderRadius: 20,
-                child: Column(
-                  children: [
-                    _buildInfoRow(context, 'Core Engine', 'Native Dart 64-Bit Binary Parser'),
-                    Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
-                    _buildInfoRow(context, 'Cutoff Heuristic', 'Spectral Frequency Roll-off Analysis'),
-                    Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
-                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 9)'),
-                  ],
-                ),
+              _buildConnectedGroup(
+                isDark: isDark,
+                items: [
+                  (
+                    icon: Icons.memory_rounded,
+                    title: 'Core Parser Engine',
+                    subtitle: 'Native Dart 64-Bit Binary FLAC Stream Decoder',
+                    trailing: null,
+                  ),
+                  (
+                    icon: Icons.graphic_eq_rounded,
+                    title: 'Nyquist Heuristics',
+                    subtitle: 'High-Frequency Roll-Off & Spectral Threshold Test',
+                    trailing: null,
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
 
-              // Library Cache Section Header
+              // 3. Library Cache Section Header
               _buildSectionHeader('LIBRARY CACHE', subTextColor),
               const SizedBox(height: 8),
 
-              GlassCard(
-                borderRadius: 20,
+              Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceContainer : AppColors.lightSurface,
+                  borderRadius: ExpressiveShapes.heroInner,
+                  border: Border.all(
+                    color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
+                    width: 0.5,
+                  ),
+                  boxShadow: AppColors.softElevation(elevation: 3.0),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -146,7 +171,7 @@ class SettingsScreen extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                             color: textColor,
                           ),
                         ),
@@ -166,9 +191,9 @@ class SettingsScreen extends StatelessWidget {
                     if (appState.sharedLibrary.isNotEmpty)
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFFF3D3D),
-                          side: BorderSide(color: const Color(0xFFFF3D3D).withOpacity(0.4)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          foregroundColor: AppColors.fakeCoral,
+                          side: BorderSide(color: AppColors.fakeCoral.withOpacity(0.4)),
+                          shape: RoundedRectangleBorder(borderRadius: ExpressiveShapes.badgePill),
                         ),
                         onPressed: () {
                           appState.setSharedLibrary([], '');
@@ -176,14 +201,91 @@ class SettingsScreen extends StatelessWidget {
                             const SnackBar(content: Text('Scanned library cleared')),
                           );
                         },
-                        child: const Text('Clear', style: TextStyle(fontSize: 12)),
+                        child: const Text('Clear', style: TextStyle(fontFamily: 'Inter', fontSize: 12)),
                       ),
                   ],
                 ),
               ),
 
-              // CRITICAL: 140px Bottom buffer so floating nav bar NEVER collides
-              const SizedBox(height: 140),
+              const SizedBox(height: 20),
+
+              // 4. About & Version Section
+              _buildSectionHeader('ABOUT & SYSTEM', subTextColor),
+              const SizedBox(height: 8),
+
+              Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceContainer : AppColors.lightSurface,
+                  borderRadius: ExpressiveShapes.heroInner,
+                  border: Border.all(
+                    color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
+                    width: 0.5,
+                  ),
+                  boxShadow: AppColors.softElevation(elevation: 3.0),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Version',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: subTextColor,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentPrimary.withOpacity(isDark ? 0.20 : 0.14),
+                            borderRadius: ExpressiveShapes.badgePill,
+                            border: Border.all(color: AppColors.accentPrimary.withOpacity(0.35), width: 0.5),
+                          ),
+                          child: const Text(
+                            'v1.1.0 (Build 10)',
+                            style: TextStyle(
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.accentPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Divider(color: isDark ? Colors.white10 : Colors.black12, height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Design Architecture',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: subTextColor,
+                          ),
+                        ),
+                        Text(
+                          '1:1 LastWave Native Design',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 30),
             ],
           ),
         );
@@ -201,9 +303,79 @@ class SettingsScreen extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w800,
           color: color,
-          letterSpacing: 1.1,
+          letterSpacing: 1.0,
         ),
       ),
+    );
+  }
+
+  Widget _buildConnectedGroup({
+    required bool isDark,
+    required List<({IconData icon, String title, String subtitle, Widget? trailing})> items,
+  }) {
+    return Column(
+      children: List.generate(items.length, (i) {
+        final item = items[i];
+        final position = items.length == 1
+            ? GroupPosition.single
+            : (i == 0
+                ? GroupPosition.top
+                : (i == items.length - 1 ? GroupPosition.bottom : GroupPosition.middle));
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 3), // 3dp GROUP_GAP matching LastWave
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceContainer : AppColors.lightSurface,
+              borderRadius: groupShape(position),
+              border: Border.all(
+                color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
+                width: 0.5,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceHighest : AppColors.lightSurfaceHigh,
+                    borderRadius: ExpressiveShapes.artwork,
+                  ),
+                  child: Icon(item.icon, size: 20, color: isDark ? Colors.white70 : Colors.black87),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.subtitle,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11,
+                          color: isDark ? const Color(0xB3FFFFFF) : const Color(0x99000000),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (item.trailing != null) item.trailing!,
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -219,125 +391,39 @@ class SettingsScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF00D2FF).withOpacity(0.18)
-                : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
-            borderRadius: BorderRadius.circular(14),
+                ? AppColors.accentPrimary.withOpacity(isDark ? 0.20 : 0.16)
+                : (isDark ? AppColors.surfaceHighest : AppColors.lightSurfaceHigh),
+            borderRadius: ExpressiveShapes.statPill,
             border: Border.all(
-              color: isSelected ? const Color(0xFF00D2FF) : Colors.transparent,
-              width: 1.2,
+              color: isSelected ? AppColors.accentPrimary : Colors.transparent,
+              width: 1.0,
             ),
           ),
           child: Column(
             children: [
-              Icon(icon, size: 18, color: isSelected ? const Color(0xFF00D2FF) : (isDark ? Colors.white60 : Colors.black54)),
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected
+                    ? AppColors.accentPrimary
+                    : (isDark ? Colors.white60 : Colors.black54),
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? const Color(0xFF00D2FF) : (isDark ? Colors.white70 : Colors.black87),
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? AppColors.accentPrimary
+                      : (isDark ? Colors.white70 : Colors.black87),
                 ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSwitchTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    final isDark = appState.isCurrentDark(context);
-    final textColor = appState.getTextColor(context);
-    final subTextColor = appState.getSubTextColor(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: isDark ? Colors.white : Colors.black87, size: 19),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10.5,
-                    color: subTextColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            activeColor: const Color(0xFF00D2FF),
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(BuildContext context, String label, String value) {
-    final textColor = appState.getTextColor(context);
-    final subTextColor = appState.getSubTextColor(context);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 12.5,
-            color: subTextColor,
-          ),
-        ),
-        Text(
-          value,
-          style: value.startsWith('v') || value.contains('.')
-              ? TextStyle(
-                  fontFamily: 'JetBrainsMono',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                )
-              : TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-        ),
-      ],
     );
   }
 }
