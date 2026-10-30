@@ -4,6 +4,7 @@ import 'flac_info.dart';
 class AppState extends ChangeNotifier {
   bool _isLiquidGlass = true;
   bool _hapticsEnabled = true;
+  bool _amoledMode = true;
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
   
   List<FlacInfo> _sharedLibrary = [];
@@ -11,6 +12,7 @@ class AppState extends ChangeNotifier {
 
   bool get isLiquidGlass => _isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
+  bool get amoledMode => _amoledMode;
   String get themeMode => _themeMode;
   List<FlacInfo> get sharedLibrary => _sharedLibrary;
   String? get lastScannedFolder => _lastScannedFolder;
@@ -23,25 +25,15 @@ class AppState extends ChangeNotifier {
 
   Color getBgColor(BuildContext context) {
     if (!isCurrentDark(context)) return const Color(0xFFF5F5F7);
-    // Absolute Neutral Deep Obsidian Canvas (R = G = B = 6)
-    return const Color(0xFF060606);
+    return _amoledMode ? const Color(0xFF000000) : const Color(0xFF0C0C0C);
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.white.withOpacity(_isLiquidGlass ? 0.80 : 0.95);
+      return Colors.white.withOpacity(_isLiquidGlass ? 0.85 : 0.98);
     }
-    // Neutral obsidian charcoal card core (R = G = B = 20)
-    return _isLiquidGlass
-        ? const Color(0xFF141414).withOpacity(0.68)
-        : const Color(0xFF141414);
-  }
-
-  Color getBorderColor(BuildContext context) {
-    if (!isCurrentDark(context)) {
-      return Colors.black.withOpacity(0.08);
-    }
-    return Colors.white.withOpacity(0.14);
+    // True LastWave Obsidian Surface (R = G = B = 20)
+    return const Color(0xFF141414);
   }
 
   Color getTextColor(BuildContext context) {
@@ -49,7 +41,7 @@ class AppState extends ChangeNotifier {
   }
 
   Color getSubTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white.withOpacity(0.60) : const Color(0xFF666666);
+    return isCurrentDark(context) ? const Color(0x99FFFFFF) : const Color(0x99000000);
   }
 
   void setLiquidGlass(bool value) {
@@ -59,6 +51,11 @@ class AppState extends ChangeNotifier {
 
   void setHaptics(bool value) {
     _hapticsEnabled = value;
+    notifyListeners();
+  }
+
+  void setAmoledMode(bool value) {
+    _amoledMode = value;
     notifyListeners();
   }
 

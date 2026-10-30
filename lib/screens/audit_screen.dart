@@ -6,10 +6,14 @@ import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
 import '../ui/theme/colors.dart';
-import '../ui/theme/shape.dart';
-import '../widgets/score_gauge.dart';
 
-/// 1:1 Port of LastWave's Mix & Track List Stage for FLAC Audio Auditing
+/// 1:1 Port of LastWave Native's Mix & Track List Stage for FLAC Audio Auditing
+///
+/// Features:
+/// - Replaces chunky isolated track bricks with 100% seamless, borderless transparent rows.
+/// - Pure pitch black AMOLED canvas with ZERO border outlines.
+/// - 52dp squircle artwork thumbnails with continuous 14dp curvature.
+/// - 140dp bottom padding clearance ensuring seamless dock scrolling.
 class AuditScreen extends StatefulWidget {
   const AuditScreen({super.key});
 
@@ -120,48 +124,127 @@ class _AuditScreenState extends State<AuditScreen> {
           averageScore = (total / tracks.length).round();
         }
 
-        return Column(
-          children: [
-            // 1. LastWave Expressive Hero Stage (32dp Continuous Curvature)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: _buildHeroStage(
-                tracksCount: tracks.length,
-                genuineCount: genuineCount,
-                suspiciousCount: suspiciousCount,
-                fakeCount: fakeCount,
-                averageScore: averageScore,
-                isDark: isDark,
-                textColor: textColor,
-                subTextColor: subTextColor,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // 2. LastWave Unified Content Stage (28dp Top Corners)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildListContainer(
-                  tracks: filteredTracks,
-                  totalTracks: tracks.length,
-                  genuineCount: genuineCount,
-                  suspiciousCount: suspiciousCount,
-                  fakeCount: fakeCount,
-                  isDark: isDark,
-                  textColor: textColor,
-                  subTextColor: subTextColor,
+        return Scaffold(
+          backgroundColor: isDark ? AppColors.amoledCanvas : AppColors.lightCanvas,
+          body: SafeArea(
+            bottom: false,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // 1. Top Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 4),
+                    child: Text(
+                      'Audit Library',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.6,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+
+                // 2. Hero Stage (Single Sculpted Obsidian Surface, Zero Borders)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: _buildHeroStage(
+                      tracksCount: tracks.length,
+                      genuineCount: genuineCount,
+                      suspiciousCount: suspiciousCount,
+                      fakeCount: fakeCount,
+                      averageScore: averageScore,
+                      isDark: isDark,
+                      textColor: textColor,
+                      subTextColor: subTextColor,
+                    ),
+                  ),
+                ),
+
+                // 3. Filter Chips Row
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildFilterPill('All (${tracks.length})', 'all', isDark),
+                          const SizedBox(width: 8),
+                          _buildFilterPill('Genuine ($genuineCount)', 'genuine', isDark),
+                          const SizedBox(width: 8),
+                          _buildFilterPill('Suspect ($suspiciousCount)', 'suspicious', isDark),
+                          const SizedBox(width: 8),
+                          _buildFilterPill('Fake ($fakeCount)', 'fake', isDark),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 4. Seamless Transparent Track Rows (1:1 LastWave Architecture)
+                if (filteredTracks.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.library_music_outlined,
+                              size: 44,
+                              color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              tracks.isEmpty
+                                  ? 'No FLAC files audited yet\nTap the hero card above to scan a music directory'
+                                  : 'No tracks match current filter',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final track = filteredTracks[index];
+                          return _buildTransparentTrackRow(
+                            track: track,
+                            isDark: isDark,
+                            textColor: textColor,
+                            subTextColor: subTextColor,
+                            onTap: () => _openTrackDetail(track),
+                          );
+                        },
+                        childCount: filteredTracks.length,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-  /// 1:1 Port of LastWave's StatsCard Hero Stage
   Widget _buildHeroStage({
     required int tracksCount,
     required int genuineCount,
@@ -172,551 +255,225 @@ class _AuditScreenState extends State<AuditScreen> {
     required Color textColor,
     required Color subTextColor,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceContainer : AppColors.lightSurface,
-        borderRadius: ExpressiveShapes.hero,
-        border: Border.all(
-          color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
-          width: 0.5,
-        ),
-        boxShadow: AppColors.softElevation(elevation: 4.0),
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        children: [
-          // Inner Hero Surface (24dp HeroInnerShape)
-          Material(
-            color: isDark ? AppColors.surfaceHigh : AppColors.lightSurfaceLow,
-            borderRadius: ExpressiveShapes.heroInner,
-            child: InkWell(
-              onTap: _isScanning ? null : _scanFolder,
-              borderRadius: ExpressiveShapes.heroInner,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                decoration: BoxDecoration(
-                  borderRadius: ExpressiveShapes.heroInner,
-                  border: Border.all(
-                    color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
-                    width: 0.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '$tracksCount',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.8,
-                                  color: textColor,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'FLACs Audited',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: subTextColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _isScanning
-                                ? 'Scanning... inspected $_scannedCount tracks'
-                                : appState.lastScannedFolder != null
-                                    ? appState.lastScannedFolder!.split('/').last
-                                    : 'Tap to select a music directory to batch audit',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              color: subTextColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Action Pill Button (46dp circle)
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.accentPrimary.withOpacity(isDark ? 0.20 : 0.14),
-                        border: Border.all(
-                          color: AppColors.accentPrimary.withOpacity(0.35),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Center(
-                        child: _isScanning
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.2,
-                                  color: AppColors.accentPrimary,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.folder_special_rounded,
-                                color: AppColors.accentPrimary,
-                                size: 22,
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+    final cardBg = isDark ? AppColors.surfaceContainer : AppColors.lightSurface;
 
-          const SizedBox(height: 10),
-
-          // 4 Telemetry Pills Row (16dp StatPillShape)
-          Row(
+    return Material(
+      color: cardBg,
+      borderRadius: BorderRadius.circular(28),
+      child: InkWell(
+        onTap: _isScanning ? null : _scanFolder,
+        borderRadius: BorderRadius.circular(28),
+        splashColor: AppColors.accentPrimary.withOpacity(0.10),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: _buildTelemetryPill(
-                  label: 'Genuine',
-                  value: '$genuineCount',
-                  color: AppColors.genuineEmerald,
-                  isDark: isDark,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildTelemetryPill(
-                  label: 'Suspect',
-                  value: '$suspiciousCount',
-                  color: AppColors.suspiciousAmber,
-                  isDark: isDark,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildTelemetryPill(
-                  label: 'Fake',
-                  value: '$fakeCount',
-                  color: AppColors.fakeCoral,
-                  isDark: isDark,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildTelemetryPill(
-                  label: 'Avg Score',
-                  value: '$averageScore%',
-                  color: AppColors.accentPrimary,
-                  isDark: isDark,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTelemetryPill({
-    required String label,
-    required String value,
-    required Color color,
-    required bool isDark,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceHigh : AppColors.lightSurfaceLow,
-        borderRadius: ExpressiveShapes.statPill,
-        border: Border.all(
-          color: color.withOpacity(0.35),
-          width: 0.5,
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 8.5,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: Color(0x99FFFFFF),
-            ),
-            maxLines: 1,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'JetBrainsMono',
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 1:1 Port of LastWave's ListContainerShape Stage
-  Widget _buildListContainer({
-    required List<FlacInfo> tracks,
-    required int totalTracks,
-    required int genuineCount,
-    required int suspiciousCount,
-    required int fakeCount,
-    required bool isDark,
-    required Color textColor,
-    required Color subTextColor,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceLow : AppColors.lightSurface,
-        borderRadius: ExpressiveShapes.listContainer,
-        border: Border.all(
-          color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
-          width: 0.5,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Filter Chips Row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
+              Row(
                 children: [
-                  _buildFilterPill('All ($totalTracks)', 'all', isDark),
-                  const SizedBox(width: 6),
-                  _buildFilterPill('Genuine ($genuineCount)', 'genuine', isDark),
-                  const SizedBox(width: 6),
-                  _buildFilterPill('Suspect ($suspiciousCount)', 'suspicious', isDark),
-                  const SizedBox(width: 6),
-                  _buildFilterPill('Fake ($fakeCount)', 'fake', isDark),
-                ],
-              ),
-            ),
-          ),
-
-          Divider(color: isDark ? Colors.white10 : Colors.black12, height: 1),
-
-          // Tracks List
-          Expanded(
-            child: tracks.isEmpty
-                ? Center(
+                  Expanded(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.library_music_rounded,
-                          size: 42,
-                          color: isDark ? Colors.white24 : Colors.black26,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '$tracksCount',
+                              style: TextStyle(
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: 36,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.8,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'FLACs Audited',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 3),
                         Text(
-                          totalTracks == 0 ? 'No folder scanned yet' : 'No tracks match filter',
+                          _isScanning
+                              ? 'Scanning... audited $_scannedCount tracks'
+                              : (appState.lastScannedFolder != null
+                                  ? appState.lastScannedFolder!.split('/').last
+                                  : 'Tap to select music folder to batch audit'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          totalTracks == 0
-                              ? 'Tap the folder button above to audit audio files'
-                              : 'Select another filter chip above',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11.5,
+                            fontSize: 12,
                             color: subTextColor,
                           ),
                         ),
                       ],
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: tracks.length,
-                    itemBuilder: (context, index) {
-                      final track = tracks[index];
-                      final statusColor = _getStatusColor(track.status);
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Material(
-                          color: isDark ? AppColors.surfaceContainer : AppColors.lightSurfaceLow,
-                          borderRadius: ExpressiveShapes.trackRow,
-                          child: InkWell(
-                            onTap: () => _openTrackDetail(track),
-                            borderRadius: ExpressiveShapes.trackRow,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              decoration: BoxDecoration(
-                                borderRadius: ExpressiveShapes.trackRow,
-                                border: Border.all(
-                                  color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  // Artwork Thumbnail (14dp ArtworkShape)
-                                  Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: isDark ? AppColors.surfaceHighest : AppColors.lightSurfaceHigh,
-                                      borderRadius: ExpressiveShapes.artwork,
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: track.hasCover && track.coverBytes != null
-                                        ? Image.memory(
-                                            track.coverBytes!,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => _fallbackCover(statusColor),
-                                          )
-                                        : _fallbackCover(statusColor),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          track.title.isNotEmpty ? track.title : track.fileName,
-                                          style: TextStyle(
-                                            fontFamily: 'Inter',
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: textColor,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          track.artist.isNotEmpty
-                                              ? '${track.artist} • ${track.album}'
-                                              : track.fileName,
-                                          style: TextStyle(
-                                            fontFamily: 'Inter',
-                                            fontSize: 11,
-                                            color: subTextColor,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Row(
-                                          children: [
-                                            _buildBadge('${track.bitDepth}-bit', isDark),
-                                            const SizedBox(width: 5),
-                                            _buildBadge('${(track.sampleRate / 1000).toStringAsFixed(1)}k', isDark),
-                                            const SizedBox(width: 5),
-                                            _buildBadge('${track.bitrateKbps} kbps', isDark),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Score & Purity Indicator Dot
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            width: 7,
-                                            height: 7,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: statusColor,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Text(
-                                            '${track.score}%',
-                                            style: TextStyle(
-                                              fontFamily: 'JetBrainsMono',
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: statusColor,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${track.cutoffKhz.toStringAsFixed(1)} kHz',
-                                        style: TextStyle(
-                                          fontFamily: 'JetBrainsMono',
-                                          fontSize: 9.5,
-                                          color: subTextColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E2638) : const Color(0xFFE0F7FE),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: _isScanning
+                        ? const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: AppColors.accentPrimary,
                               ),
                             ),
+                          )
+                        : const Icon(
+                            Icons.folder_open_rounded,
+                            color: AppColors.accentPrimary,
+                            size: 22,
                           ),
-                        ),
-                      );
-                    },
                   ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              // Telemetry Pills Row
+              Row(
+                children: [
+                  _buildStatPill('Genuine', '$genuineCount', AppColors.genuineEmerald, isDark),
+                  const SizedBox(width: 6),
+                  _buildStatPill('Suspect', '$suspiciousCount', AppColors.suspiciousAmber, isDark),
+                  const SizedBox(width: 6),
+                  _buildStatPill('Fake', '$fakeCount', AppColors.fakeCoral, isDark),
+                  const SizedBox(width: 6),
+                  _buildStatPill('Avg Score', '$averageScore%', AppColors.accentPrimary, isDark),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildFilterPill(String label, String value, bool isDark) {
-    final isSelected = _filter == value;
-    final activeBg = AppColors.accentPrimary.withOpacity(isDark ? 0.25 : 0.18);
+  Widget _buildStatPill(String label, String value, Color color, bool isDark) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1B1B1B) : const Color(0xFFF1F1F4),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 8.5,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+                color: isDark ? const Color(0x80FFFFFF) : const Color(0x80000000),
+              ),
+              maxLines: 1,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterPill(String label, String filterKey, bool isDark) {
+    final isSelected = _filter == filterKey;
+    final bg = isSelected
+        ? (isDark ? const Color(0xFF242E3D) : const Color(0xFFE0F2FE))
+        : (isDark ? const Color(0xFF141414) : const Color(0xFFEEEEF1));
+    final fg = isSelected
+        ? AppColors.accentPrimary
+        : (isDark ? const Color(0x99FFFFFF) : const Color(0x99000000));
+
+    return GestureDetector(
+      onTap: () => setState(() => _filter = filterKey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: fg,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 1:1 Port of LastWave's NativeTrackRow (100% Transparent, Seamless Surface)
+  Widget _buildTransparentTrackRow({
+    required FlacInfo track,
+    required bool isDark,
+    required Color textColor,
+    required Color subTextColor,
+    required VoidCallback onTap,
+  }) {
+    final statusColor = _getStatusColor(track.status);
 
     return Material(
-      color: isSelected ? activeBg : (isDark ? AppColors.surfaceHigh : AppColors.lightSurfaceLow),
-      borderRadius: ExpressiveShapes.badgePill,
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: () => setState(() => _filter = value),
-        borderRadius: ExpressiveShapes.badgePill,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: ExpressiveShapes.badgePill,
-            border: Border.all(
-              color: isSelected
-                  ? AppColors.accentPrimary.withOpacity(0.45)
-                  : (isDark ? AppColors.darkHairline : AppColors.lightHairline),
-              width: 0.5,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected
-                  ? (isDark ? Colors.white : AppColors.accentPrimary)
-                  : (isDark ? const Color(0xB3FFFFFF) : const Color(0x99000000)),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBadge(String text, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceHighest : AppColors.lightSurfaceHigh,
-        borderRadius: ExpressiveShapes.badgePill,
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontFamily: 'JetBrainsMono',
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          color: Color(0xB3FFFFFF),
-        ),
-      ),
-    );
-  }
-
-  Widget _fallbackCover(Color accent) {
-    return Center(
-      child: Icon(Icons.music_note_rounded, size: 22, color: accent.withOpacity(0.8)),
-    );
-  }
-}
-
-/// LastWave-Style Modal Bottom Sheet with Frosted Glass & Nyquist Analysis
-class _TrackDetailModal extends StatelessWidget {
-  final FlacInfo track;
-
-  const _TrackDetailModal({required this.track});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = appState.isCurrentDark(context);
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subTextColor = isDark ? const Color(0xB3FFFFFF) : const Color(0x99000000);
-
-    final statusColor = track.status == 'genuine'
-        ? AppColors.genuineEmerald
-        : (track.status == 'suspicious' ? AppColors.suspiciousAmber : AppColors.fakeCoral);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceContainer : AppColors.lightSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(
-          color: isDark ? AppColors.darkHairline : AppColors.lightHairline,
-          width: 0.5,
-        ),
-        boxShadow: AppColors.softElevation(elevation: 12.0),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag handle
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white24 : Colors.black26,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Header with Artwork & Title
-          Row(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: AppColors.accentPrimary.withOpacity(0.10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
             children: [
+              // 52dp Continuous Squircle Artwork Thumbnail
               Container(
-                width: 58,
-                height: 58,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceHighest : AppColors.lightSurfaceHigh,
-                  borderRadius: ExpressiveShapes.artwork,
+                  color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5EA),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: track.hasCover && track.coverBytes != null
-                    ? Image.memory(track.coverBytes!, fit: BoxFit.cover)
-                    : Icon(Icons.music_note_rounded, size: 28, color: statusColor),
+                    ? Image.memory(
+                        track.coverBytes!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _fallbackCover(statusColor),
+                      )
+                    : _fallbackCover(statusColor),
               ),
               const SizedBox(width: 14),
+              // Title, Artist & Technical Badges
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -725,8 +482,8 @@ class _TrackDetailModal extends StatelessWidget {
                       track.title.isNotEmpty ? track.title : track.fileName,
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: textColor,
                       ),
                       maxLines: 1,
@@ -734,7 +491,9 @@ class _TrackDetailModal extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      track.artist.isNotEmpty ? track.artist : 'Unknown Artist',
+                      track.artist.isNotEmpty
+                          ? '${track.artist} • ${track.album}'
+                          : track.fileName,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
@@ -744,61 +503,214 @@ class _TrackDetailModal extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      track.filePath,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        color: subTextColor.withOpacity(0.7),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        _buildTinyBadge('${track.bitDepth}-bit', isDark),
+                        const SizedBox(width: 4),
+                        _buildTinyBadge('${(track.sampleRate / 1000).toStringAsFixed(1)}k', isDark),
+                        const SizedBox(width: 4),
+                        _buildTinyBadge('${track.bitrateKbps}k', isDark),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Embedded Score Gauge
-          ScoreGauge(
-            score: track.score,
-            status: track.status,
-            cutoffKhz: track.cutoffKhz,
-            maxKhz: track.maxKhz,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Verdict Banner
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
-              borderRadius: ExpressiveShapes.statPill,
-              border: Border.all(color: statusColor.withOpacity(0.35), width: 0.5),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  track.status == 'genuine' ? Icons.verified_rounded : Icons.warning_rounded,
-                  color: statusColor,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    track.verdict,
+              const SizedBox(width: 8),
+              // Purity Score Pill & Indicator Dot
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: statusColor,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${track.score}%',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    track.durationStr,
                     style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11.5,
-                      color: textColor,
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11,
+                      color: subTextColor,
                     ),
                   ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTinyBadge(String text, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8E8EC),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'JetBrainsMono',
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
+        ),
+      ),
+    );
+  }
+
+  Widget _fallbackCover(Color statusColor) {
+    return Center(
+      child: Icon(
+        Icons.music_note_rounded,
+        size: 24,
+        color: statusColor.withOpacity(0.7),
+      ),
+    );
+  }
+}
+
+/// Track Detail Modal Bottom Sheet (Frosted Glass, Pitch Black AMOLED Substrate)
+class _TrackDetailModal extends StatelessWidget {
+  final FlacInfo track;
+
+  const _TrackDetailModal({required this.track});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = appState.isCurrentDark(context);
+    final textColor = appState.getTextColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xF2121212) : Colors.white.withOpacity(0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ],
+              ),
+              const SizedBox(height: 18),
+              // Track Title & Score
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5EA),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: track.hasCover && track.coverBytes != null
+                        ? Image.memory(track.coverBytes!, fit: BoxFit.cover)
+                        : const Icon(Icons.music_note_rounded, size: 28),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          track.title.isNotEmpty ? track.title : track.fileName,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          track.artist.isNotEmpty ? track.artist : 'Unknown Artist',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            color: subTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Technical Rows
+              _buildModalRow('Authenticity Score', '${track.score}%', isDark, textColor),
+              _buildModalRow('Cutoff Frequency', '${track.cutoffKhz.toStringAsFixed(1)} kHz', isDark, textColor),
+              _buildModalRow('Sample Rate & Depth', '${track.bitDepth}-bit / ${(track.sampleRate / 1000).toStringAsFixed(1)} kHz', isDark, textColor),
+              _buildModalRow('Bitrate', '${track.bitrateKbps} kbps', isDark, textColor),
+              _buildModalRow('File Size', '${track.fileSizeMb.toStringAsFixed(2)} MB', isDark, textColor),
+              _buildModalRow('Duration', track.durationStr, isDark, textColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModalRow(String label, String value, bool isDark, Color textColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              color: isDark ? const Color(0x99FFFFFF) : const Color(0x99000000),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'JetBrainsMono',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: textColor,
             ),
           ),
         ],
