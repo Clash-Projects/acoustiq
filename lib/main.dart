@@ -1,6 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'models/app_settings.dart';
 import 'screens/inspect_screen.dart';
@@ -30,8 +30,8 @@ class FlacToolkitApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: appState,
       builder: (context, _) {
-        const darkCanvas = Color(0xFF090D17);
-        const lightCanvas = Color(0xFFF5F7FB);
+        const darkCanvas = Color(0xFF0A0B0E);
+        const lightCanvas = Color(0xFFF6F7FA);
 
         return MaterialApp(
           title: 'FLAC Toolkit',
@@ -40,6 +40,7 @@ class FlacToolkitApp extends StatelessWidget {
               ? ThemeMode.light
               : (appState.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.system),
           theme: ThemeData(
+            fontFamily: 'Inter',
             brightness: Brightness.light,
             scaffoldBackgroundColor: lightCanvas,
             colorScheme: const ColorScheme.light(
@@ -47,17 +48,16 @@ class FlacToolkitApp extends StatelessWidget {
               secondary: Color(0xFF00C853),
               surface: Colors.white,
             ),
-            textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
           ),
           darkTheme: ThemeData(
+            fontFamily: 'Inter',
             brightness: Brightness.dark,
             scaffoldBackgroundColor: darkCanvas,
             colorScheme: const ColorScheme.dark(
               primary: Color(0xFF00D2FF),
               secondary: Color(0xFF00E676),
-              surface: Color(0xFF101524),
+              surface: Color(0xFF131418),
             ),
-            textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
           ),
           home: const MainShell(),
         );
@@ -107,136 +107,179 @@ class _MainShellState extends State<MainShell> {
         final isDark = appState.isCurrentDark(context);
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
+        final screenWidth = MediaQuery.of(context).size.width;
+
+        // Responsive dock width: Proportional on mobile (330dp) and tablet (480dp)
+        final dockWidth = (screenWidth * 0.86).clamp(320.0, 500.0);
 
         return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Container(
-            // Seamless Atmospheric Substrate:
-            // Eliminates clumsy circular containers that previously produced dirty smudges in Light Mode
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? const [
-                        Color(0xFF080C15),
-                        Color(0xFF0A0F1D),
-                        Color(0xFF0D1424),
-                      ]
-                    : const [
-                        Color(0xFFF7F9FD),
-                        Color(0xFFEEF2F8),
-                      ],
+          backgroundColor: isDark ? const Color(0xFF0A0B0E) : const Color(0xFFF6F7FA),
+          body: Stack(
+            children: [
+              // 1. Environmental Acoustic Loft Substrate (Allows BackdropFilter to physically frost!)
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _AcousticLoftPainter(isDark: isDark),
+                ),
               ),
-            ),
-            child: Stack(
-              children: [
-                // In Dark Mode: Deep diffused atmospheric radiance (soft oceanic substrate)
-                if (isDark)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: const Alignment(0.0, -0.2),
-                            radius: 1.2,
-                            colors: [
-                              const Color(0xFF131D33).withOpacity(0.35),
-                              Colors.transparent,
+
+              // 2. Responsive Content Container (Centered max 620px for tablets)
+              SafeArea(
+                bottom: false,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 620),
+                    child: Column(
+                      children: [
+                        // Header Bar
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7.5),
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDark ? Colors.white.withOpacity(0.10) : Colors.black.withOpacity(0.06),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.waves_rounded,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  size: 19,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'FLAC TOOLKIT',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.1,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Pro Audio Quality Analyzer',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: subTextColor,
+                                      letterSpacing: 0.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                      ),
-                    ),
-                  ),
 
-                // Main Scrollable Area & Screens
-                SafeArea(
-                  bottom: false,
-                  child: Column(
-                    children: [
-                      // Header Bar
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(7.5),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isDark ? Colors.white.withOpacity(0.14) : Colors.black.withOpacity(0.08),
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.waves_rounded,
-                                color: isDark ? Colors.white : Colors.black87,
-                                size: 19,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'FLAC TOOLKIT',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.1,
-                                    color: textColor,
-                                  ),
-                                ),
-                                Text(
-                                  'Pro Audio Quality Analyzer',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                    color: subTextColor,
-                                    letterSpacing: 0.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        // Active Tab Screen
+                        Expanded(
+                          child: IndexedStack(
+                            index: _currentIndex,
+                            children: _screens,
+                          ),
                         ),
-                      ),
-
-                      // Active Tab Screen
-                      Expanded(
-                        child: IndexedStack(
-                          index: _currentIndex,
-                          children: _screens,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Floating Centered KowSU-style Liquid Lens Navigation Bar
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 18,
-                  child: Center(
-                    child: SizedBox(
-                      width: 326,
-                      child: LiquidLensNavBar(
-                        currentIndex: _currentIndex,
-                        onTabSelected: (index) {
-                          setState(() => _currentIndex = index);
-                        },
-                      ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // 3. Floating Centered KowSU / LastWave Magnifying Liquid Lens Navigation Bar
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 18,
+                child: Center(
+                  child: SizedBox(
+                    width: dockWidth,
+                    child: LiquidLensNavBar(
+                      currentIndex: _currentIndex,
+                      onTabSelected: (index) {
+                        setState(() => _currentIndex = index);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
+  }
+}
+
+/// Architectural Acoustic Loft Environmental Substrate
+///
+/// Implements subtle architectural daylight and acoustic diffusion slats
+/// that give BackdropFilter real optical contrast and light rays to diffuse,
+/// replicating the "Good Morning Concrete Loft" aesthetic with ZERO navy blue.
+class _AcousticLoftPainter extends CustomPainter {
+  final bool isDark;
+
+  _AcousticLoftPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+
+    if (isDark) {
+      // 1. Neutral Obsidian Base
+      final bgPaint = Paint()..color = const Color(0xFF0A0B0E);
+      canvas.drawRect(rect, bgPaint);
+
+      // 2. Cinematic Overhead Daylight Aperture (Top-center light pool)
+      final daylightShader = RadialGradient(
+        center: const Alignment(0.0, -0.70),
+        radius: 1.35,
+        colors: [
+          const Color(0xFFE2E8F0).withOpacity(0.065),
+          const Color(0xFF94A3B8).withOpacity(0.020),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.45, 1.0],
+      ).createShader(rect);
+      canvas.drawRect(rect, Paint()..shader = daylightShader);
+
+      // 3. Subtle Acoustic Slats (Vertical diffusion geometry)
+      final slatPaint = Paint()
+        ..color = Colors.white.withOpacity(0.015)
+        ..strokeWidth = 1.0;
+
+      const slatSpacing = 36.0;
+      for (double x = 0.0; x < size.width; x += slatSpacing) {
+        canvas.drawLine(Offset(x, 0.0), Offset(x, size.height), slatPaint);
+      }
+    } else {
+      // Light Mode: Pure Porcelain Substrate
+      final bgPaint = Paint()..color = const Color(0xFFF6F7FA);
+      canvas.drawRect(rect, bgPaint);
+
+      final daylightShader = RadialGradient(
+        center: const Alignment(0.0, -0.60),
+        radius: 1.3,
+        colors: [
+          Colors.white.withOpacity(0.95),
+          const Color(0xFFEEF0F5),
+        ],
+      ).createShader(rect);
+      canvas.drawRect(rect, Paint()..shader = daylightShader);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _AcousticLoftPainter oldDelegate) {
+    return oldDelegate.isDark != isDark;
   }
 }

@@ -114,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
                     _buildInfoRow(context, 'Cutoff Heuristic', 'Spectral Frequency Roll-off Analysis'),
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
-                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 6)'),
+                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 7)'),
                   ],
                 ),
               ),
