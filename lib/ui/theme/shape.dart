@@ -72,3 +72,4 @@ BorderRadius groupShape(GroupPosition position) {
       );
   }
 }
+
