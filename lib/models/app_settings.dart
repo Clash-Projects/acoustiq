@@ -23,17 +23,17 @@ class AppState extends ChangeNotifier {
 
   Color getBgColor(BuildContext context) {
     if (!isCurrentDark(context)) return const Color(0xFFF5F5F7);
-    // Absolute Pure Neutral Obsidian Canvas (R = G = B = 8, ZERO navy blue or teal subpixel glow)
-    return const Color(0xFF080808);
+    // Absolute Neutral Deep Obsidian Canvas (R = G = B = 6)
+    return const Color(0xFF060606);
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.white.withOpacity(_isLiquidGlass ? 0.78 : 0.95);
+      return Colors.white.withOpacity(_isLiquidGlass ? 0.80 : 0.95);
     }
-    // Pure neutral obsidian charcoal card core (R = G = B = 20)
+    // Neutral obsidian charcoal card core (R = G = B = 20)
     return _isLiquidGlass
-        ? const Color(0xFF141414).withOpacity(0.72)
+        ? const Color(0xFF141414).withOpacity(0.68)
         : const Color(0xFF141414);
   }
 
@@ -41,8 +41,7 @@ class AppState extends ChangeNotifier {
     if (!isCurrentDark(context)) {
       return Colors.black.withOpacity(0.08);
     }
-    // Sub-pixel hairline perimeter: neutral white with subtle opacity
-    return Colors.white.withOpacity(0.11);
+    return Colors.white.withOpacity(0.14);
   }
 
   Color getTextColor(BuildContext context) {

@@ -30,7 +30,7 @@ class FlacToolkitApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: appState,
       builder: (context, _) {
-        const darkCanvas = Color(0xFF080808);
+        const darkCanvas = Color(0xFF060606);
         const lightCanvas = Color(0xFFF5F5F7);
 
         return MaterialApp(
@@ -113,10 +113,10 @@ class _MainShellState extends State<MainShell> {
         final dockWidth = (screenWidth * 0.86).clamp(320.0, 500.0);
 
         return Scaffold(
-          backgroundColor: isDark ? const Color(0xFF080808) : const Color(0xFFF5F5F7),
+          backgroundColor: isDark ? const Color(0xFF060606) : const Color(0xFFF5F5F7),
           body: Stack(
             children: [
-              // 1. Environmental Acoustic Loft Substrate (Allows BackdropFilter to physically frost!)
+              // 1. Cinematic Architectural Acoustic Loft Substrate (Rich ambient light & diffusion geometry)
               Positioned.fill(
                 child: CustomPaint(
                   painter: _AcousticLoftPainter(isDark: isDark),
@@ -131,7 +131,7 @@ class _MainShellState extends State<MainShell> {
                     constraints: const BoxConstraints(maxWidth: 620),
                     child: Column(
                       children: [
-                        // Header Bar
+                        // Header Bar with Frosted Glass Badge
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           child: Row(
@@ -139,11 +139,11 @@ class _MainShellState extends State<MainShell> {
                               Container(
                                 padding: const EdgeInsets.all(7.5),
                                 decoration: BoxDecoration(
-                                  color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
+                                  color: isDark ? Colors.white.withOpacity(0.07) : Colors.black.withOpacity(0.04),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: isDark ? Colors.white.withOpacity(0.10) : Colors.black.withOpacity(0.06),
-                                    width: 0.5,
+                                    color: isDark ? Colors.white.withOpacity(0.14) : Colors.black.withOpacity(0.06),
+                                    width: 0.8,
                                   ),
                                 ),
                                 child: Icon(
@@ -195,7 +195,7 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
 
-              // 3. Floating Centered KowSU Liquid Lens Navigation Bar
+              // 3. Floating Centered KowSU 3D Liquid Lens Navigation Bar
               Positioned(
                 left: 0,
                 right: 0,
@@ -222,9 +222,9 @@ class _MainShellState extends State<MainShell> {
 
 /// Architectural Acoustic Loft Environmental Substrate
 ///
-/// Implements subtle architectural daylight and acoustic diffusion slats
-/// that give BackdropFilter real optical contrast and light rays to diffuse,
-/// replicating the "Good Morning Concrete Loft" aesthetic with ZERO navy blue.
+/// Implements authentic cinematic daylight aperture, studio light pools,
+/// and acoustic diffusion slats that give BackdropFilter high optical contrast
+/// and real light rays to physically scatter into luminous frosted silica.
 class _AcousticLoftPainter extends CustomPainter {
   final bool isDark;
 
@@ -235,28 +235,40 @@ class _AcousticLoftPainter extends CustomPainter {
     final rect = Offset.zero & size;
 
     if (isDark) {
-      // 1. Absolute Neutral Obsidian Base (R = G = B = 8)
-      final bgPaint = Paint()..color = const Color(0xFF080808);
+      // 1. Deep Obsidian Base (R = G = B = 6, strictly neutral)
+      final bgPaint = Paint()..color = const Color(0xFF060606);
       canvas.drawRect(rect, bgPaint);
 
-      // 2. Cinematic Overhead Daylight Aperture (Top-center neutral silver pool)
+      // 2. Cinematic Overhead Daylight Aperture (High-contrast neutral silver pool)
       final daylightShader = RadialGradient(
-        center: const Alignment(0.0, -0.75),
-        radius: 1.35,
+        center: const Alignment(0.0, -0.80),
+        radius: 1.45,
         colors: [
-          Colors.white.withOpacity(0.07),
-          Colors.white.withOpacity(0.02),
+          Colors.white.withOpacity(0.12),
+          Colors.white.withOpacity(0.04),
           Colors.transparent,
         ],
-        stops: const [0.0, 0.48, 1.0],
+        stops: const [0.0, 0.45, 1.0],
       ).createShader(rect);
       canvas.drawRect(rect, Paint()..shader = daylightShader);
 
-      // 3. Architectural Slats & Geometric Diffusion Texture
-      // Allows BackdropFilter to scatter distinct rays into creamy frosted silica!
+      // 3. Subtle Studio Spotlight Cone
+      final studioShader = RadialGradient(
+        center: const Alignment(0.0, -0.25),
+        radius: 1.7,
+        colors: [
+          Colors.white.withOpacity(0.035),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 1.0],
+      ).createShader(rect);
+      canvas.drawRect(rect, Paint()..shader = studioShader);
+
+      // 4. Architectural Acoustic Diffusion Slats & Geometric Guides
+      // When BackdropFilter blurs these slats, they scatter into genuine milky frosted silica!
       final verticalSlatPaint = Paint()
-        ..color = Colors.white.withOpacity(0.035)
-        ..strokeWidth = 1.0;
+        ..color = Colors.white.withOpacity(0.045)
+        ..strokeWidth = 1.2;
 
       const slatSpacing = 36.0;
       for (double x = 0.0; x < size.width; x += slatSpacing) {
@@ -264,7 +276,7 @@ class _AcousticLoftPainter extends CustomPainter {
       }
 
       final horizontalSlatPaint = Paint()
-        ..color = Colors.white.withOpacity(0.018)
+        ..color = Colors.white.withOpacity(0.025)
         ..strokeWidth = 0.8;
 
       const horizSpacing = 72.0;
@@ -272,12 +284,12 @@ class _AcousticLoftPainter extends CustomPainter {
         canvas.drawLine(Offset(0.0, y), Offset(size.width, y), horizontalSlatPaint);
       }
 
-      // 4. Subtle Ambient Bottom Pool (Behind floating dock)
+      // 5. Bottom Ambient Refraction Light Pool (Directly behind the floating nav bar dock)
       final bottomGlowShader = RadialGradient(
-        center: const Alignment(0.0, 0.95),
-        radius: 0.85,
+        center: const Alignment(0.0, 0.98),
+        radius: 0.90,
         colors: [
-          Colors.white.withOpacity(0.035),
+          Colors.white.withOpacity(0.08),
           Colors.transparent,
         ],
         stops: const [0.0, 1.0],

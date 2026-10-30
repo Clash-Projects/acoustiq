@@ -1,7 +1,7 @@
 name: flac_toolkit
 description: "Smart FLAC Audio Quality Analyzer and Duplicate Manager"
 publish_to: 'none'
-version: 1.1.0+8
+version: 1.1.0+9
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
