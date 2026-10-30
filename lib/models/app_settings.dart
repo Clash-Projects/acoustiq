@@ -22,35 +22,35 @@ class AppState extends ChangeNotifier {
   }
 
   Color getBgColor(BuildContext context) {
-    if (!isCurrentDark(context)) return const Color(0xFFF6F7FA);
-    // True Neutral Obsidian Canvas (R ≈ G ≈ B, zero navy blue bleed on IPS LCD)
-    return const Color(0xFF0A0B0E);
+    if (!isCurrentDark(context)) return const Color(0xFFF5F5F7);
+    // Absolute Pure Neutral Obsidian Canvas (R = G = B = 8, ZERO navy blue or teal subpixel glow)
+    return const Color(0xFF080808);
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.white.withOpacity(_isLiquidGlass ? 0.72 : 0.96);
+      return Colors.white.withOpacity(_isLiquidGlass ? 0.78 : 0.95);
     }
-    // Luminous frosted silica core: translucent, never flat muddy grey
+    // Pure neutral obsidian charcoal card core (R = G = B = 20)
     return _isLiquidGlass
-        ? Colors.white.withOpacity(0.045)
-        : const Color(0xFF131418);
+        ? const Color(0xFF141414).withOpacity(0.72)
+        : const Color(0xFF141414);
   }
 
   Color getBorderColor(BuildContext context) {
     if (!isCurrentDark(context)) {
       return Colors.black.withOpacity(0.08);
     }
-    // Sub-pixel hairline perimeter: faint, optical depth without cartoon borders
-    return Colors.white.withOpacity(0.09);
+    // Sub-pixel hairline perimeter: neutral white with subtle opacity
+    return Colors.white.withOpacity(0.11);
   }
 
   Color getTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white : const Color(0xFF0E0F12);
+    return isCurrentDark(context) ? Colors.white : const Color(0xFF111111);
   }
 
   Color getSubTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white.withOpacity(0.62) : const Color(0xFF555B68);
+    return isCurrentDark(context) ? Colors.white.withOpacity(0.60) : const Color(0xFF666666);
   }
 
   void setLiquidGlass(bool value) {

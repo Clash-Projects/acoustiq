@@ -1,11 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
-import '../services/duplicate_detector.dart';
 import '../widgets/glass_card.dart';
 
 class DuplicatesScreen extends StatefulWidget {
@@ -15,24 +13,48 @@ class DuplicatesScreen extends StatefulWidget {
   State<DuplicatesScreen> createState() => _DuplicatesScreenState();
 }
 
+class DuplicateItem {
+  final FlacInfo info;
+  final bool isBest;
+  final String reason;
+
+  DuplicateItem({required this.info, required this.isBest, required this.reason});
+}
+
+class DuplicateGroup {
+  final String key;
+  final String title;
+  final String artist;
+  final List<DuplicateItem> items;
+
+  DuplicateGroup({
+    required this.key,
+    required this.title,
+    required this.artist,
+    required this.items,
+  });
+
+  double get wastedMb {
+    if (items.length <= 1) return 0.0;
+    final best = items.firstWhere((i) => i.isBest, orElse: () => items.first);
+    double total = 0.0;
+    for (final it in items) {
+      if (it != best) total += it.info.fileSizeMb;
+    }
+    return total;
+  }
+}
+
 class _DuplicatesScreenState extends State<DuplicatesScreen> {
-  List<DuplicateGroup> _groups = [];
   bool _isScanning = false;
   int _scannedCount = 0;
+  List<DuplicateGroup> _groups = [];
 
   @override
   void initState() {
     super.initState();
-    _checkSharedLibrary();
-  }
-
-  void _checkSharedLibrary() {
     if (appState.sharedLibrary.isNotEmpty) {
-      final detected = DuplicateDetector.findDuplicates(appState.sharedLibrary);
-      setState(() {
-        _groups = detected;
-        _scannedCount = appState.sharedLibrary.length;
-      });
+      _analyzeDuplicates(appState.sharedLibrary);
     }
   }
 
@@ -42,8 +64,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
     setState(() {
       _isScanning = true;
-      _groups.clear();
       _scannedCount = 0;
+      _groups = [];
     });
 
     try {
@@ -61,21 +83,18 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         final info = await FlacParser.analyzeFile(file.path);
         tracks.add(info);
         if (mounted) {
-          setState(() => _scannedCount++);
+          setState(() {
+            _scannedCount++;
+          });
         }
       }
 
       appState.setSharedLibrary(tracks, dirPath);
-      final detected = DuplicateDetector.findDuplicates(tracks);
-      if (mounted) {
-        setState(() {
-          _groups = detected;
-        });
-      }
+      _analyzeDuplicates(tracks);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text('Scan error: $e'), backgroundColor: Colors.redAccent),
         );
       }
     } finally {
@@ -93,17 +112,23 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF131826),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text('Delete Duplicate?', style: TextStyle(color: Colors.white, fontSize: 16)),
+        backgroundColor: const Color(0xFF141414),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.12), width: 0.8),
+        ),
+        title: const Text(
+          'Delete Duplicate?',
+          style: TextStyle(fontFamily: 'Inter', color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         content: Text(
           'Delete "${item.info.fileName}" (${item.info.fileSizeMb} MB)?\n\nThis cannot be undone.',
-          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12.5),
+          style: TextStyle(fontFamily: 'Inter', color: Colors.white.withOpacity(0.7), fontSize: 12.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: const Text('Cancel', style: TextStyle(fontFamily: 'Inter', color: Colors.white54)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -112,7 +137,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: const Text('Delete', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -146,6 +171,63 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     }
   }
 
+  void _analyzeDuplicates(List<FlacInfo> tracks) {
+    final Map<String, List<FlacInfo>> map = {};
+
+    for (final t in tracks) {
+      final normTitle = t.title.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final normArtist = t.artist.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final key = normTitle.isNotEmpty && normArtist.isNotEmpty
+          ? '$normTitle##$normArtist'
+          : t.fileName.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+      map.putIfAbsent(key, () => []).add(t);
+    }
+
+    final List<DuplicateGroup> result = [];
+
+    for (final entry in map.entries) {
+      if (entry.value.length > 1) {
+        final groupTracks = entry.value;
+
+        // Rank by quality score, then sample rate, then bit depth
+        groupTracks.sort((a, b) {
+          if (b.score != a.score) return b.score.compareTo(a.score);
+          if (b.sampleRate != a.sampleRate) return b.sampleRate.compareTo(a.sampleRate);
+          return b.bitDepth.compareTo(a.bitDepth);
+        });
+
+        final bestTrack = groupTracks.first;
+
+        final List<DuplicateItem> items = [];
+        for (int i = 0; i < groupTracks.length; i++) {
+          final t = groupTracks[i];
+          final isBest = i == 0;
+          String reason;
+          if (isBest) {
+            reason = 'Highest audio purity (${t.score}%)';
+          } else {
+            reason = t.score < bestTrack.score
+                ? 'Lower quality (${t.score}% vs ${bestTrack.score}%)'
+                : 'Identical audio purity, duplicate copy';
+          }
+          items.add(DuplicateItem(info: t, isBest: isBest, reason: reason));
+        }
+
+        result.add(DuplicateGroup(
+          key: entry.key,
+          title: bestTrack.title.isNotEmpty ? bestTrack.title : bestTrack.fileName,
+          artist: bestTrack.artist.isNotEmpty ? bestTrack.artist : 'Unknown Artist',
+          items: items,
+        ));
+      }
+    }
+
+    setState(() {
+      _groups = result;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -160,7 +242,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               child: GlassCard(
-                borderRadius: 22,
+                borderRadius: 20,
                 borderColor: const Color(0xFFFFB300).withOpacity(0.25),
                 backgroundColor: const Color(0xFFFFB300).withOpacity(0.06),
                 onTap: _isScanning ? null : _scanForDuplicates,
@@ -170,7 +252,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       padding: const EdgeInsets.all(11),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFB300).withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(Icons.copy_all_rounded, color: Color(0xFFFFB300), size: 24),
                     ),
@@ -182,6 +264,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           Text(
                             _isScanning ? 'Analyzing Duplicates...' : 'Find Audio Duplicates',
                             style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 14.5,
                               fontWeight: FontWeight.bold,
                               color: textColor,
@@ -196,7 +279,11 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                     : 'Scan folder to identify redundant tracks',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 11.5, color: subTextColor),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11.5,
+                              color: subTextColor,
+                            ),
                           ),
                         ],
                       ),
@@ -230,7 +317,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           children: [
                             Text(
                               '${_groups.length} Duplicate Sets Found',
-                              style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: textColor),
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -241,10 +333,11 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               ),
                               child: Text(
                                 'Wasted: ${_totalWastedMb.toStringAsFixed(1)} MB',
-                                style: GoogleFonts.jetBrainsMono(
+                                style: const TextStyle(
+                                  fontFamily: 'JetBrainsMono',
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w800,
-                                  color: const Color(0xFFFF3D3D),
+                                  color: Color(0xFFFF3D3D),
                                 ),
                               ),
                             ),
@@ -269,12 +362,20 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'No duplicate sets detected',
-                            style: TextStyle(fontSize: 14, color: subTextColor),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              color: subTextColor,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Select a directory or audit your library to find copies',
-                            style: TextStyle(fontSize: 11.5, color: subTextColor.withOpacity(0.7)),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11.5,
+                              color: subTextColor.withOpacity(0.7),
+                            ),
                           ),
                         ],
                       ),
@@ -306,7 +407,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                       children: [
                                         Text(
                                           group.title,
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             color: textColor,
@@ -314,7 +416,11 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                         ),
                                         Text(
                                           group.artist,
-                                          style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor),
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 11.5,
+                                            color: subTextColor,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -327,7 +433,11 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                     ),
                                     child: Text(
                                       '${group.items.length} copies',
-                                      style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor),
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 10.5,
+                                        color: subTextColor,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -363,6 +473,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                         child: Text(
                                           item.isBest ? 'KEEP' : 'DUP',
                                           style: TextStyle(
+                                            fontFamily: 'Inter',
                                             fontSize: 9.5,
                                             fontWeight: FontWeight.w900,
                                             color: item.isBest ? Colors.black : const Color(0xFFFFB300),
@@ -378,12 +489,21 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                               item.info.fileName,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600, color: textColor),
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: textColor,
+                                              ),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
                                               '${item.reason} • ${item.info.fileSizeMb} MB',
-                                              style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor),
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: 10.5,
+                                                color: subTextColor,
+                                              ),
                                             ),
                                           ],
                                         ),

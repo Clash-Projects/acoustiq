@@ -30,8 +30,8 @@ class FlacToolkitApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: appState,
       builder: (context, _) {
-        const darkCanvas = Color(0xFF0A0B0E);
-        const lightCanvas = Color(0xFFF6F7FA);
+        const darkCanvas = Color(0xFF080808);
+        const lightCanvas = Color(0xFFF5F5F7);
 
         return MaterialApp(
           title: 'FLAC Toolkit',
@@ -44,8 +44,8 @@ class FlacToolkitApp extends StatelessWidget {
             brightness: Brightness.light,
             scaffoldBackgroundColor: lightCanvas,
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF007AFF),
-              secondary: Color(0xFF00C853),
+              primary: Color(0xFF00D2FF),
+              secondary: Color(0xFF00E676),
               surface: Colors.white,
             ),
           ),
@@ -56,7 +56,7 @@ class FlacToolkitApp extends StatelessWidget {
             colorScheme: const ColorScheme.dark(
               primary: Color(0xFF00D2FF),
               secondary: Color(0xFF00E676),
-              surface: Color(0xFF131418),
+              surface: Color(0xFF141414),
             ),
           ),
           home: const MainShell(),
@@ -113,7 +113,7 @@ class _MainShellState extends State<MainShell> {
         final dockWidth = (screenWidth * 0.86).clamp(320.0, 500.0);
 
         return Scaffold(
-          backgroundColor: isDark ? const Color(0xFF0A0B0E) : const Color(0xFFF6F7FA),
+          backgroundColor: isDark ? const Color(0xFF080808) : const Color(0xFFF5F5F7),
           body: Stack(
             children: [
               // 1. Environmental Acoustic Loft Substrate (Allows BackdropFilter to physically frost!)
@@ -195,7 +195,7 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
 
-              // 3. Floating Centered KowSU / LastWave Magnifying Liquid Lens Navigation Bar
+              // 3. Floating Centered KowSU Liquid Lens Navigation Bar
               Positioned(
                 left: 0,
                 right: 0,
@@ -235,35 +235,57 @@ class _AcousticLoftPainter extends CustomPainter {
     final rect = Offset.zero & size;
 
     if (isDark) {
-      // 1. Neutral Obsidian Base
-      final bgPaint = Paint()..color = const Color(0xFF0A0B0E);
+      // 1. Absolute Neutral Obsidian Base (R = G = B = 8)
+      final bgPaint = Paint()..color = const Color(0xFF080808);
       canvas.drawRect(rect, bgPaint);
 
-      // 2. Cinematic Overhead Daylight Aperture (Top-center light pool)
+      // 2. Cinematic Overhead Daylight Aperture (Top-center neutral silver pool)
       final daylightShader = RadialGradient(
-        center: const Alignment(0.0, -0.70),
+        center: const Alignment(0.0, -0.75),
         radius: 1.35,
         colors: [
-          const Color(0xFFE2E8F0).withOpacity(0.065),
-          const Color(0xFF94A3B8).withOpacity(0.020),
+          Colors.white.withOpacity(0.07),
+          Colors.white.withOpacity(0.02),
           Colors.transparent,
         ],
-        stops: const [0.0, 0.45, 1.0],
+        stops: const [0.0, 0.48, 1.0],
       ).createShader(rect);
       canvas.drawRect(rect, Paint()..shader = daylightShader);
 
-      // 3. Subtle Acoustic Slats (Vertical diffusion geometry)
-      final slatPaint = Paint()
-        ..color = Colors.white.withOpacity(0.015)
+      // 3. Architectural Slats & Geometric Diffusion Texture
+      // Allows BackdropFilter to scatter distinct rays into creamy frosted silica!
+      final verticalSlatPaint = Paint()
+        ..color = Colors.white.withOpacity(0.035)
         ..strokeWidth = 1.0;
 
       const slatSpacing = 36.0;
       for (double x = 0.0; x < size.width; x += slatSpacing) {
-        canvas.drawLine(Offset(x, 0.0), Offset(x, size.height), slatPaint);
+        canvas.drawLine(Offset(x, 0.0), Offset(x, size.height), verticalSlatPaint);
       }
+
+      final horizontalSlatPaint = Paint()
+        ..color = Colors.white.withOpacity(0.018)
+        ..strokeWidth = 0.8;
+
+      const horizSpacing = 72.0;
+      for (double y = 0.0; y < size.height; y += horizSpacing) {
+        canvas.drawLine(Offset(0.0, y), Offset(size.width, y), horizontalSlatPaint);
+      }
+
+      // 4. Subtle Ambient Bottom Pool (Behind floating dock)
+      final bottomGlowShader = RadialGradient(
+        center: const Alignment(0.0, 0.95),
+        radius: 0.85,
+        colors: [
+          Colors.white.withOpacity(0.035),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 1.0],
+      ).createShader(rect);
+      canvas.drawRect(rect, Paint()..shader = bottomGlowShader);
     } else {
-      // Light Mode: Pure Porcelain Substrate
-      final bgPaint = Paint()..color = const Color(0xFFF6F7FA);
+      // Light Mode: Pure Porcelain Substrate (R = G = B = 245)
+      final bgPaint = Paint()..color = const Color(0xFFF5F5F7);
       canvas.drawRect(rect, bgPaint);
 
       final daylightShader = RadialGradient(
@@ -271,10 +293,18 @@ class _AcousticLoftPainter extends CustomPainter {
         radius: 1.3,
         colors: [
           Colors.white.withOpacity(0.95),
-          const Color(0xFFEEF0F5),
+          const Color(0xFFEEEEF2),
         ],
       ).createShader(rect);
       canvas.drawRect(rect, Paint()..shader = daylightShader);
+
+      final slatPaint = Paint()
+        ..color = Colors.black.withOpacity(0.025)
+        ..strokeWidth = 0.8;
+
+      for (double x = 0.0; x < size.width; x += 36.0) {
+        canvas.drawLine(Offset(x, 0.0), Offset(x, size.height), slatPaint);
+      }
     }
   }
 

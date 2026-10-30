@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../widgets/glass_card.dart';
 
@@ -47,11 +46,20 @@ class SettingsScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Theme Mode',
-                              style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: textColor),
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
                             ),
                             Text(
                               'Choose system, light, or dark look',
-                              style: GoogleFonts.inter(fontSize: 11, color: subTextColor),
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                color: subTextColor,
+                              ),
                             ),
                           ],
                         ),
@@ -83,7 +91,7 @@ class SettingsScreen extends StatelessWidget {
                       context,
                       icon: Icons.blur_on_rounded,
                       title: 'Frosted Liquid Glass',
-                      subtitle: 'iOS-style translucent materials across the app',
+                      subtitle: 'Translucent optical diffusion across the app',
                       value: appState.isLiquidGlass,
                       onChanged: (val) => appState.setLiquidGlass(val),
                     ),
@@ -114,7 +122,7 @@ class SettingsScreen extends StatelessWidget {
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
                     _buildInfoRow(context, 'Cutoff Heuristic', 'Spectral Frequency Roll-off Analysis'),
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
-                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 7)'),
+                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 8)'),
                   ],
                 ),
               ),
@@ -135,14 +143,23 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         Text(
                           '${appState.sharedLibrary.length} Scanned Tracks',
-                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           appState.lastScannedFolder != null
                               ? 'From ${appState.lastScannedFolder!.split("/").last}'
                               : 'No folder scanned',
-                          style: GoogleFonts.inter(fontSize: 11, color: subTextColor),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            color: subTextColor,
+                          ),
                         ),
                       ],
                     ),
@@ -179,7 +196,8 @@ class SettingsScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         title,
-        style: GoogleFonts.inter(
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 11,
           fontWeight: FontWeight.w800,
           color: color,
@@ -215,7 +233,8 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected ? const Color(0xFF00D2FF) : (isDark ? Colors.white70 : Colors.black87),
@@ -259,11 +278,20 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: textColor),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
                 ),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10.5,
+                    color: subTextColor,
+                  ),
                 ),
               ],
             ),
@@ -285,15 +313,31 @@ class SettingsScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 12.5, color: subTextColor)),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12.5,
+            color: subTextColor,
+          ),
+        ),
         Text(
           value,
           style: value.startsWith('v') || value.contains('.')
-              ? GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)
-              : GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: textColor),
+              ? TextStyle(
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                )
+              : TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
         ),
       ],
     );
   }
 }
-

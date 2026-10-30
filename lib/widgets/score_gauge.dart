@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ScoreGauge extends StatelessWidget {
   final int score;
@@ -48,7 +47,8 @@ class ScoreGauge extends StatelessWidget {
                     children: [
                       Text(
                         '$score',
-                        style: GoogleFonts.jetBrainsMono(
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
                           fontSize: 48,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -64,7 +64,8 @@ class ScoreGauge extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '%',
-                        style: GoogleFonts.jetBrainsMono(
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: statusColor,
@@ -82,7 +83,8 @@ class ScoreGauge extends StatelessWidget {
                     ),
                     child: Text(
                       status.toUpperCase(),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: statusColor,
@@ -104,7 +106,8 @@ class ScoreGauge extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'Cutoff: ${cutoffKhz.toStringAsFixed(1)} kHz',
-              style: GoogleFonts.jetBrainsMono(
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Colors.white.withOpacity(0.90),
@@ -113,7 +116,8 @@ class ScoreGauge extends StatelessWidget {
             ),
             Text(
               '  /  Max: ${maxKhz.toStringAsFixed(1)} kHz',
-              style: GoogleFonts.jetBrainsMono(
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
                 fontSize: 11,
                 color: Colors.white.withOpacity(0.40),
               ),
@@ -139,11 +143,11 @@ class _ArcPainter extends CustomPainter {
     const sweepTotal = 270 * (math.pi / 180);
     final currentSweep = sweepTotal * (score.clamp(0, 100) / 100);
 
-    // Background track
+    // Track Background Arc
     final bgPaint = Paint()
       ..color = Colors.white.withOpacity(0.08)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
+      ..strokeWidth = 10.0
       ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
@@ -154,41 +158,53 @@ class _ArcPainter extends CustomPainter {
       bgPaint,
     );
 
-    // Progress Arc with glowing gradient
-    final progressPaint = Paint()
-      ..shader = SweepGradient(
-        colors: [
-          color.withOpacity(0.3),
-          color,
-        ],
-        startAngle: startAngle,
-        endAngle: startAngle + sweepTotal,
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round;
+    // Active Score Arc
+    if (score > 0) {
+      final activePaint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 10.0
+        ..strokeCap = StrokeCap.round;
 
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      currentSweep,
-      false,
-      progressPaint,
-    );
-
-    // Glowing tip dot locked to exact end of progress arc
-    if (score > 1) {
-      final tipAngle = startAngle + currentSweep;
-      final tipX = center.dx + radius * math.cos(tipAngle);
-      final tipY = center.dy + radius * math.sin(tipAngle);
-
+      // Score Arc Glow Shadow
       final glowPaint = Paint()
-        ..color = color.withOpacity(0.5)
+        ..color = color.withOpacity(0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 16.0
+        ..strokeCap = StrokeCap.round
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-      canvas.drawCircle(Offset(tipX, tipY), 8, glowPaint);
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        currentSweep,
+        false,
+        glowPaint,
+      );
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        currentSweep,
+        false,
+        activePaint,
+      );
+
+      // Arc Head Needle Pill Dot
+      final headAngle = startAngle + currentSweep;
+      final headOffset = Offset(
+        center.dx + radius * math.cos(headAngle),
+        center.dy + radius * math.sin(headAngle),
+      );
 
       final dotPaint = Paint()..color = Colors.white;
-      canvas.drawCircle(Offset(tipX, tipY), 4.5, dotPaint);
+      canvas.drawCircle(headOffset, 6.0, dotPaint);
+
+      final dotGlow = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5;
+      canvas.drawCircle(headOffset, 6.0, dotGlow);
     }
   }
 

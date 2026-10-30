@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
@@ -122,19 +121,19 @@ class _AuditScreenState extends State<AuditScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               child: GlassCard(
-                borderRadius: 22,
-                borderColor: const Color(0xFF6C63FF).withOpacity(0.25),
-                backgroundColor: const Color(0xFF6C63FF).withOpacity(0.06),
+                borderRadius: 20,
+                borderColor: const Color(0xFF00D2FF).withOpacity(0.25),
+                backgroundColor: const Color(0xFF00D2FF).withOpacity(0.06),
                 onTap: _isScanning ? null : _scanFolder,
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(11),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6C63FF).withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(15),
+                        color: const Color(0xFF00D2FF).withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.folder_special_rounded, color: Color(0xFF8E85FF), size: 24),
+                      child: const Icon(Icons.folder_special_rounded, color: Color(0xFF00D2FF), size: 24),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -144,6 +143,7 @@ class _AuditScreenState extends State<AuditScreen> {
                           Text(
                             _isScanning ? 'Scanning Library...' : 'Scan Music Folder',
                             style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 14.5,
                               fontWeight: FontWeight.bold,
                               color: textColor,
@@ -158,7 +158,11 @@ class _AuditScreenState extends State<AuditScreen> {
                                     : 'Select folder to batch audit FLACs',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 11.5, color: subTextColor),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11.5,
+                              color: subTextColor,
+                            ),
                           ),
                         ],
                       ),
@@ -167,7 +171,7 @@ class _AuditScreenState extends State<AuditScreen> {
                       const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF8E85FF)),
+                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF00D2FF)),
                       )
                     else
                       Icon(Icons.search_rounded, color: subTextColor, size: 22),
@@ -226,12 +230,20 @@ class _AuditScreenState extends State<AuditScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'No folder scanned yet',
-                            style: TextStyle(fontSize: 14, color: subTextColor),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              color: subTextColor,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Tap the scan button above to audit your music collection',
-                            style: TextStyle(fontSize: 11.5, color: subTextColor.withOpacity(0.7)),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11.5,
+                              color: subTextColor.withOpacity(0.7),
+                            ),
                           ),
                         ],
                       ),
@@ -286,6 +298,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                     child: Text(
                                       '${item.score}',
                                       style: const TextStyle(
+                                        fontFamily: 'JetBrainsMono',
                                         fontSize: 9,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.black,
@@ -304,6 +317,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.bold,
                                         color: textColor,
@@ -315,6 +329,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 11,
                                         color: subTextColor,
                                       ),
@@ -329,6 +344,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                   Text(
                                     '${item.bitrateKbps} kbps',
                                     style: TextStyle(
+                                      fontFamily: 'JetBrainsMono',
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
                                       color: textColor.withOpacity(0.85),
@@ -337,7 +353,11 @@ class _AuditScreenState extends State<AuditScreen> {
                                   const SizedBox(height: 2),
                                   Text(
                                     item.durationStr,
-                                    style: TextStyle(fontSize: 10.5, color: subTextColor),
+                                    style: TextStyle(
+                                      fontFamily: 'JetBrainsMono',
+                                      fontSize: 10.5,
+                                      color: subTextColor,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -366,7 +386,8 @@ class _AuditScreenState extends State<AuditScreen> {
           children: [
             Text(
               value,
-              style: GoogleFonts.jetBrainsMono(
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 color: color,
@@ -375,7 +396,11 @@ class _AuditScreenState extends State<AuditScreen> {
             const SizedBox(height: 1),
             Text(
               label,
-              style: GoogleFonts.inter(fontSize: 8.5, color: Colors.white.withOpacity(0.4)),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 8.5,
+                color: Colors.white.withOpacity(0.4),
+              ),
             ),
           ],
         ),
@@ -402,6 +427,7 @@ class _AuditScreenState extends State<AuditScreen> {
         child: Text(
           label,
           style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: 10.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             color: isSelected ? const Color(0xFF00D2FF) : (isDark ? Colors.white70 : Colors.black87),
@@ -412,7 +438,7 @@ class _AuditScreenState extends State<AuditScreen> {
   }
 }
 
-// DEDICATED TRACK DETAIL MODAL (No "Change Audio File" button!)
+// DEDICATED TRACK DETAIL MODAL (Strictly neutral monochrome, zero navy blue)
 class _TrackDetailModal extends StatelessWidget {
   final FlacInfo track;
 
@@ -439,12 +465,12 @@ class _TrackDetailModal extends StatelessWidget {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF0F1523).withOpacity(0.85)
-                : Colors.white.withOpacity(0.88),
+                ? const Color(0xFF141414).withOpacity(0.92)
+                : Colors.white.withOpacity(0.90),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
               color: isDark ? Colors.white.withOpacity(0.14) : Colors.black.withOpacity(0.08),
@@ -452,7 +478,7 @@ class _TrackDetailModal extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.45 : 0.10),
+                color: Colors.black.withOpacity(isDark ? 0.50 : 0.10),
                 blurRadius: 30,
                 offset: const Offset(0, -6),
               ),
@@ -485,7 +511,12 @@ class _TrackDetailModal extends StatelessWidget {
                     children: [
                       Text(
                         'Track Inspection',
-                        style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold, color: textColor),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
                       ),
                       IconButton(
                         icon: Icon(Icons.close_rounded, color: subTextColor),
@@ -497,6 +528,7 @@ class _TrackDetailModal extends StatelessWidget {
 
                   // Score Gauge
                   GlassCard(
+                    borderRadius: 20,
                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                     borderColor: statusColor.withOpacity(0.25),
                     child: ScoreGauge(
@@ -511,6 +543,7 @@ class _TrackDetailModal extends StatelessWidget {
 
                   // Verdict Card
                   GlassCard(
+                    borderRadius: 20,
                     padding: const EdgeInsets.all(12),
                     backgroundColor: statusColor.withOpacity(0.07),
                     borderColor: statusColor.withOpacity(0.30),
@@ -532,7 +565,8 @@ class _TrackDetailModal extends StatelessWidget {
                             children: [
                               Text(
                                 'AUDIT VERDICT',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 9.5,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.1,
@@ -542,7 +576,12 @@ class _TrackDetailModal extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 track.verdict,
-                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor),
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
                               ),
                             ],
                           ),
@@ -555,6 +594,7 @@ class _TrackDetailModal extends StatelessWidget {
 
                   // Track & Specs Card
                   GlassCard(
+                    borderRadius: 20,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -580,20 +620,33 @@ class _TrackDetailModal extends StatelessWidget {
                                     track.title,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: textColor,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     track.artist,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12,
+                                      color: subTextColor,
+                                    ),
                                   ),
                                   Text(
                                     track.album,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor.withOpacity(0.7)),
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 10.5,
+                                      color: subTextColor.withOpacity(0.7),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -626,9 +679,24 @@ class _TrackDetailModal extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: subTextColor),
           const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11.5,
+              color: subTextColor,
+            ),
+          ),
           const Spacer(),
-          Text(value, style: GoogleFonts.jetBrainsMono(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'JetBrainsMono',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
         ],
       ),
     );

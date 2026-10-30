@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
@@ -85,7 +84,7 @@ class _InspectScreenState extends State<InspectScreen> {
             children: [
               // Select File Action Card
               GlassCard(
-                borderRadius: 22,
+                borderRadius: 20,
                 borderColor: const Color(0xFF00D2FF).withOpacity(0.25),
                 backgroundColor: const Color(0xFF00D2FF).withOpacity(0.06),
                 onTap: _isLoading ? null : _pickAndAnalyzeFile,
@@ -95,7 +94,7 @@ class _InspectScreenState extends State<InspectScreen> {
                       padding: const EdgeInsets.all(11),
                       decoration: BoxDecoration(
                         color: const Color(0xFF00D2FF).withOpacity(0.16),
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(Icons.audio_file_rounded, color: Color(0xFF00D2FF), size: 24),
                     ),
@@ -106,7 +105,8 @@ class _InspectScreenState extends State<InspectScreen> {
                         children: [
                           Text(
                             _info == null ? 'Select FLAC File' : 'Change Audio File',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 14.5,
                               fontWeight: FontWeight.bold,
                               color: textColor,
@@ -117,7 +117,8 @@ class _InspectScreenState extends State<InspectScreen> {
                             _info == null ? 'Tap to browse and inspect purity' : _info!.fileName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 11.5,
                               color: subTextColor,
                             ),
@@ -142,33 +143,39 @@ class _InspectScreenState extends State<InspectScreen> {
               if (_info != null) ...[
                 // Score Arc Meter & Cutoff Indicator
                 GlassCard(
+                  borderRadius: 20,
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                   borderColor: _getStatusColor(_info!.status).withOpacity(0.25),
                   child: ScoreGauge(
                     score: _info!.score,
                     status: _info!.status,
                     cutoffKhz: _info!.cutoffKhz,
-                    maxKhz: _info!.maxKhz,
+                    maxKhz: _info!.maxFrequencyKhz,
                   ),
                 ),
 
                 const SizedBox(height: 10),
 
-                // Verdict Box
+                // Spectral Explanation Card
                 GlassCard(
-                  padding: const EdgeInsets.all(12),
+                  borderRadius: 20,
                   backgroundColor: _getStatusColor(_info!.status).withOpacity(0.07),
                   borderColor: _getStatusColor(_info!.status).withOpacity(0.30),
                   child: Row(
                     children: [
-                      Icon(
-                        _info!.status == 'genuine'
-                            ? Icons.verified_rounded
-                            : _info!.status == 'suspicious'
-                                ? Icons.warning_amber_rounded
-                                : Icons.cancel_rounded,
-                        color: _getStatusColor(_info!.status),
-                        size: 26,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _getStatusColor(_info!.status).withOpacity(0.18),
+                        ),
+                        child: Icon(
+                          _info!.status == 'genuine'
+                              ? Icons.verified_rounded
+                              : (_info!.status == 'suspicious' ? Icons.warning_rounded : Icons.dangerous_rounded),
+                          color: _getStatusColor(_info!.status),
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -176,21 +183,24 @@ class _InspectScreenState extends State<InspectScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'AUDIT VERDICT',
-                              style: GoogleFonts.inter(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.1,
+                              _info!.status == 'genuine'
+                                  ? 'Authentic Lossless Spectrum'
+                                  : (_info!.status == 'suspicious' ? 'Suspicious Lossy Transcode' : 'Confirmed MP3 Upscale'),
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
                                 color: _getStatusColor(_info!.status),
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _info!.verdict,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: textColor,
+                              _info!.explanation,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                color: subTextColor,
+                                height: 1.35,
                               ),
                             ),
                           ],
@@ -204,6 +214,7 @@ class _InspectScreenState extends State<InspectScreen> {
 
                 // Track & Metadata Info
                 GlassCard(
+                  borderRadius: 20,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -234,7 +245,8 @@ class _InspectScreenState extends State<InspectScreen> {
                                   _info!.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.bold,
                                     color: textColor,
@@ -245,7 +257,8 @@ class _InspectScreenState extends State<InspectScreen> {
                                   _info!.artist,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: 12,
                                     color: subTextColor,
                                   ),
@@ -255,7 +268,8 @@ class _InspectScreenState extends State<InspectScreen> {
                                   _info!.album,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: 10.5,
                                     color: subTextColor.withOpacity(0.7),
                                   ),
@@ -287,13 +301,21 @@ class _InspectScreenState extends State<InspectScreen> {
                         const SizedBox(height: 14),
                         Text(
                           'Ready to inspect audio purity',
-                          style: GoogleFonts.inter(fontSize: 14, color: subTextColor),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: subTextColor,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Pick any .flac track to view spectrum cutoff & purity',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor.withOpacity(0.6)),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11.5,
+                            color: subTextColor.withOpacity(0.6),
+                          ),
                         ),
                       ],
                     ),
@@ -317,11 +339,19 @@ class _InspectScreenState extends State<InspectScreen> {
         children: [
           Icon(icon, size: 14, color: subTextColor),
           const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11.5,
+              color: subTextColor,
+            ),
+          ),
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.jetBrainsMono(
+            style: TextStyle(
+              fontFamily: 'JetBrainsMono',
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: textColor,

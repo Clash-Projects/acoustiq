@@ -1,16 +1,15 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/app_settings.dart';
-import 'squircle.dart';
 
-/// Flagship visionOS / LastWave-Inspired G2 Squircle Frosted Glass Card
+/// Flagship visionOS-Grade Smooth Frosted Glass Card
 ///
 /// Features:
-/// 1. Continuous-Curvature G2 Superellipse clipping (k = 1.528665)
-/// 2. Crisp 14dp Optical Diffusion Kernel (LastWave recipe)
-/// 3. Luminous Frosted Silica Gradient
-/// 4. Sub-pixel 0.5px hairline rim (zero cartoon wires)
-/// 5. Soft ambient contact shadow for true floating depth
+/// 1. Silky Smooth Rounded Geometry (Zero chamfers, zero diagonal cuts)
+/// 2. 18dp Gaussian Optical Diffusion Kernel for authentic glass refraction
+/// 3. Luminous Frosted Silica Gradient + Neutral Translucent Glass Substrate
+/// 4. Sub-pixel 0.8px hairline perimeter with top specular light catch
+/// 5. Ambient deep contact drop shadow for genuine 3D floating elevation
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -25,7 +24,7 @@ class GlassCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.margin,
-    this.borderRadius = 24,
+    this.borderRadius = 20,
     this.borderColor,
     this.backgroundColor,
     this.onTap,
@@ -40,7 +39,10 @@ class GlassCard extends StatelessWidget {
         final isDark = appState.isCurrentDark(context);
 
         final bg = backgroundColor ?? appState.getCardBgColor(context);
-        final baseBorder = borderColor ?? appState.getBorderColor(context);
+        final baseBorder = borderColor ??
+            (isDark
+                ? Colors.white.withOpacity(0.12)
+                : Colors.black.withOpacity(0.08));
 
         final Gradient? fillGradient = useGlass
             ? LinearGradient(
@@ -48,12 +50,12 @@ class GlassCard extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: isDark
                     ? [
-                        Colors.white.withOpacity(0.065),
-                        Colors.white.withOpacity(0.018),
+                        Colors.white.withOpacity(0.10),
+                        Colors.white.withOpacity(0.025),
                       ]
                     : [
-                        Colors.white.withOpacity(0.80),
-                        Colors.white.withOpacity(0.62),
+                        Colors.white.withOpacity(0.90),
+                        Colors.white.withOpacity(0.70),
                       ],
               )
             : null;
@@ -61,51 +63,52 @@ class GlassCard extends StatelessWidget {
         Widget cardContent = Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: useGlass ? (backgroundColor ?? Colors.transparent) : bg,
+            color: useGlass
+                ? (backgroundColor ??
+                    (isDark
+                        ? const Color(0xFF141414).withOpacity(0.72)
+                        : Colors.white.withOpacity(0.82)))
+                : bg,
             gradient: backgroundColor == null ? fillGradient : null,
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: baseBorder,
+              width: 0.8,
+            ),
           ),
           child: child,
         );
 
         Widget glassBody;
         if (useGlass) {
-          glassBody = ClipPath(
-            clipper: SquircleClipper(radius: borderRadius),
+          glassBody = ClipRRect(
+            borderRadius: BorderRadius.circular(borderRadius),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: cardContent,
             ),
           );
         } else {
-          glassBody = ClipPath(
-            clipper: SquircleClipper(radius: borderRadius),
+          glassBody = ClipRRect(
+            borderRadius: BorderRadius.circular(borderRadius),
             child: cardContent,
           );
         }
 
-        // Sub-pixel hairline border + Ambient contact drop shadow
-        Widget framed = CustomPaint(
-          foregroundPainter: SquircleBorderPainter(
-            radius: borderRadius,
-            borderColor: baseBorder,
-            borderWidth: 0.5,
+        // Ambient contact drop shadow for true 3D floating depth (Strictly neutral monochrome)
+        Widget framed = Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.52 : 0.07),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: -2,
+              ),
+            ],
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withOpacity(0.42)
-                      : const Color(0xFF1E2D4A).withOpacity(0.06),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                  spreadRadius: -2,
-                ),
-              ],
-            ),
-            child: glassBody,
-          ),
+          child: glassBody,
         );
 
         if (margin != null) {
