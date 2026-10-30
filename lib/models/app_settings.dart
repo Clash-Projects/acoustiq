@@ -22,16 +22,16 @@ class AppState extends ChangeNotifier {
   }
 
   Color getBgColor(BuildContext context) {
-    if (!isCurrentDark(context)) return const Color(0xFFF2F5FA);
-    // Deep Frosted Obsidian canvas allowing true optical light diffusion
-    return const Color(0xFF090D16);
+    if (!isCurrentDark(context)) return const Color(0xFFF5F7FB);
+    // Deep Frosted Obsidian canvas substrate allowing true optical light diffusion
+    return const Color(0xFF090D17);
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.white.withOpacity(_isLiquidGlass ? 0.82 : 0.96);
+      return Colors.white.withOpacity(_isLiquidGlass ? 0.72 : 0.96);
     }
-    // Luminous frosted core: translucent, never flat muddy grey
+    // Luminous frosted core: translucent silica, never flat muddy grey
     return _isLiquidGlass
         ? Colors.white.withOpacity(0.065)
         : const Color(0xFF131826);
@@ -39,17 +39,18 @@ class AppState extends ChangeNotifier {
 
   Color getBorderColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.black.withOpacity(0.10);
+      return Colors.black.withOpacity(0.08);
     }
-    return Colors.white.withOpacity(0.16);
+    // Silky uniform perimeter: subtle, consistent, eliminates rectangular wire illusion
+    return Colors.white.withOpacity(0.12);
   }
 
   Color getTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white : const Color(0xFF0F131C);
+    return isCurrentDark(context) ? Colors.white : const Color(0xFF0E131E);
   }
 
   Color getSubTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white.withOpacity(0.58) : const Color(0xFF5E6778);
+    return isCurrentDark(context) ? Colors.white.withOpacity(0.60) : const Color(0xFF5A6475);
   }
 
   void setLiquidGlass(bool value) {

@@ -2,6 +2,13 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/app_settings.dart';
 
+/// Flagship iOS 18 / visionOS 4-Layer Frosted Glass Container
+///
+/// Implements authentic optical diffusion:
+/// 1. Atmospheric Substrate transmission
+/// 2. Bilateral Diffusion Kernel (sigma 28)
+/// 3. Frosted Silica Emulsion gradient
+/// 4. Silky uniform squircle perimeter (NO harsh white top wires)
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -16,7 +23,7 @@ class GlassCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.margin,
-    this.borderRadius = 22,
+    this.borderRadius = 24,
     this.borderColor,
     this.backgroundColor,
     this.onTap,
@@ -33,34 +40,44 @@ class GlassCard extends StatelessWidget {
         final bg = backgroundColor ?? appState.getCardBgColor(context);
         final baseBorder = borderColor ?? appState.getBorderColor(context);
 
+        // In glass mode, blend dual-stop frosted silica gradient
+        // In opaque mode, use flat background
+        final Gradient? fillGradient = useGlass
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [
+                        Colors.white.withOpacity(0.085),
+                        Colors.white.withOpacity(0.025),
+                      ]
+                    : [
+                        Colors.white.withOpacity(0.82),
+                        Colors.white.withOpacity(0.64),
+                      ],
+              )
+            : null;
+
         Widget content = Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: bg,
+            color: useGlass ? (backgroundColor ?? Colors.transparent) : bg,
             borderRadius: BorderRadius.circular(borderRadius),
-            gradient: isDark && useGlass
-                ? LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withOpacity(0.10),
-                      Colors.white.withOpacity(0.03),
-                    ],
-                  )
-                : null,
-            border: isDark && useGlass
-                ? Border(
-                    top: BorderSide(color: Colors.white.withOpacity(0.32), width: 1.3),
-                    left: BorderSide(color: Colors.white.withOpacity(0.14), width: 1.0),
-                    right: BorderSide(color: Colors.white.withOpacity(0.14), width: 1.0),
-                    bottom: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
-                  )
-                : Border.all(color: baseBorder, width: 1.0),
+            gradient: backgroundColor == null ? fillGradient : null,
+            // UNIFORM SILKY PERIMETER:
+            // Eliminates the harsh white top border that previously destroyed squircle corners
+            border: Border.all(
+              color: baseBorder,
+              width: 1.0,
+            ),
             boxShadow: [
               BoxShadow(
-                color: isDark ? Colors.black.withOpacity(0.48) : Colors.black.withOpacity(0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 4),
+                color: isDark
+                    ? Colors.black.withOpacity(0.38)
+                    : const Color(0xFF1E2D4A).withOpacity(0.06),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
+                spreadRadius: -2,
               ),
             ],
           ),
@@ -72,7 +89,7 @@ class GlassCard extends StatelessWidget {
           card = ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
               child: content,
             ),
           );

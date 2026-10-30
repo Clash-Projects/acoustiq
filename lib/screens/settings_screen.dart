@@ -47,11 +47,11 @@ class SettingsScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Theme Mode',
-                              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: textColor),
+                              style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: textColor),
                             ),
                             Text(
                               'Choose system, light, or dark look',
-                              style: TextStyle(fontSize: 11, color: subTextColor),
+                              style: GoogleFonts.inter(fontSize: 11, color: subTextColor),
                             ),
                           ],
                         ),
@@ -114,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
                     _buildInfoRow(context, 'Cutoff Heuristic', 'Spectral Frequency Roll-off Analysis'),
                     Divider(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06), height: 20),
-                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 5)'),
+                    _buildInfoRow(context, 'Release Version', 'v1.1.0 (Build 6)'),
                   ],
                 ),
               ),
@@ -135,14 +135,14 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         Text(
                           '${appState.sharedLibrary.length} Scanned Tracks',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           appState.lastScannedFolder != null
                               ? 'From ${appState.lastScannedFolder!.split("/").last}'
                               : 'No folder scanned',
-                          style: TextStyle(fontSize: 11, color: subTextColor),
+                          style: GoogleFonts.inter(fontSize: 11, color: subTextColor),
                         ),
                       ],
                     ),
@@ -179,7 +179,7 @@ class SettingsScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         title,
-        style: TextStyle(
+        style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w800,
           color: color,
@@ -215,7 +215,7 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected ? const Color(0xFF00D2FF) : (isDark ? Colors.white70 : Colors.black87),
@@ -259,11 +259,11 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: textColor),
+                  style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: textColor),
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 10.5, color: subTextColor),
+                  style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor),
                 ),
               ],
             ),

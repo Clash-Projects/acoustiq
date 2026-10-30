@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -435,124 +436,94 @@ class _TrackDetailModal extends StatelessWidget {
     final subTextColor = appState.getSubTextColor(context);
     final statusColor = _getStatusColor(track.status);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: appState.getBgColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.16))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: subTextColor.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF0F1523).withOpacity(0.85)
+                : Colors.white.withOpacity(0.88),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: isDark ? Colors.white.withOpacity(0.14) : Colors.black.withOpacity(0.08),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.45 : 0.10),
+                blurRadius: 30,
+                offset: const Offset(0, -6),
               ),
-              const SizedBox(height: 14),
-
-              // Header: Title & Close
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Track Inspection',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: textColor),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close_rounded, color: subTextColor),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Score Gauge
-              GlassCard(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-                borderColor: statusColor.withOpacity(0.25),
-                child: ScoreGauge(
-                  score: track.score,
-                  status: track.status,
-                  cutoffKhz: track.cutoffKhz,
-                  maxKhz: track.maxKhz,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Verdict Card
-              GlassCard(
-                padding: const EdgeInsets.all(12),
-                backgroundColor: statusColor.withOpacity(0.07),
-                borderColor: statusColor.withOpacity(0.30),
-                child: Row(
-                  children: [
-                    Icon(
-                      track.status == 'genuine'
-                          ? Icons.verified_rounded
-                          : track.status == 'suspicious'
-                              ? Icons.warning_amber_rounded
-                              : Icons.cancel_rounded,
-                      color: statusColor,
-                      size: 26,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AUDIT VERDICT',
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.1,
-                              color: statusColor,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            track.verdict,
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor),
-                          ),
-                        ],
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: subTextColor.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                  const SizedBox(height: 14),
 
-              const SizedBox(height: 10),
+                  // Header: Title & Close
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Track Inspection',
+                        style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold, color: textColor),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close_rounded, color: subTextColor),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
 
-              // Track & Specs Card
-              GlassCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                  // Score Gauge
+                  GlassCard(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                    borderColor: statusColor.withOpacity(0.25),
+                    child: ScoreGauge(
+                      score: track.score,
+                      status: track.status,
+                      cutoffKhz: track.cutoffKhz,
+                      maxKhz: track.maxKhz,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Verdict Card
+                  GlassCard(
+                    padding: const EdgeInsets.all(12),
+                    backgroundColor: statusColor.withOpacity(0.07),
+                    borderColor: statusColor.withOpacity(0.30),
+                    child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: track.coverBytes != null
-                              ? Image.memory(track.coverBytes!, width: 52, height: 52, fit: BoxFit.cover)
-                              : Container(
-                                  width: 52,
-                                  height: 52,
-                                  color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
-                                  child: Icon(Icons.album_rounded, color: subTextColor, size: 30),
-                                ),
+                        Icon(
+                          track.status == 'genuine'
+                              ? Icons.verified_rounded
+                              : track.status == 'suspicious'
+                                  ? Icons.warning_amber_rounded
+                                  : Icons.cancel_rounded,
+                          color: statusColor,
+                          size: 26,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -560,40 +531,88 @@ class _TrackDetailModal extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                track.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
+                                'AUDIT VERDICT',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                  color: statusColor,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                track.artist,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 12, color: subTextColor),
-                              ),
-                              Text(
-                                track.album,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 10.5, color: subTextColor.withOpacity(0.7)),
+                                track.verdict,
+                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor),
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    Divider(color: isDark ? Colors.white10 : Colors.black12, height: 22),
-                    _specRow(Icons.speed_rounded, 'Format & Bitrate', '${track.bitrateKbps} kbps FLAC', textColor, subTextColor),
-                    _specRow(Icons.tune_rounded, 'Bit Depth & Sample Rate', '${track.bitDepth}-bit / ${track.sampleRate} Hz', textColor, subTextColor),
-                    _specRow(Icons.schedule_rounded, 'Duration & Channels', '${track.durationStr} (${track.channels == 2 ? "Stereo" : "${track.channels}ch"})', textColor, subTextColor),
-                    _specRow(Icons.storage_rounded, 'File Size', '${track.fileSizeMb} MB', textColor, subTextColor),
-                  ],
-                ),
-              ),
+                  ),
 
-              const SizedBox(height: 24),
-            ],
+                  const SizedBox(height: 10),
+
+                  // Track & Specs Card
+                  GlassCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: track.coverBytes != null
+                                  ? Image.memory(track.coverBytes!, width: 52, height: 52, fit: BoxFit.cover)
+                                  : Container(
+                                      width: 52,
+                                      height: 52,
+                                      color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                                      child: Icon(Icons.album_rounded, color: subTextColor, size: 30),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    track.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    track.artist,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                                  ),
+                                  Text(
+                                    track.album,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor.withOpacity(0.7)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Divider(color: isDark ? Colors.white10 : Colors.black12, height: 22),
+                        _specRow(Icons.speed_rounded, 'Format & Bitrate', '${track.bitrateKbps} kbps FLAC', textColor, subTextColor),
+                        _specRow(Icons.tune_rounded, 'Bit Depth & Sample Rate', '${track.bitDepth}-bit / ${track.sampleRate} Hz', textColor, subTextColor),
+                        _specRow(Icons.schedule_rounded, 'Duration & Channels', '${track.durationStr} (${track.channels == 2 ? "Stereo" : "${track.channels}ch"})', textColor, subTextColor),
+                        _specRow(Icons.storage_rounded, 'File Size', '${track.fileSizeMb} MB', textColor, subTextColor),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
           ),
         ),
       ),

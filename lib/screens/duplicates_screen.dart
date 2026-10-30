@@ -230,7 +230,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           children: [
                             Text(
                               '${_groups.length} Duplicate Sets Found',
-                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: textColor),
+                              style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: textColor),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -306,7 +306,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                       children: [
                                         Text(
                                           group.title,
-                                          style: TextStyle(
+                                          style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             color: textColor,
@@ -314,7 +314,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                         ),
                                         Text(
                                           group.artist,
-                                          style: TextStyle(fontSize: 11.5, color: subTextColor),
+                                          style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor),
                                         ),
                                       ],
                                     ),
@@ -327,7 +327,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                     ),
                                     child: Text(
                                       '${group.items.length} copies',
-                                      style: TextStyle(fontSize: 10.5, color: subTextColor),
+                                      style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor),
                                     ),
                                   ),
                                 ],
@@ -378,12 +378,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                               item.info.fileName,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: textColor),
+                                              style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600, color: textColor),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
                                               '${item.reason} • ${item.info.fileSizeMb} MB',
-                                              style: TextStyle(fontSize: 10.5, color: subTextColor),
+                                              style: GoogleFonts.inter(fontSize: 10.5, color: subTextColor),
                                             ),
                                           ],
                                         ),

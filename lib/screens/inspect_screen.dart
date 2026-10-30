@@ -106,7 +106,7 @@ class _InspectScreenState extends State<InspectScreen> {
                         children: [
                           Text(
                             _info == null ? 'Select FLAC File' : 'Change Audio File',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 14.5,
                               fontWeight: FontWeight.bold,
                               color: textColor,
@@ -117,7 +117,7 @@ class _InspectScreenState extends State<InspectScreen> {
                             _info == null ? 'Tap to browse and inspect purity' : _info!.fileName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 11.5,
                               color: subTextColor,
                             ),
@@ -177,7 +177,7 @@ class _InspectScreenState extends State<InspectScreen> {
                           children: [
                             Text(
                               'AUDIT VERDICT',
-                              style: TextStyle(
+                              style: GoogleFonts.inter(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.1,
@@ -187,7 +187,7 @@ class _InspectScreenState extends State<InspectScreen> {
                             const SizedBox(height: 2),
                             Text(
                               _info!.verdict,
-                              style: TextStyle(
+                              style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: textColor,
@@ -234,7 +234,7 @@ class _InspectScreenState extends State<InspectScreen> {
                                   _info!.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: GoogleFonts.inter(
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.bold,
                                     color: textColor,
@@ -245,7 +245,7 @@ class _InspectScreenState extends State<InspectScreen> {
                                   _info!.artist,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
                                     color: subTextColor,
                                   ),
@@ -255,7 +255,7 @@ class _InspectScreenState extends State<InspectScreen> {
                                   _info!.album,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: GoogleFonts.inter(
                                     fontSize: 10.5,
                                     color: subTextColor.withOpacity(0.7),
                                   ),
@@ -287,13 +287,13 @@ class _InspectScreenState extends State<InspectScreen> {
                         const SizedBox(height: 14),
                         Text(
                           'Ready to inspect audio purity',
-                          style: TextStyle(fontSize: 14, color: subTextColor),
+                          style: GoogleFonts.inter(fontSize: 14, color: subTextColor),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Pick any .flac track to view spectrum cutoff & purity',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11.5, color: subTextColor.withOpacity(0.6)),
+                          style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor.withOpacity(0.6)),
                         ),
                       ],
                     ),
