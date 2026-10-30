@@ -3,13 +3,17 @@ import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
 import '../widgets/expressive_group.dart';
+import '../widgets/luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's Settings Screen Architecture (Appearance & Visuals)
 ///
 /// Features:
-/// - True Connected Group Architecture with 3dp gaps and 28dp/6dp continuous curvature.
-/// - Pure Pitch Black AMOLED background with zero white border outlines.
-/// - 140dp bottom padding clearance ensuring the floating dock never obscures settings.
+/// - Connected Group Architecture with 3dp gaps and 28dp/6dp continuous curvature.
+/// - Pure Pitch Black AMOLED vs Deep Graphite toggle with instant live repaint.
+/// - Liquid Glass toggle switching between optical translucent blur and opaque surfaces.
+/// - High-contrast Light Mode typography and segment controls.
+/// - Zero text truncation (natural soft-wrapping).
+/// - 140dp bottom padding clearance.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -23,7 +27,7 @@ class SettingsScreen extends StatelessWidget {
         final subTextColor = appState.getSubTextColor(context);
 
         return Scaffold(
-          backgroundColor: isDark ? AppColors.amoledCanvas : AppColors.lightCanvas,
+          backgroundColor: appState.getBgColor(context),
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
@@ -58,14 +62,19 @@ class SettingsScreen extends StatelessWidget {
                           // Theme Mode (System, Light, Dark)
                           return _buildThemeModeRow(context, position, isDark, textColor, subTextColor);
                         case 1:
-                          // AMOLED Mode (Pitch black substrate)
+                          // AMOLED Mode (Pitch black vs Graphite)
                           return ExpressiveGroupRow(
                             icon: Icons.brightness_2_rounded,
                             iconColor: const Color(0xFFC084FC),
                             iconBgColor: isDark ? const Color(0xFF261D36) : const Color(0xFFF3E8FF),
                             title: 'AMOLED Mode',
-                            subtitle: 'Pure pitch-black substrate (Dark mode only)',
+                            subtitle: isDark
+                                ? (appState.amoledMode
+                                    ? 'Pure pitch-black canvas (#000000)'
+                                    : 'Deep obsidian graphite canvas (#121212)')
+                                : 'Active only in dark mode',
                             position: position,
+                            luminousVariant: LuminousVariant.violet,
                             trailing: Switch.adaptive(
                               value: appState.amoledMode,
                               activeColor: AppColors.accentPrimary,
@@ -79,8 +88,11 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: AppColors.accentPrimary,
                             iconBgColor: isDark ? const Color(0xFF162B38) : const Color(0xFFE0F7FE),
                             title: 'Liquid Glass',
-                            subtitle: '3D optical lens & visionOS translucent materials',
+                            subtitle: appState.isLiquidGlass
+                                ? '3D optical lens with lensing & 24dp blur active'
+                                : 'Opaque Material 3 Expressive surfaces active',
                             position: position,
+                            luminousVariant: LuminousVariant.cyan,
                             trailing: Switch.adaptive(
                               value: appState.isLiquidGlass,
                               activeColor: AppColors.accentPrimary,
@@ -95,8 +107,9 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: AppColors.genuineEmerald,
                             iconBgColor: isDark ? const Color(0xFF142B1F) : const Color(0xFFDCFCE7),
                             title: 'Haptic Feedback',
-                            subtitle: 'Tactile spring clicks on dock transitions & actions',
+                            subtitle: 'Tactile spring clicks on dock transitions & interactions',
                             position: position,
+                            luminousVariant: LuminousVariant.emerald,
                             trailing: Switch.adaptive(
                               value: appState.hapticsEnabled,
                               activeColor: AppColors.genuineEmerald,
@@ -128,7 +141,7 @@ class SettingsScreen extends StatelessWidget {
                                 fontFamily: 'JetBrainsMono',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.accentPrimary,
+                                color: isDark ? AppColors.accentPrimary : AppColors.lightCyanText,
                               ),
                             ),
                           );
@@ -145,9 +158,9 @@ class SettingsScreen extends StatelessWidget {
                               'Active',
                               style: TextStyle(
                                 fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.genuineEmerald,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText,
                               ),
                             ),
                           );
@@ -168,15 +181,15 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: const Color(0xFF38BDF8),
                             iconBgColor: isDark ? const Color(0xFF132A38) : const Color(0xFFE0F2FE),
                             title: 'Version',
-                            subtitle: 'FLAC Toolkit Mobile • Build 11 (Release)',
+                            subtitle: 'FLAC Toolkit Mobile • Build 12 (Release)',
                             position: position,
                             trailing: Text(
                               'v1.1.0',
                               style: TextStyle(
                                 fontFamily: 'JetBrainsMono',
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: subTextColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
                               ),
                             ),
                           );
@@ -195,8 +208,8 @@ class SettingsScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontFamily: 'JetBrainsMono',
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.accentPrimary,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.accentPrimary : AppColors.lightCyanText,
                               ),
                             ),
                           );
@@ -208,6 +221,7 @@ class SettingsScreen extends StatelessWidget {
                             subtitle: 'Reset in-memory audited FLAC tracks and duplicates',
                             position: position,
                             danger: true,
+                            luminousVariant: LuminousVariant.amber,
                             onTap: () {
                               appState.setSharedLibrary([], '');
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -238,11 +252,13 @@ class SettingsScreen extends StatelessWidget {
     Color subTextColor,
   ) {
     final shape = groupShape(position);
-    final rowBg = isDark ? AppColors.surfaceContainer : AppColors.lightSurface;
+    final rowBg = appState.getCardBgColor(context);
 
     return Material(
       color: rowBg,
       borderRadius: shape,
+      elevation: isDark ? 0 : 2,
+      shadowColor: Colors.black.withOpacity(0.04),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
@@ -264,33 +280,35 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Theme',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Theme',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Choose system default, light, or dark look',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11.5,
-                        color: subTextColor,
+                      const SizedBox(height: 2),
+                      Text(
+                        'Choose system default, light, or dark look',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11.5,
+                          color: subTextColor,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            // Segmented Button Row (Matching LastWave_3.png)
+            // High-Contrast Segmented Button Row (WCAG Compliant)
             Row(
               children: [
                 _buildThemeSegment('System', Icons.settings_brightness_rounded, 'system', isDark),
@@ -309,10 +327,10 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildThemeSegment(String label, IconData icon, String mode, bool isDark) {
     final isSelected = appState.themeMode == mode;
     final selectedBg = isDark ? const Color(0xFF283548) : const Color(0xFFE0E7FF);
-    final selectedFg = isDark ? Colors.white : const Color(0xFF3730A3);
+    final selectedFg = isDark ? Colors.white : const Color(0xFF1E1B4B);
 
-    final unselectedBg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF1F1F4);
-    final unselectedFg = isDark ? const Color(0x99FFFFFF) : const Color(0x99000000);
+    final unselectedBg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE5E5EB);
+    final unselectedFg = isDark ? const Color(0x99FFFFFF) : AppColors.lightTextSecondary;
 
     return Expanded(
       child: Material(
@@ -322,7 +340,7 @@ class SettingsScreen extends StatelessWidget {
           onTap: () => appState.setThemeMode(mode),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            height: 38,
+            height: 40,
             alignment: Alignment.center,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -338,7 +356,7 @@ class SettingsScreen extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 12.5,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     color: isSelected ? selectedFg : unselectedFg,
                   ),
                 ),

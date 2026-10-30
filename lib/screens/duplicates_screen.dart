@@ -7,13 +7,16 @@ import '../services/flac_parser.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
 import '../widgets/expressive_group.dart';
+import '../widgets/luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's Connected Group Architecture for Duplicate Track Management
 ///
 /// Features:
-/// - Replaces nested boxed cards with LastWave Connected Groups (3dp gaps, 28dp/6dp continuous curvature).
-/// - Pure pitch black AMOLED canvas with ZERO border outlines.
-/// - 140dp bottom padding clearance ensuring the dock never covers duplicate sets.
+/// - Connected Groups with 3dp gaps and 28dp/6dp continuous curvature.
+/// - Luminous amber ripple feedback on interactions.
+/// - High-contrast Light Mode typography and stat pills.
+/// - Pure pitch black AMOLED vs Graphite background with ZERO border outlines.
+/// - 140dp bottom padding clearance.
 class DuplicatesScreen extends StatefulWidget {
   const DuplicatesScreen({super.key});
 
@@ -176,17 +179,30 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF161616),
+        backgroundColor: appState.getCardBgColor(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Delete File', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Delete File',
+          style: TextStyle(
+            color: appState.getTextColor(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Are you sure you want to delete this redundant copy?\n\n${track.filePath.split('/').last}',
-          style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 13),
+          style: TextStyle(
+            color: appState.getSubTextColor(context),
+            fontSize: 13,
+            height: 1.3,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0x99FFFFFF))),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: appState.getSubTextColor(context)),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -210,7 +226,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 );
               }
             },
-            child: const Text('Delete', style: TextStyle(color: AppColors.fakeCoral, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: AppColors.fakeCoral,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -231,7 +253,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         final wastedMb = _groups.fold<double>(0.0, (sum, g) => sum + g.wastedMb);
 
         return Scaffold(
-          backgroundColor: isDark ? AppColors.amoledCanvas : AppColors.lightCanvas,
+          backgroundColor: appState.getBgColor(context),
           body: SafeArea(
             bottom: false,
             child: CustomScrollView(
@@ -281,7 +303,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             Icon(
                               Icons.copy_all_outlined,
                               size: 44,
-                              color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
+                              color: isDark ? const Color(0x40FFFFFF) : AppColors.lightTextMuted,
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -332,11 +354,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     required Color textColor,
     required Color subTextColor,
   }) {
-    final cardBg = isDark ? AppColors.surfaceContainer : AppColors.lightSurface;
+    final cardBg = appState.getCardBgColor(context);
 
     return Material(
       color: cardBg,
       borderRadius: BorderRadius.circular(28),
+      elevation: isDark ? 0 : 2,
+      shadowColor: Colors.black.withOpacity(0.04),
       child: InkWell(
         onTap: _isScanning ? null : _scanForDuplicates,
         borderRadius: BorderRadius.circular(28),
@@ -385,8 +409,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               : (groupsCount > 0
                                   ? '$groupsCount duplicate sets ($duplicatesCount redundant files)'
                                   : 'Tap to scan music folders and keep the purest FLAC'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          softWrap: true,
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 12,
@@ -425,7 +449,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
               const SizedBox(height: 18),
 
-              // 3 Telemetry Pills
+              // High-Contrast Telemetry Pills Row
               Row(
                 children: [
                   _buildStatPill('Sets', '$groupsCount', AppColors.accentPrimary, isDark),
@@ -443,11 +467,27 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   }
 
   Widget _buildStatPill(String label, String value, Color color, bool isDark) {
+    Color pillBg = isDark ? const Color(0xFF1B1B1B) : const Color(0xFFF0F0F4);
+    Color fgColor = color;
+
+    if (!isDark) {
+      if (color == AppColors.genuineEmerald) {
+        pillBg = AppColors.lightEmeraldPillBg;
+        fgColor = AppColors.lightEmeraldText;
+      } else if (color == AppColors.suspiciousAmber) {
+        pillBg = AppColors.lightAmberPillBg;
+        fgColor = AppColors.lightAmberText;
+      } else {
+        pillBg = AppColors.lightCyanPillBg;
+        fgColor = AppColors.lightCyanText;
+      }
+    }
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1B1B1B) : const Color(0xFFF1F1F4),
+          color: pillBg,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -457,9 +497,9 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 8.5,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
-                color: isDark ? const Color(0x80FFFFFF) : const Color(0x80000000),
+                color: isDark ? const Color(0x80FFFFFF) : AppColors.lightTextMuted,
               ),
               maxLines: 1,
             ),
@@ -470,7 +510,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 fontFamily: 'JetBrainsMono',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: color,
+                color: fgColor,
               ),
             ),
           ],
@@ -499,56 +539,61 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   '${group.title} • ${group.artist}',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 13,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: textColor,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  softWrap: true,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '${group.items.length} copies',
                 style: TextStyle(
                   fontFamily: 'JetBrainsMono',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.suspiciousAmber,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.suspiciousAmber : AppColors.lightAmberText,
                 ),
               ),
             ],
           ),
         ),
 
-        // Connected Rows
+        // Connected Rows with Luminous Feedback
         ExpressiveGroup(
           rowCount: group.items.length,
           itemBuilder: (context, index, position) {
             final item = group.items[index];
             final shape = groupShape(position);
-            final rowBg = isDark ? AppColors.surfaceContainer : AppColors.lightSurface;
+            final rowBg = appState.getCardBgColor(context);
 
             return Material(
               color: rowBg,
               borderRadius: shape,
+              elevation: isDark ? 0 : 1,
+              shadowColor: Colors.black.withOpacity(0.04),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
                   children: [
-                    // Badge: Best vs Redundant
+                    // Badge: Wavy verified seal for best vs copy icon for redundant
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         color: item.isBest
-                            ? (isDark ? const Color(0xFF142B1F) : const Color(0xFFDCFCE7))
-                            : (isDark ? const Color(0xFF261D1D) : const Color(0xFFFEE2E2)),
+                            ? (isDark ? const Color(0xFF142B1F) : AppColors.lightEmeraldPillBg)
+                            : (isDark ? const Color(0xFF261D1D) : AppColors.lightCoralPillBg),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        item.isBest ? Icons.star_rounded : Icons.copy_rounded,
-                        size: 18,
-                        color: item.isBest ? AppColors.genuineEmerald : AppColors.fakeCoral,
+                        item.isBest ? Icons.verified_rounded : Icons.copy_rounded,
+                        size: 20,
+                        color: item.isBest
+                            ? (isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText)
+                            : (isDark ? AppColors.fakeCoral : AppColors.lightCoralText),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -565,7 +610,9 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.6,
-                                  color: item.isBest ? AppColors.genuineEmerald : AppColors.fakeCoral,
+                                  color: item.isBest
+                                      ? (isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText)
+                                      : (isDark ? AppColors.fakeCoral : AppColors.lightCoralText),
                                 ),
                               ),
                               const SizedBox(width: 6),

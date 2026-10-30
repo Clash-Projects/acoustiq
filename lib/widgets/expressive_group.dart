@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
+import 'luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's ExpressiveGroup Architecture
 ///
@@ -48,10 +49,11 @@ class ExpressiveGroup extends StatelessWidget {
 ///
 /// Features:
 /// - Exact 28dp/6dp continuous corner curvature based on position.
-/// - Pure LastWave obsidian container (#141414 in dark, #FFFFFF in light) with ZERO borders.
-/// - Fluid spring scale feedback on touch press (scales to 0.98).
+/// - Pure LastWave obsidian container with ZERO borders.
+/// - Natural multiline text wrapping (eliminates text truncation).
+/// - Luminous chromatic ripple feedback on touch.
 /// - 44dp squircle icon badge with continuous 14dp curvature.
-class ExpressiveGroupRow extends StatefulWidget {
+class ExpressiveGroupRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final GroupPosition position;
@@ -61,6 +63,7 @@ class ExpressiveGroupRow extends StatefulWidget {
   final Color? iconBgColor;
   final Widget? trailing;
   final bool danger;
+  final LuminousVariant luminousVariant;
 
   const ExpressiveGroupRow({
     super.key,
@@ -73,14 +76,8 @@ class ExpressiveGroupRow extends StatefulWidget {
     this.iconBgColor,
     this.trailing,
     this.danger = false,
+    this.luminousVariant = LuminousVariant.violet,
   });
-
-  @override
-  State<ExpressiveGroupRow> createState() => _ExpressiveGroupRowState();
-}
-
-class _ExpressiveGroupRowState extends State<ExpressiveGroupRow> {
-  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -88,105 +85,99 @@ class _ExpressiveGroupRowState extends State<ExpressiveGroupRow> {
       animation: appState,
       builder: (context, _) {
         final isDark = appState.isCurrentDark(context);
-        final textColor = widget.danger
+        final textColor = danger
             ? AppColors.fakeCoral
             : appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
 
-        final rowBg = isDark ? AppColors.surfaceContainer : AppColors.lightSurface;
-        final shape = groupShape(widget.position);
+        final rowBg = appState.getCardBgColor(context);
+        final shape = groupShape(position);
 
-        final iconBg = widget.iconBgColor ??
-            (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F2));
-        final iconClr = widget.iconColor ??
-            (widget.danger ? AppColors.fakeCoral : AppColors.accentPrimary);
+        final iconBg = iconBgColor ??
+            (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F4));
+        final iconClr = iconColor ??
+            (danger ? AppColors.fakeCoral : AppColors.accentPrimary);
 
-        return AnimatedScale(
-          scale: _isPressed ? 0.98 : 1.0,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.fastOutSlowIn,
-          child: Material(
-            color: rowBg,
-            borderRadius: shape,
-            child: InkWell(
-              onTap: widget.onTap,
-              onHighlightChanged: (highlighted) {
-                if (mounted && widget.onTap != null) {
-                  setState(() => _isPressed = highlighted);
-                }
-              },
+        return LuminousFeedback(
+          onTap: onTap,
+          variant: luminousVariant,
+          borderRadius: shape,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 64),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            decoration: BoxDecoration(
+              color: rowBg,
               borderRadius: shape,
-              splashColor: AppColors.accentPrimary.withOpacity(0.10),
-              highlightColor: Colors.transparent,
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 64),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                decoration: BoxDecoration(
-                  borderRadius: shape,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.20 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: Row(
-                  children: [
-                    // 44dp Squircle Icon Badge
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: iconBg,
-                        borderRadius: BorderRadius.circular(14),
+              ],
+            ),
+            child: Row(
+              children: [
+                // 44dp Squircle Icon Badge
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: iconClr,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                // Title & Natural Soft-Wrapping Subtitle (No Truncation)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                        maxLines: 2,
+                        softWrap: true,
                       ),
-                      child: Icon(
-                        widget.icon,
-                        size: 22,
-                        color: iconClr,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    // Title & Optional Subtitle
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            widget.title,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w600,
-                              color: textColor,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11.5,
+                            height: 1.3,
+                            color: subTextColor,
                           ),
-                          if (widget.subtitle != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              widget.subtitle!,
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11.5,
-                                color: subTextColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if (widget.trailing != null) ...[
-                      const SizedBox(width: 8),
-                      widget.trailing!,
-                    ] else if (widget.onTap != null) ...[
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 22,
-                        color: isDark ? const Color(0x66FFFFFF) : const Color(0x66000000),
-                      ),
+                          maxLines: 2,
+                          softWrap: true,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 10),
+                  trailing!,
+                ] else if (onTap != null) ...[
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 22,
+                    color: isDark ? const Color(0x66FFFFFF) : AppColors.lightTextMuted,
+                  ),
+                ],
+              ],
             ),
           ),
         );
@@ -203,10 +194,10 @@ Widget buildSectionHeader(String label, Color color) {
       label.toUpperCase(),
       style: TextStyle(
         fontFamily: 'Inter',
-        fontSize: 11,
+        fontSize: 11.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,
-        color: color.withOpacity(0.55),
+        color: color,
       ),
     ),
   );

@@ -31,9 +31,16 @@ class FlacToolkitApp extends StatelessWidget {
       animation: appState,
       builder: (context, _) {
         final isDark = appState.isCurrentDark(context);
-        final bg = isDark
-            ? (appState.amoledMode ? AppColors.amoledCanvas : AppColors.darkCanvas)
-            : AppColors.lightCanvas;
+        final bg = appState.getBgColor(context);
+
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+            systemNavigationBarColor: bg,
+            systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          ),
+        );
 
         return MaterialApp(
           title: 'FLAC Toolkit',
@@ -107,9 +114,16 @@ class _MainShellState extends State<MainShell> {
       animation: appState,
       builder: (context, _) {
         final isDark = appState.isCurrentDark(context);
-        final bg = isDark
-            ? (appState.amoledMode ? AppColors.amoledCanvas : AppColors.darkCanvas)
-            : AppColors.lightCanvas;
+        final bg = appState.getBgColor(context);
+
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+            systemNavigationBarColor: bg,
+            systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          ),
+        );
 
         return Scaffold(
           backgroundColor: bg,

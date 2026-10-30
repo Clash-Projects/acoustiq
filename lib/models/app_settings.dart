@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'flac_info.dart';
+import '../ui/theme/colors.dart';
 
 class AppState extends ChangeNotifier {
   bool _isLiquidGlass = true;
@@ -24,24 +25,37 @@ class AppState extends ChangeNotifier {
   }
 
   Color getBgColor(BuildContext context) {
-    if (!isCurrentDark(context)) return const Color(0xFFF5F5F7);
-    return _amoledMode ? const Color(0xFF000000) : const Color(0xFF0C0C0C);
+    if (!isCurrentDark(context)) return AppColors.lightCanvas;
+    // AMOLED Mode: #000000 vs Graphite Mode: #121212
+    return _amoledMode ? AppColors.amoledCanvas : AppColors.graphiteCanvas;
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
-      return Colors.white.withOpacity(_isLiquidGlass ? 0.85 : 0.98);
+      return _isLiquidGlass
+          ? Colors.white.withOpacity(0.85)
+          : AppColors.lightSurface;
     }
-    // True LastWave Obsidian Surface (R = G = B = 20)
-    return const Color(0xFF141414);
+    // Dark mode surfaces
+    if (_amoledMode) {
+      return _isLiquidGlass
+          ? const Color(0xE6101010)
+          : const Color(0xFF141414);
+    } else {
+      return _isLiquidGlass
+          ? const Color(0xE61C1C1C)
+          : const Color(0xFF202020);
+    }
   }
 
   Color getTextColor(BuildContext context) {
-    return isCurrentDark(context) ? Colors.white : const Color(0xFF111111);
+    return isCurrentDark(context) ? Colors.white : AppColors.lightTextPrimary;
   }
 
   Color getSubTextColor(BuildContext context) {
-    return isCurrentDark(context) ? const Color(0x99FFFFFF) : const Color(0x99000000);
+    return isCurrentDark(context)
+        ? const Color(0x99FFFFFF)
+        : AppColors.lightTextSecondary;
   }
 
   void setLiquidGlass(bool value) {
