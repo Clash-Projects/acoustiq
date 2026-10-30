@@ -150,7 +150,7 @@ class _InspectScreenState extends State<InspectScreen> {
                     score: _info!.score,
                     status: _info!.status,
                     cutoffKhz: _info!.cutoffKhz,
-                    maxKhz: _info!.maxFrequencyKhz,
+                    maxKhz: _info!.maxKhz,
                   ),
                 ),
 
@@ -195,7 +195,7 @@ class _InspectScreenState extends State<InspectScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _info!.explanation,
+                              _info!.verdict,
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 11,
