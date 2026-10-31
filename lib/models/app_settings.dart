@@ -26,25 +26,25 @@ class AppState extends ChangeNotifier {
 
   Color getBgColor(BuildContext context) {
     if (!isCurrentDark(context)) return AppColors.lightCanvas;
-    // AMOLED Mode: #000000 vs Graphite Mode: #121212
+    // AMOLED Mode: #000000 vs Graphite Mode: #12161A
     return _amoledMode ? AppColors.amoledCanvas : AppColors.graphiteCanvas;
   }
 
   Color getCardBgColor(BuildContext context) {
     if (!isCurrentDark(context)) {
       return _isLiquidGlass
-          ? Colors.white.withOpacity(0.85)
+          ? Colors.white.withOpacity(0.90)
           : AppColors.lightSurface;
     }
     // Dark mode surfaces
     if (_amoledMode) {
       return _isLiquidGlass
-          ? const Color(0xE6101010)
-          : const Color(0xFF141414);
+          ? const Color(0x22FFFFFF)
+          : const Color(0xFF101214);
     } else {
       return _isLiquidGlass
-          ? const Color(0xE61C1C1C)
-          : const Color(0xFF202020);
+          ? const Color(0x28FFFFFF)
+          : const Color(0xFF1E2228);
     }
   }
 

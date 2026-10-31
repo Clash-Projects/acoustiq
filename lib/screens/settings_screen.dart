@@ -9,12 +9,12 @@ import '../widgets/luminous_feedback.dart';
 /// 1:1 Port of LastWave Native's Settings Screen Architecture (Appearance & Visuals)
 ///
 /// Features:
-/// - WWDC25 Frosted & Clear Glass surfaces.
+/// - Concise studio-grade copywriting (eliminates verbose multi-line clutter).
 /// - Connected Group Architecture with 3dp gaps and 28dp/6dp continuous curvature.
 /// - Pure Pitch Black AMOLED vs Deep Graphite toggle with instant live repaint.
 /// - Liquid Glass toggle switching between optical translucent blur and opaque surfaces.
 /// - High-contrast Light Mode typography and segment controls.
-/// - Zero text truncation (natural multiline soft-wrapping).
+/// - Zero text truncation.
 /// - 160dp bottom padding clearance.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -72,8 +72,8 @@ class SettingsScreen extends StatelessWidget {
                             title: 'AMOLED Mode',
                             subtitle: isDark
                                 ? (appState.amoledMode
-                                    ? 'Pure pitch-black canvas (#000000)'
-                                    : 'Deep obsidian graphite canvas (#121212)')
+                                    ? 'Pitch-black background for OLED displays (#000000)'
+                                    : 'Deep obsidian graphite background (#12161A)')
                                 : 'Active only in dark mode',
                             position: position,
                             luminousVariant: LuminousVariant.violet,
@@ -91,7 +91,7 @@ class SettingsScreen extends StatelessWidget {
                             iconBgColor: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
                             title: 'Liquid Glass',
                             subtitle: appState.isLiquidGlass
-                                ? 'WWDC25 Frosted glass substrates & 3D optical lens active'
+                                ? 'iOS-style translucent materials across the app'
                                 : 'Opaque Material 3 Expressive surfaces active',
                             position: position,
                             luminousVariant: LuminousVariant.cyan,
@@ -109,7 +109,7 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: AppColors.genuineEmerald,
                             iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
                             title: 'Haptic Feedback',
-                            subtitle: 'Tactile spring clicks on dock transitions & interactions',
+                            subtitle: 'Tactile response on navigation & actions',
                             position: position,
                             luminousVariant: LuminousVariant.emerald,
                             trailing: Switch.adaptive(
@@ -135,7 +135,7 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: AppColors.accentPrimary,
                             iconBgColor: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
                             title: 'Bitstream Auditor',
-                            subtitle: 'Lossless header verification & spectral Nyquist check',
+                            subtitle: 'Lossless header verification & spectral check',
                             position: position,
                             trailing: Text(
                               '96 kHz',
@@ -153,8 +153,8 @@ class SettingsScreen extends StatelessWidget {
                             icon: Icons.auto_awesome_rounded,
                             iconColor: AppColors.suspiciousAmber,
                             iconBgColor: isDark ? const Color(0x30FFB300) : const Color(0xFFFEF3C7),
-                            title: 'Auto-scan Duplicate Hashes',
-                            subtitle: 'Detect identical audio streams with mismatched tags',
+                            title: 'Duplicate Scanner',
+                            subtitle: 'Detect identical audio streams across tags',
                             position: position,
                             trailing: Text(
                               'Active',
@@ -183,7 +183,7 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: const Color(0xFF38BDF8),
                             iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                             title: 'Version',
-                            subtitle: 'FLAC Toolkit Mobile • Build 13 (Release)',
+                            subtitle: 'FLAC Toolkit Mobile • Build 15 (Release)',
                             position: position,
                             trailing: Text(
                               'v1.1.0',
@@ -219,7 +219,7 @@ class SettingsScreen extends StatelessWidget {
                         default:
                           return ExpressiveGroupRow(
                             icon: Icons.delete_outline_rounded,
-                            title: 'Clear Scanned Library Cache',
+                            title: 'Clear Library Cache',
                             subtitle: 'Reset in-memory audited FLAC tracks and duplicates',
                             position: position,
                             danger: true,
@@ -258,6 +258,7 @@ class SettingsScreen extends StatelessWidget {
     return GlassSurface(
       borderRadius: shape,
       style: GlassStyle.frosted,
+      borderless: true,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,8 +300,7 @@ class SettingsScreen extends StatelessWidget {
                         fontSize: 11.5,
                         color: subTextColor,
                       ),
-                      maxLines: 2,
-                      softWrap: true,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -309,7 +309,7 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // High-Contrast Clear Glass Segmented Button Row
+          // Clean Borderless Segmented Button Row
           Row(
             children: [
               _buildThemeSegment('System', Icons.settings_brightness_rounded, 'system', isDark),
@@ -333,6 +333,7 @@ class SettingsScreen extends StatelessWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(12),
         style: GlassStyle.clear,
+        borderless: true,
         tintColor: isSelected
             ? (isDark ? const Color(0x40818CF8) : const Color(0xFFDCE2FF))
             : null,

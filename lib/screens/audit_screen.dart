@@ -9,13 +9,14 @@ import '../widgets/audio_spectrum_stage.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 
-/// 1:1 Port of LastWave Native's Mix & Track List Stage for FLAC Audio Auditing
+/// 1:1 Port of LastWave Native's Borderless AMOLED Track List Stage for FLAC Audio Auditing
 ///
 /// Features:
+/// - Borderless AMOLED Track Rows (Tracks sit natively on #000000 canvas with zero cartoon borders).
+/// - 48dp Squircle Album Art with smooth 12dp continuous curvature.
 /// - Iconic wavy-circle verified seal (Icons.verified_rounded) for genuine FLACs.
-/// - WWDC25 Frosted & Clear Glass surfaces across hero cards, stat pills, and filters.
 /// - Rich Studio Spectral Nyquist Analyzer Stage inside song details modal bottom sheet.
-/// - Multi-line title wrapping for long track names.
+/// - Concise studio-grade badges that never truncate.
 /// - Luminous emerald touch feedback ripple across track items.
 /// - 160dp bottom padding clearance.
 class AuditScreen extends StatefulWidget {
@@ -152,12 +153,12 @@ class _AuditScreenState extends State<AuditScreen> {
                   ),
                 ),
 
-                // 2. Hero Stage (Frosted Glass Substrate)
+                // 2. Library Hero Action & Statistics Card (Borderless)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: _buildHeroStage(
-                      tracksCount: tracks.length,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: _buildHeroAuditCard(
+                      totalTracks: tracks.length,
                       genuineCount: genuineCount,
                       suspiciousCount: suspiciousCount,
                       fakeCount: fakeCount,
@@ -169,56 +170,62 @@ class _AuditScreenState extends State<AuditScreen> {
                   ),
                 ),
 
-                // 3. Filter Chips Row (Clear Glass Pills)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          _buildFilterPill('All (${tracks.length})', 'all', isDark),
-                          const SizedBox(width: 8),
-                          _buildFilterPill('Genuine ($genuineCount)', 'genuine', isDark),
-                          const SizedBox(width: 8),
-                          _buildFilterPill('Suspect ($suspiciousCount)', 'suspicious', isDark),
-                          const SizedBox(width: 8),
-                          _buildFilterPill('Fake ($fakeCount)', 'fake', isDark),
-                        ],
+                // 3. Filter Segment Pills Row (Borderless)
+                if (tracks.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            _buildFilterPill('All (${tracks.length})', 'all', isDark),
+                            const SizedBox(width: 8),
+                            _buildFilterPill('Genuine ($genuineCount)', 'genuine', isDark),
+                            const SizedBox(width: 8),
+                            _buildFilterPill('Suspicious ($suspiciousCount)', 'suspicious', isDark),
+                            const SizedBox(width: 8),
+                            _buildFilterPill('Fake ($fakeCount)', 'fake', isDark),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                // 4. Seamless Transparent Track Rows with Luminous Feedback
-                if (filteredTracks.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.library_music_outlined,
-                              size: 44,
-                              color: isDark ? const Color(0x40FFFFFF) : AppColors.lightTextMuted,
+                // 4. LastWave Borderless AMOLED Track List
+                if (tracks.isEmpty && !_isScanning)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.folder_open_rounded,
+                            size: 56,
+                            color: subTextColor.withOpacity(0.4),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No Audited Tracks Yet',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              tracks.isEmpty
-                                  ? 'No FLAC files audited yet\nTap the hero card above to scan a music directory'
-                                  : 'No tracks match current filter',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 13,
-                                color: subTextColor,
-                              ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tap the card above to scan a music directory',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              color: subTextColor,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   )
@@ -229,15 +236,12 @@ class _AuditScreenState extends State<AuditScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final track = filteredTracks[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _buildTransparentTrackRow(
-                              track: track,
-                              isDark: isDark,
-                              textColor: textColor,
-                              subTextColor: subTextColor,
-                              onTap: () => _openTrackDetail(track),
-                            ),
+                          return _buildBorderlessTrackRow(
+                            track: track,
+                            isDark: isDark,
+                            textColor: textColor,
+                            subTextColor: subTextColor,
+                            onTap: () => _openTrackDetail(track),
                           );
                         },
                         childCount: filteredTracks.length,
@@ -252,8 +256,8 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
-  Widget _buildHeroStage({
-    required int tracksCount,
+  Widget _buildHeroAuditCard({
+    required int totalTracks,
     required int genuineCount,
     required int suspiciousCount,
     required int fakeCount,
@@ -269,6 +273,7 @@ class _AuditScreenState extends State<AuditScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(28),
         style: GlassStyle.frosted,
+        borderless: true, // ZERO BORDERS!
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -284,7 +289,7 @@ class _AuditScreenState extends State<AuditScreen> {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            '$tracksCount',
+                            '$totalTracks',
                             style: TextStyle(
                               fontFamily: 'JetBrainsMono',
                               fontSize: 36,
@@ -295,7 +300,7 @@ class _AuditScreenState extends State<AuditScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'FLACs Audited',
+                            'Audited Tracks',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 14,
@@ -308,10 +313,10 @@ class _AuditScreenState extends State<AuditScreen> {
                       const SizedBox(height: 3),
                       Text(
                         _isScanning
-                            ? 'Scanning... audited $_scannedCount tracks'
+                            ? 'Scanning folder... analyzed $_scannedCount tracks'
                             : (appState.lastScannedFolder != null
-                                ? appState.lastScannedFolder!.split('/').last
-                                : 'Tap to select music folder to batch audit'),
+                                ? 'Source: ${appState.lastScannedFolder!.split('/').last}'
+                                : 'Tap to scan folder and audit entire library'),
                         maxLines: 2,
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
@@ -328,7 +333,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
+                    color: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: _isScanning
@@ -338,13 +343,13 @@ class _AuditScreenState extends State<AuditScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.2,
-                              color: AppColors.accentPrimary,
+                              color: AppColors.genuineEmerald,
                             ),
                           ),
                         )
                       : const Icon(
                           Icons.folder_open_rounded,
-                          color: AppColors.accentPrimary,
+                          color: AppColors.genuineEmerald,
                           size: 22,
                         ),
                 ),
@@ -353,7 +358,7 @@ class _AuditScreenState extends State<AuditScreen> {
 
             const SizedBox(height: 18),
 
-            // High-Contrast Clear Glass Telemetry Pills Row
+            // Telemetry Pills Row (Borderless)
             Row(
               children: [
                 _buildStatPill(
@@ -406,6 +411,7 @@ class _AuditScreenState extends State<AuditScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(16),
         style: GlassStyle.clear,
+        borderless: true,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         child: Column(
           children: [
@@ -448,6 +454,7 @@ class _AuditScreenState extends State<AuditScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(20),
         style: GlassStyle.clear,
+        borderless: true,
         tintColor: isSelected
             ? (isDark ? const Color(0x4000D2FF) : const Color(0xFFCCE8FE))
             : null,
@@ -465,8 +472,16 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
-  /// Track Row with Soft Wrapping & Luminous Emerald Feedback
-  Widget _buildTransparentTrackRow({
+  /// LastWave Borderless Track Row Architecture
+  ///
+  /// Matches LastWave screenshot_1.png and screenshot_6.png:
+  /// - 0 box containers or outlines. Tracks sit directly on AMOLED black.
+  /// - 48dp continuous squircle artwork.
+  /// - Single-line semibold track title with clean ellipsis.
+  /// - Muted technical metadata subtitle (sample rate, bit depth, format).
+  /// - Wavy circle verified seal (Icons.verified_rounded) for genuine FLACs.
+  /// - Luminous subtle touch feedback on tap.
+  Widget _buildBorderlessTrackRow({
     required FlacInfo track,
     required bool isDark,
     required Color textColor,
@@ -475,89 +490,75 @@ class _AuditScreenState extends State<AuditScreen> {
   }) {
     final statusColor = _getStatusColor(track.status);
 
-    return LuminousFeedback(
-      onTap: onTap,
-      variant: LuminousVariant.emerald,
-      borderRadius: BorderRadius.circular(18),
-      child: GlassSurface(
-        borderRadius: BorderRadius.circular(18),
-        style: GlassStyle.frosted,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        child: Row(
-          children: [
-            // 52dp Squircle Artwork Thumbnail
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.30 : 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          splashColor: statusColor.withOpacity(0.12),
+          highlightColor: statusColor.withOpacity(0.06),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                // 48dp Squircle Artwork Thumbnail (12dp radius)
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x28FFFFFF) : const Color(0xFFE5E5EA),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: isDark
+                        ? AppColors.softElevation(elevation: 2.0)
+                        : AppColors.lightSoftElevation(elevation: 2.0),
                   ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: track.hasCover && track.coverBytes != null
-                  ? Image.memory(
-                      track.coverBytes!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _fallbackCover(statusColor),
-                    )
-                  : _fallbackCover(statusColor),
-            ),
-            const SizedBox(width: 14),
-            // Title (2-line soft wrap), Artist & Technical Badges
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    track.title.isNotEmpty ? track.title : track.fileName,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    track.artist.isNotEmpty
-                        ? '${track.artist} • ${track.album}'
-                        : track.fileName,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: subTextColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
+                  clipBehavior: Clip.antiAlias,
+                  child: track.hasCover && track.coverBytes != null
+                      ? Image.memory(
+                          track.coverBytes!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _fallbackCover(statusColor),
+                        )
+                      : _fallbackCover(statusColor),
+                ),
+                const SizedBox(width: 14),
+
+                // Title & Subtitle with Clean Wrapping
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildSpecChip('${track.bitDepth}-bit', isDark),
-                      const SizedBox(width: 4),
-                      _buildSpecChip('${(track.sampleRate / 1000).toStringAsFixed(1)}k', isDark),
-                      const SizedBox(width: 4),
-                      _buildSpecChip('${track.bitrateKbps}k', isDark),
+                      Text(
+                        track.title.isNotEmpty ? track.title : track.fileName,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${track.artist.isNotEmpty ? track.artist : 'Unknown'} • ${(track.sampleRate / 1000).toStringAsFixed(1)}kHz/${track.bitDepth}bit • ${track.bitrateKbps}k',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11.5,
+                          color: subTextColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Status Icon & Authenticity Score Badge
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
+                ),
+                const SizedBox(width: 10),
+
+                // Wavy Verified Seal & Score Badge
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -575,7 +576,7 @@ class _AuditScreenState extends State<AuditScreen> {
                         size: 16,
                         color: statusColor,
                       ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     Text(
                       '${track.score}%',
                       style: TextStyle(
@@ -587,37 +588,9 @@ class _AuditScreenState extends State<AuditScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  track.durationStr,
-                  style: TextStyle(
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 11,
-                    color: subTextColor,
-                  ),
-                ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpecChip(String text, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFF0F0F4),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontFamily: 'JetBrainsMono',
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: isDark ? const Color(0xCCFFFFFF) : AppColors.lightTextPrimary,
+          ),
         ),
       ),
     );
@@ -627,7 +600,7 @@ class _AuditScreenState extends State<AuditScreen> {
     return Center(
       child: Icon(
         Icons.album_rounded,
-        size: 26,
+        size: 24,
         color: statusColor.withOpacity(0.7),
       ),
     );
@@ -635,6 +608,9 @@ class _AuditScreenState extends State<AuditScreen> {
 }
 
 /// Rich Studio Audio Inspector Modal Bottom Sheet with Spectral Analyzer Stage
+///
+/// Fixes User Complaint #4: Displays the full Studio Spectral Nyquist Analyzer Stage,
+/// dynamic cutoff frequency, score ring/gauge, and verified seal for individual songs!
 class _TrackDetailModal extends StatelessWidget {
   final FlacInfo track;
 
@@ -661,6 +637,7 @@ class _TrackDetailModal extends StatelessWidget {
     return GlassSurface(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       style: GlassStyle.frosted,
+      borderless: true,
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -689,13 +666,9 @@ class _TrackDetailModal extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: isDark
+                      ? AppColors.softElevation(elevation: 3.0)
+                      : AppColors.lightSoftElevation(elevation: 3.0),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: track.hasCover && track.coverBytes != null
@@ -753,7 +726,7 @@ class _TrackDetailModal extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // 2. Score Badge
+          // 2. Score Badge & Wavy Verified Seal (Concise, no truncation)
           Row(
             children: [
               Row(
@@ -783,11 +756,10 @@ class _TrackDetailModal extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(isDark ? 0.18 : 0.12),
+                    color: statusColor.withOpacity(isDark ? 0.20 : 0.12),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor.withOpacity(0.35), width: 0.8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -796,16 +768,16 @@ class _TrackDetailModal extends StatelessWidget {
                         track.status == 'genuine'
                             ? Icons.verified_rounded
                             : Icons.warning_amber_rounded,
-                        size: 15,
+                        size: 16,
                         color: statusColor,
                       ),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
-                          track.verdict.toUpperCase(),
+                          track.shortBadge,
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 11,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
                             color: statusColor,
@@ -823,7 +795,7 @@ class _TrackDetailModal extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // 3. Studio Spectral Nyquist Analyzer Stage (Requested by user!)
+          // 3. Studio Spectral Nyquist Analyzer Stage (Fixes User Item #4!)
           AudioSpectrumStage(
             cutoffKhz: track.cutoffKhz,
             maxKhz: track.maxKhz,
@@ -831,9 +803,24 @@ class _TrackDetailModal extends StatelessWidget {
             height: 38,
           ),
 
-          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Text(
+              track.verdict,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11.5,
+                height: 1.3,
+                color: subTextColor,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
 
-          // 4. Quick Specs in Clear Glass
+          const SizedBox(height: 12),
+
+          // 4. Quick Specs in Clear Glass (Zero Borders)
           Row(
             children: [
               _buildModalSpecTile('${track.bitDepth}-bit', 'Depth', isDark),
@@ -852,6 +839,7 @@ class _TrackDetailModal extends StatelessWidget {
           GlassSurface(
             borderRadius: BorderRadius.circular(14),
             style: GlassStyle.clear,
+            borderless: true,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
@@ -883,6 +871,7 @@ class _TrackDetailModal extends StatelessWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(12),
         style: GlassStyle.clear,
+        borderless: true,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           children: [

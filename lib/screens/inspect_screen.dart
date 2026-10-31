@@ -13,11 +13,11 @@ import '../widgets/luminous_feedback.dart';
 /// 1:1 Port of LastWave Studio-Grade Audio Inspector Architecture
 ///
 /// Features:
-/// - WWDC25 Frosted Glass Substrate with real Gaussian blur & specular highlights.
+/// - Borderless AMOLED / Light mode container (zero cartoon box strokes).
 /// - Embedded album cover artwork (72dp continuous squircle).
 /// - Studio Spectral Nyquist Analyzer Stage (32-band real-time audio frequency visualizer).
 /// - Iconic wavy-circle verified seal (Icons.verified_rounded) for genuine FLACs.
-/// - Soft multiline text wrapping (eliminates hard pixel cutoffs).
+/// - Concise studio-grade badges that never truncate.
 /// - 160dp bottom clearance (guarantees floating dock never obstructs content).
 class InspectScreen extends StatefulWidget {
   final FlacInfo? initialTrack;
@@ -116,7 +116,7 @@ class _InspectScreenState extends State<InspectScreen> {
 
                   const SizedBox(height: 12),
 
-                  // 1. Studio Audio Hero Stage (Frosted Glass Substrate)
+                  // 1. Studio Audio Hero Stage (Zero-Border Architecture)
                   _buildStudioHeroStage(isDark, textColor, subTextColor),
 
                   const SizedBox(height: 18),
@@ -145,6 +145,7 @@ class _InspectScreenState extends State<InspectScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(28),
         style: GlassStyle.frosted,
+        borderless: true, // ZERO BORDERS matching LastWave!
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -160,13 +161,9 @@ class _InspectScreenState extends State<InspectScreen> {
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
                     borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: isDark
+                        ? AppColors.softElevation(elevation: 3.0)
+                        : AppColors.lightSoftElevation(elevation: 3.0),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _isLoading
@@ -189,7 +186,7 @@ class _InspectScreenState extends State<InspectScreen> {
                           : _fallbackArtwork(statusColor)),
                 ),
                 const SizedBox(width: 14),
-                // Title & Subtitle with Soft Multiline Wrapping (No truncation)
+                // Title & Subtitle with Clean Wrapping
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +218,7 @@ class _InspectScreenState extends State<InspectScreen> {
                           height: 1.35,
                           color: subTextColor,
                         ),
-                        maxLines: 3,
+                        maxLines: 2,
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -232,6 +229,7 @@ class _InspectScreenState extends State<InspectScreen> {
                 GlassSurface(
                   borderRadius: BorderRadius.circular(12),
                   style: GlassStyle.clear,
+                  borderless: true,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   child: Text(
                     _info != null ? 'Change' : 'Browse',
@@ -249,7 +247,7 @@ class _InspectScreenState extends State<InspectScreen> {
             if (_info != null) ...[
               const SizedBox(height: 20),
 
-              // 2. Score Row with Wavy Circle Verified Seal
+              // 2. Score Row with Wavy Circle Verified Seal & Concise Badge (No Truncation)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -278,13 +276,13 @@ class _InspectScreenState extends State<InspectScreen> {
                     ],
                   ),
                   const SizedBox(width: 12),
+                  // Concise Studio Badge (Fits cleanly in 1 line with no truncation)
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(isDark ? 0.16 : 0.12),
+                        color: statusColor.withOpacity(isDark ? 0.20 : 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: statusColor.withOpacity(0.35), width: 0.8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -299,10 +297,10 @@ class _InspectScreenState extends State<InspectScreen> {
                           const SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                              _info!.verdict.toUpperCase(),
+                              _info!.shortBadge,
                               style: TextStyle(
                                 fontFamily: 'Inter',
-                                fontSize: 11,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
                                 color: statusColor,
@@ -318,7 +316,7 @@ class _InspectScreenState extends State<InspectScreen> {
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // 3. Pro Studio Spectral Nyquist Analyzer Stage
               AudioSpectrumStage(
@@ -328,9 +326,25 @@ class _InspectScreenState extends State<InspectScreen> {
                 height: 42,
               ),
 
-              const SizedBox(height: 16),
+              // Detailed explanation text under spectrum
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Text(
+                  _info!.verdict,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11.5,
+                    height: 1.3,
+                    color: subTextColor,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
 
-              // 4. Clean High-Contrast Spec Pills in Clear Glass
+              const SizedBox(height: 12),
+
+              // 4. Clean High-Contrast Spec Pills in Clear Glass (Zero Borders)
               Row(
                 children: [
                   _buildSpecTile('${_info!.bitDepth}-bit', 'Depth', isDark),
@@ -364,6 +378,7 @@ class _InspectScreenState extends State<InspectScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(14),
         style: GlassStyle.clear,
+        borderless: true,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         child: Column(
           children: [

@@ -7,10 +7,10 @@ import 'luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's ExpressiveGroup Architecture
 ///
-/// A group of rows reads as ONE continuous premium sculpted glass surface rather
+/// A group of rows reads as ONE continuous premium sculpted surface rather
 /// than a stack of separate cards — first row rounded on top (28dp), last row
 /// rounded on the bottom (28dp), middle rows nearly square (6dp), all separated by a
-/// hairline 3dp gap.
+/// hairline 3dp gap with ZERO border outlines.
 class ExpressiveGroup extends StatelessWidget {
   final int rowCount;
   final Widget Function(BuildContext context, int index, GroupPosition position) itemBuilder;
@@ -46,14 +46,14 @@ class ExpressiveGroup extends StatelessWidget {
   }
 }
 
-/// A tappable row inside an [ExpressiveGroup] with WWDC25 Frosted Glass Substrate styling.
+/// A tappable row inside an [ExpressiveGroup] matching LastWave's ExpressiveGroupRow.
 ///
 /// Features:
 /// - Exact 28dp/6dp continuous corner curvature based on position.
-/// - WWDC25 Frosted Glass substrate with real Gaussian blur & specular edge highlights.
-/// - Natural multiline text wrapping (up to 3 lines with graceful ellipsis, eliminating hard truncation).
-/// - Luminous chromatic ripple feedback on touch.
-/// - 44dp squircle icon badge with continuous 14dp curvature.
+/// - Borderless tonal surface (zero cartoon wireframe borders).
+/// - 44dp squircle icon badge (14dp radius).
+/// - High-contrast readable typography in both dark AMOLED and light modes.
+/// - Luminous subtle touch feedback ripple.
 class ExpressiveGroupRow extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -94,7 +94,7 @@ class ExpressiveGroupRow extends StatelessWidget {
         final shape = groupShape(position);
 
         final iconBg = iconBgColor ??
-            (isDark ? const Color(0x30FFFFFF) : const Color(0xFFF0F0F4));
+            (isDark ? const Color(0x28FFFFFF) : const Color(0xFFF0F2F5));
         final iconClr = iconColor ??
             (danger ? AppColors.fakeCoral : AppColors.accentPrimary);
 
@@ -105,8 +105,9 @@ class ExpressiveGroupRow extends StatelessWidget {
           child: GlassSurface(
             borderRadius: shape,
             style: GlassStyle.frosted,
-            constraints: const BoxConstraints(minHeight: 64),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            borderless: true, // ZERO BORDERS matching LastWave!
+            constraints: const BoxConstraints(minHeight: 62),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 // 44dp Squircle Icon Badge
@@ -124,7 +125,7 @@ class ExpressiveGroupRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 14),
-                // Title & Natural Soft-Wrapping Subtitle (No Truncation)
+                // Title & Subtitle with Clean Wrapping (No Cutoff)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,22 +139,20 @@ class ExpressiveGroupRow extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: textColor,
                         ),
-                        maxLines: 2,
-                        softWrap: true,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (subtitle != null) ...[
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 2),
                         Text(
                           subtitle!,
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 11.5,
-                            height: 1.35,
+                            fontSize: 12.0,
+                            height: 1.3,
                             color: subTextColor,
                           ),
-                          maxLines: 3,
-                          softWrap: true,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],

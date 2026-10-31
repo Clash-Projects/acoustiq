@@ -47,6 +47,15 @@ class FlacInfo {
     this.error,
   });
 
+  /// Concise Studio Badge (Prevents mobile UI text truncation)
+  String get shortBadge {
+    if (score >= 90) return 'GENUINE LOSSLESS';
+    if (score >= 75) return 'STUDIO MASTER';
+    if (score >= 55) return 'SUSPICIOUS RES';
+    if (score >= 35) return 'LOSSY UPSCALE';
+    return 'FAKE LOSSLESS';
+  }
+
   factory FlacInfo.withError(String filePath, String fileName, String error) {
     return FlacInfo(
       filePath: filePath,
@@ -72,4 +81,3 @@ class FlacInfo {
     );
   }
 }
-
