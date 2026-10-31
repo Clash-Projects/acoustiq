@@ -37,8 +37,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
   static const double _kPaddingH = 8.0;
   static const double _kDockHeight = 56.0;
   static const double _kInactiveWidth = 48.0;
-  static const double _kActiveWidth = 116.0;
-  static const double _kTotalWidth = (2 * _kPaddingH) + (3 * _kInactiveWidth) + _kActiveWidth; // 268.0
+  static const double _kActiveWidth = 136.0;
+  static const double _kTotalWidth = (2 * _kPaddingH) + (3 * _kInactiveWidth) + _kActiveWidth; // 296.0
 
   int _lastHapticIndex = -1;
 
@@ -92,6 +92,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
       builder: (context, _) {
         final isDark = appState.isCurrentDark(context);
         final useGlass = appState.isLiquidGlass;
+        final activeAccent = appState.getAccentColor(context);
 
         // 1:1 LastWave Architecture: Pure Achromatic Black Translucent Substrate (ZERO navy blue)
         // Scrim alpha 0.48 lets scrolling album art bleed through naturally without color distortion
@@ -150,6 +151,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                         isSelected: isSelected,
                         isDark: isDark,
                         useGlass: useGlass,
+                        activeAccent: activeAccent,
                         onTap: () => _selectTab(index),
                       );
                     }),
@@ -171,6 +173,7 @@ class _IntegratedDockTab extends StatelessWidget {
   final bool isSelected;
   final bool isDark;
   final bool useGlass;
+  final Color activeAccent;
   final VoidCallback onTap;
 
   const _IntegratedDockTab({
@@ -179,12 +182,13 @@ class _IntegratedDockTab extends StatelessWidget {
     required this.isSelected,
     required this.isDark,
     required this.useGlass,
+    required this.activeAccent,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    const activeWidth = 116.0;
+    const activeWidth = 136.0;
     const inactiveWidth = 48.0;
 
     final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
@@ -206,6 +210,7 @@ class _IntegratedDockTab extends StatelessWidget {
               ? _AchromaticWaterLensPill(
                   isDark: isDark,
                   useGlass: useGlass,
+                  activeAccent: activeAccent,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -226,19 +231,19 @@ class _IntegratedDockTab extends StatelessWidget {
                         },
                       ),
                       const SizedBox(width: 8),
-                      // Smoothly expanding label
+                      // Smoothly expanding label - No truncation!
                       Flexible(
                         child: Text(
                           label,
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
                             color: activeColor,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          overflow: TextOverflow.clip,
                         ),
                       ),
                     ],
@@ -260,18 +265,20 @@ class _IntegratedDockTab extends StatelessWidget {
 /// Achromatic Water Lens Pill Container
 ///
 /// Implements true physical water droplet optics:
-/// - Pure water-clear body (NO cyan dye).
+/// - Pure water-clear body with subtle activeAccent optical illumination.
 /// - Top specular highlight arc catching ambient overhead illumination.
 /// - Meniscus depth refraction.
 /// - Soft contact drop shadow.
 class _AchromaticWaterLensPill extends StatelessWidget {
   final bool isDark;
   final bool useGlass;
+  final Color activeAccent;
   final Widget child;
 
   const _AchromaticWaterLensPill({
     required this.isDark,
     required this.useGlass,
+    required this.activeAccent,
     required this.child,
   });
 
@@ -280,7 +287,7 @@ class _AchromaticWaterLensPill extends StatelessWidget {
     if (!useGlass) {
       final solidBg = isDark ? const Color(0xFF222B34) : const Color(0xFFE2E8F0);
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: solidBg,
           borderRadius: BorderRadius.circular(23),
@@ -291,16 +298,18 @@ class _AchromaticWaterLensPill extends StatelessWidget {
     }
 
     return CustomPaint(
-      painter: _WaterDropletLensPainter(isDark: isDark),
+      painter: _WaterDropletLensPainter(isDark: isDark, activeAccent: activeAccent),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(23),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+              color: isDark
+                  ? activeAccent.withOpacity(0.18)
+                  : activeAccent.withOpacity(0.10),
               blurRadius: 10,
-              offset: const Offset(0, 3),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -314,8 +323,9 @@ class _AchromaticWaterLensPill extends StatelessWidget {
 /// CustomPainter rendering Achromatic Optical Water Meniscus & Specular Light Arc
 class _WaterDropletLensPainter extends CustomPainter {
   final bool isDark;
+  final Color activeAccent;
 
-  _WaterDropletLensPainter({required this.isDark});
+  _WaterDropletLensPainter({required this.isDark, required this.activeAccent});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -324,21 +334,21 @@ class _WaterDropletLensPainter extends CustomPainter {
       const Radius.circular(23),
     );
 
-    // 1. Water-Clear Translucent Refraction Body (100% Achromatic, ZERO cyan or blue)
+    // 1. Water-Clear Translucent Refraction Body with delicate harmonic accent aura
     final bodyPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                Colors.white.withOpacity(0.22), // Clean ambient specular catch
-                Colors.white.withOpacity(0.14),
-                Colors.white.withOpacity(0.09), // Pure neutral achromatic base
+                Color.lerp(Colors.white, activeAccent, 0.16)!.withOpacity(0.24),
+                Color.lerp(Colors.white, activeAccent, 0.12)!.withOpacity(0.15),
+                Color.lerp(Colors.white, activeAccent, 0.08)!.withOpacity(0.10),
               ]
             : [
-                Colors.black.withOpacity(0.08),
-                Colors.black.withOpacity(0.06),
-                Colors.black.withOpacity(0.04),
+                Color.lerp(Colors.black, activeAccent, 0.12)!.withOpacity(0.09),
+                Color.lerp(Colors.black, activeAccent, 0.08)!.withOpacity(0.06),
+                Color.lerp(Colors.black, activeAccent, 0.04)!.withOpacity(0.04),
               ],
       ).createShader(Offset.zero & size);
 
@@ -362,7 +372,7 @@ class _WaterDropletLensPainter extends CustomPainter {
 
     canvas.drawPath(topArcPath, topArcPaint);
 
-    // 3. Crisp Optical Contour (Very subtle white light refraction edge)
+    // 3. Crisp Optical Contour (Refraction rim with subtle accent specular gleam)
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.6
@@ -371,8 +381,8 @@ class _WaterDropletLensPainter extends CustomPainter {
         end: Alignment.bottomRight,
         colors: isDark
             ? [
-                const Color(0x40FFFFFF),
-                const Color(0x10FFFFFF),
+                Color.lerp(Colors.white, activeAccent, 0.25)!.withOpacity(0.45),
+                const Color(0x15FFFFFF),
                 const Color(0x05FFFFFF),
               ]
             : [
@@ -387,6 +397,6 @@ class _WaterDropletLensPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WaterDropletLensPainter oldDelegate) {
-    return oldDelegate.isDark != isDark;
+    return oldDelegate.isDark != isDark || oldDelegate.activeAccent != activeAccent;
   }
 }
