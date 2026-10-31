@@ -211,7 +211,7 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: const Color(0xFF38BDF8),
                             iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                             title: 'Engine Version',
-                            subtitle: 'FLAC Toolkit Mobile • Build 17 (Release)',
+                            subtitle: 'FLAC Toolkit Mobile • Build 18 (Release)',
                             position: position,
                             trailing: Text(
                               'v1.1.0',
