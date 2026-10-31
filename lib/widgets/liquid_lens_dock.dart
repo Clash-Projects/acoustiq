@@ -162,7 +162,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
