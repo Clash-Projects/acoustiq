@@ -526,13 +526,12 @@ class _AuditScreenState extends State<AuditScreen> {
                 ),
                 const SizedBox(width: 14),
 
-                // Title (2-line soft wrap) & Subtitle Specs
+                // Title & Subtitle with Clean 1-Line Non-wrapping Layout (LastWave Native Architecture)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Song Title: up to 2 lines with graceful wrap
                       Text(
                         track.title.isNotEmpty ? track.title : track.fileName,
                         style: TextStyle(
@@ -542,44 +541,21 @@ class _AuditScreenState extends State<AuditScreen> {
                           color: textColor,
                           height: 1.25,
                         ),
-                        maxLines: 2,
-                        softWrap: true,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      // Subtitle Row: Artist + Isolated Audio Specs Capsule (Zero Truncation!)
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              track.artist.isNotEmpty ? track.artist : 'Unknown Artist',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11.5,
-                                color: subTextColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0x20FFFFFF) : const Color(0xFFE5E7EB),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              '${(track.sampleRate / 1000).toStringAsFixed(0)}k • ${track.bitDepth}b • ${track.bitrateKbps}k',
-                              style: TextStyle(
-                                fontFamily: 'JetBrainsMono',
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? const Color(0xCCFFFFFF) : AppColors.lightTextSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 3),
+                      Text(
+                        track.artist.isNotEmpty
+                            ? '${track.artist} • ${(track.sampleRate / 1000).toStringAsFixed(0)}k/${track.bitDepth}b'
+                            : '${(track.sampleRate / 1000).toStringAsFixed(0)}k/${track.bitDepth}b • ${track.bitrateKbps}k',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12.0,
+                          color: subTextColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -916,15 +892,18 @@ class _TrackDetailModal extends StatelessWidget {
               maxLines: 1,
             ),
             const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.lightTextPrimary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                ),
+                maxLines: 1,
               ),
-              maxLines: 1,
             ),
           ],
         ),

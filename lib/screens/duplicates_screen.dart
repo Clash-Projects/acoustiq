@@ -525,8 +525,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     color: textColor,
                     height: 1.25,
                   ),
-                  maxLines: 2,
-                  softWrap: true,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -615,6 +614,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             fontSize: 11.5,
                             color: subTextColor,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           item.info.filePath.split('/').last,

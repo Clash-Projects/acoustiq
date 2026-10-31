@@ -213,7 +213,7 @@ class _InspectScreenState extends State<InspectScreen> {
                             ? (_info!.artist.isNotEmpty
                                 ? '${_info!.artist} • ${_info!.album}'
                                 : _info!.filePath.split('/').last)
-                            : 'Tap to inspect lossless audio authenticity, embedded artwork & Nyquist cutoff',
+                            : 'Tap to inspect audio authenticity & spectral cutoff',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 12,
@@ -347,7 +347,7 @@ class _InspectScreenState extends State<InspectScreen> {
 
               const SizedBox(height: 12),
 
-              // 4. Clean High-Contrast Spec Pills in Clear Glass (WWDC25 Clear Glass)
+              // 4. Clean High-Contrast Spec Pills in Clear Glass (FittedBox auto-scaling for mobile & tablet)
               Row(
                 children: [
                   _buildSpecTile('${_info!.bitDepth}-bit', 'Depth', isDark),
@@ -382,7 +382,7 @@ class _InspectScreenState extends State<InspectScreen> {
         borderRadius: BorderRadius.circular(14),
         style: GlassStyle.clear,
         borderless: false,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           children: [
             Text(
@@ -397,15 +397,18 @@ class _InspectScreenState extends State<InspectScreen> {
               maxLines: 1,
             ),
             const SizedBox(height: 3),
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.lightTextPrimary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                ),
+                maxLines: 1,
               ),
-              maxLines: 1,
             ),
           ],
         ),
@@ -421,7 +424,7 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.verified_user_rounded,
         iconColor: AppColors.genuineEmerald,
         iconBg: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-        title: 'Encoding & Analysis Verdict',
+        title: 'Audio Integrity',
         subtitle: _info!.verdict,
         trailing: Text(
           _info!.status == 'genuine' ? 'Lossless' : 'Transcode',
@@ -439,8 +442,8 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.graphic_eq_rounded,
         iconColor: AppColors.accentPrimary,
         iconBg: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
-        title: 'Channels & Audio Subframes',
-        subtitle: '${_info!.channels == 2 ? 'Stereo (2.0)' : 'Mono'} • FLAC Lossless Stream',
+        title: 'Audio Channels',
+        subtitle: '${_info!.channels == 2 ? 'Stereo (2.0)' : 'Mono'} • FLAC Stream',
         trailing: Text(
           '${_info!.channels} ch',
           style: TextStyle(
@@ -455,8 +458,8 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.timer_outlined,
         iconColor: const Color(0xFFA78BFA),
         iconBg: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
-        title: 'Track Duration & Bitrate',
-        subtitle: '${_info!.bitrateKbps} kbps average streaming rate',
+        title: 'Duration & Bitrate',
+        subtitle: '${_info!.bitrateKbps} kbps average',
         trailing: Text(
           _info!.durationStr,
           style: TextStyle(
@@ -471,7 +474,7 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.folder_open_rounded,
         iconColor: AppColors.suspiciousAmber,
         iconBg: isDark ? const Color(0x30FFB300) : const Color(0xFFFEF3C7),
-        title: 'Storage Path',
+        title: 'File Location',
         subtitle: _info!.filePath,
         trailing: null,
       ),

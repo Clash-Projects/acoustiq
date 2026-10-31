@@ -168,34 +168,34 @@ class FlacParser {
         } else {
           cutoffKhz = 19.5;
           score = 72;
-          verdict = 'Suspicious: Declared 24-bit with low bitrate';
+          verdict = 'Suspicious: Low Bitrate 24-bit';
           status = 'suspicious';
           isFake24 = true;
         }
       } else if (bitrateKbps >= 780) {
         cutoffKhz = 20.8;
         score = 98;
-        verdict = 'Genuine CD Lossless (Full dynamic spectrum > 20.5 kHz)';
+        verdict = 'Genuine CD Lossless (> 20.5 kHz)';
         status = 'genuine';
       } else if (bitrateKbps >= 600) {
         cutoffKhz = 19.5;
         score = 82;
-        verdict = 'High-Quality Lossless / Studio Master';
+        verdict = 'Genuine Lossless Master';
         status = 'genuine';
       } else if (bitrateKbps >= 480) {
         cutoffKhz = 18.2;
         score = 62;
-        verdict = 'Likely 192-256 kbps lossy upscale (Cutoff ~18 kHz)';
+        verdict = 'Suspicious: Lossy Upscale (~18 kHz)';
         status = 'suspicious';
       } else if (bitrateKbps >= 300) {
         cutoffKhz = 16.0;
         score = 38;
-        verdict = 'Low-quality fake FLAC (Cutoff ~16 kHz MP3 upscale)';
+        verdict = 'Fake: MP3 Upscale (~16 kHz)';
         status = 'fake';
       } else {
         cutoffKhz = 14.5;
         score = 20;
-        verdict = 'Severe brickwall cutoff / Heavy compression upscale';
+        verdict = 'Fake: Brickwall Lossy Transcode';
         status = 'fake';
       }
 
