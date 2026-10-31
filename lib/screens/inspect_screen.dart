@@ -36,6 +36,22 @@ class _InspectScreenState extends State<InspectScreen> {
   void initState() {
     super.initState();
     _info = widget.initialTrack;
+    if (_info == null && appState.recentFilePaths.isNotEmpty) {
+      _loadLastRecentTrack();
+    }
+  }
+
+  Future<void> _loadLastRecentTrack() async {
+    final recent = appState.recentFilePaths;
+    for (final path in recent) {
+      if (File(path).existsSync()) {
+        final analyzed = await FlacParser.analyzeFile(path);
+        if (mounted && analyzed.error == null) {
+          setState(() => _info = analyzed);
+        }
+        break;
+      }
+    }
   }
 
   Future<void> _pickAndAnalyzeFile() async {
@@ -49,6 +65,9 @@ class _InspectScreenState extends State<InspectScreen> {
       if (result != null && result.files.single.path != null) {
         final path = result.files.single.path!;
         final analyzed = await FlacParser.analyzeFile(path);
+        if (analyzed.error == null) {
+          appState.addRecentFilePath(path);
+        }
         setState(() {
           _info = analyzed;
           _isLoading = false;

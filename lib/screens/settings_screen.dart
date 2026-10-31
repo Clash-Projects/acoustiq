@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
@@ -645,7 +647,7 @@ class SettingsScreen extends StatelessWidget {
       (key: 'nebula', name: 'Obsidian\nNebula'),
       (key: 'abyss', name: 'Emerald\nAbyss'),
       (key: 'sunset', name: 'Sunset\nHorizon'),
-      (key: 'pure_black', name: 'Pure\nAMOLED'),
+      (key: 'solid', name: 'Solid\nCanvas'),
     ];
 
     final isCustom = appState.wallpaperPreset == 'custom';
@@ -935,21 +937,23 @@ class SettingsScreen extends StatelessWidget {
   );
   }
 
-  /// Launch file picker for custom gallery image
+  /// Launch modern Android photo picker for custom gallery image & sandbox cleanly
   Future<void> _pickCustomWallpaper(BuildContext context) async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-      );
-      if (result != null && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        appState.setCustomWallpaperPath(path);
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final targetFile = File('${appDir.path}/custom_ambient_wallpaper.jpg');
+        final bytes = await image.readAsBytes();
+        await targetFile.writeAsBytes(bytes, flush: true);
+        appState.setCustomWallpaperPath(targetFile.path);
         if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text(
-                'Custom wallpaper applied to ambient environment',
+                'Custom wallpaper sandboxed and applied to ambient environment',
                 style: TextStyle(fontFamily: 'Inter'),
               ),
               behavior: SnackBarBehavior.floating,

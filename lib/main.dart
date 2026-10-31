@@ -11,8 +11,9 @@ import 'ui/theme/colors.dart';
 import 'widgets/ambient_wallpaper.dart';
 import 'widgets/liquid_lens_dock.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await appState.init();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

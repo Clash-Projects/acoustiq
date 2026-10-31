@@ -52,6 +52,7 @@ class AmbientWallpaperView extends StatelessWidget {
             return _buildAbyssMesh(isDark);
           case 'sunset':
             return _buildSunsetMesh(isDark);
+          case 'solid':
           case 'pure_black':
             return _buildPureBlack(context, isDark);
           case 'nebula':
@@ -332,13 +333,14 @@ class AmbientWallpaperView extends StatelessWidget {
             ),
           ),
         );
+      case 'solid':
       case 'pure_black':
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            color: const Color(0xFF000000),
+            color: isDark ? const Color(0xFF101216) : const Color(0xFFF1F3F8),
             border: Border.all(
-              color: const Color(0x33FFFFFF),
+              color: isDark ? const Color(0x33FFFFFF) : const Color(0x18000000),
               width: 1,
             ),
           ),
