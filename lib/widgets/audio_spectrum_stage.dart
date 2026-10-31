@@ -24,6 +24,7 @@ class AudioSpectrumStage extends StatefulWidget {
   final String shortBadge;
   final Color statusColor;
   final double height;
+  final List<double> spectrumBands;
 
   const AudioSpectrumStage({
     super.key,
@@ -34,6 +35,7 @@ class AudioSpectrumStage extends StatefulWidget {
     this.shortBadge = 'GENUINE LOSSLESS',
     required this.statusColor,
     this.height = 136.0,
+    this.spectrumBands = const [],
   });
 
   @override
@@ -253,6 +255,7 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                               painter: _FrequencyShelfPainter(
                                 cutoffKhz: widget.cutoffKhz,
                                 maxKhz: safeMax,
+                                spectrumBands: widget.spectrumBands,
                                 entryProgress: entryVal,
                                 shimmerProgress: shimmerVal,
                                 statusColor: widget.statusColor,
@@ -381,6 +384,7 @@ class _SpeedometerDialPainter extends CustomPainter {
 class _FrequencyShelfPainter extends CustomPainter {
   final double cutoffKhz;
   final double maxKhz;
+  final List<double> spectrumBands;
   final double entryProgress;
   final double shimmerProgress;
   final Color statusColor;
@@ -390,6 +394,7 @@ class _FrequencyShelfPainter extends CustomPainter {
   _FrequencyShelfPainter({
     required this.cutoffKhz,
     required this.maxKhz,
+    this.spectrumBands = const [],
     required this.entryProgress,
     required this.shimmerProgress,
     required this.statusColor,
@@ -417,7 +422,7 @@ class _FrequencyShelfPainter extends CustomPainter {
     final curvePath = Path();
     curvePath.moveTo(0, baselineY);
 
-    const int pointCount = 50;
+    const int pointCount = 64;
     final List<Offset> points = [];
 
     final isBrickwall = cutoffKhz <= 18.5; // MP3 upscales exhibit brickwall cliff drops
@@ -430,10 +435,20 @@ class _FrequencyShelfPainter extends CustomPainter {
       if (f <= cutoffKhz) {
         // High frequency active audio spectrum
         final progressInActive = f / cutoffKhz;
-        // Natural acoustic slope: strong dynamic energy with gentle taper
-        final baseAmplitude = 0.88 - (progressInActive * 0.22);
+        double baseAmplitude;
+
+        if (spectrumBands.isNotEmpty) {
+          final bandIdx = (progressInActive * (spectrumBands.length - 1))
+              .round()
+              .clamp(0, spectrumBands.length - 1);
+          baseAmplitude = spectrumBands[bandIdx];
+        } else {
+          // Natural acoustic slope: strong dynamic energy with gentle taper
+          baseAmplitude = 0.88 - (progressInActive * 0.22);
+        }
+
         // Live harmonic micro-shimmer ripple
-        final shimmer = math.sin(progressInActive * 5 * math.pi + shimmerProgress * 2 * math.pi) * 2.8;
+        final shimmer = math.sin(progressInActive * 5 * math.pi + shimmerProgress * 2 * math.pi) * 2.2;
 
         if (isBrickwall && progressInActive > 0.94) {
           // Sharp vertical cliff drop for fake MP3
@@ -544,16 +559,35 @@ class _FrequencyShelfPainter extends CustomPainter {
       );
     }
     final xLimit = size.width;
-    _drawAxisLabel(
-      canvas,
-      '${cutoffKhz.toStringAsFixed(0)}k',
-      cutoffX,
-      baselineY + 2,
-      Alignment.center,
-      color: statusColor,
-      isBold: true,
-    );
-    _drawAxisLabel(canvas, '${maxKhz.toStringAsFixed(0)}k', xLimit, baselineY + 2, Alignment.centerRight);
+    if ((xLimit - cutoffX).abs() >= 28.0) {
+      _drawAxisLabel(
+        canvas,
+        '${cutoffKhz.toStringAsFixed(0)}k',
+        cutoffX,
+        baselineY + 2,
+        Alignment.center,
+        color: statusColor,
+        isBold: true,
+      );
+      _drawAxisLabel(
+        canvas,
+        '${maxKhz.toStringAsFixed(0)}k',
+        xLimit,
+        baselineY + 2,
+        Alignment.centerRight,
+      );
+    } else {
+      // Near boundary: avoid overlapping "2122k" glitch
+      _drawAxisLabel(
+        canvas,
+        '${cutoffKhz.toStringAsFixed(0)}k',
+        cutoffX,
+        baselineY + 2,
+        Alignment.centerRight,
+        color: statusColor,
+        isBold: true,
+      );
+    }
   }
 
   void _drawAxisLabel(

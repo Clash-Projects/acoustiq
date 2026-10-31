@@ -17,10 +17,14 @@ class FlacInfo {
   final Uint8List? coverBytes;
   final double cutoffKhz;
   final double maxKhz;
+  final double slopeDropDb;
   final int score;
   final String verdict;
   final String status; // "genuine", "suspicious", "fake"
   final bool isFake24;
+  final List<double> spectrumBands;
+  final bool hasLyrics;
+  final String? lyricsText;
   final String? error;
 
   FlacInfo({
@@ -40,10 +44,14 @@ class FlacInfo {
     this.coverBytes,
     required this.cutoffKhz,
     required this.maxKhz,
+    this.slopeDropDb = 0.0,
     required this.score,
     required this.verdict,
     required this.status,
     required this.isFake24,
+    this.spectrumBands = const [],
+    this.hasLyrics = false,
+    this.lyricsText,
     this.error,
   });
 
@@ -73,10 +81,14 @@ class FlacInfo {
       hasCover: false,
       cutoffKhz: 0,
       maxKhz: 0,
+      slopeDropDb: 0.0,
       score: 0,
       verdict: error,
       status: 'fake',
       isFake24: false,
+      spectrumBands: const [],
+      hasLyrics: false,
+      lyricsText: null,
       error: error,
     );
   }

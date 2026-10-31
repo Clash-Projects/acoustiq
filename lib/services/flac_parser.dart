@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import '../models/flac_info.dart';
+import 'audio_dsp.dart';
 
 class FlacParser {
   static Future<FlacInfo> analyzeFile(String filePath) async {
@@ -150,54 +151,23 @@ class FlacParser {
       final title = tags['title'] ?? stem;
       final artist = tags['artist'] ?? 'Unknown Artist';
       final album = tags['album'] ?? 'Unknown Album';
+      final lyrics = tags['lyrics'] ?? tags['unsyncedlyrics'];
+      final hasLyrics = lyrics != null && lyrics.trim().isNotEmpty;
 
       final maxKhz = double.parse(((sampleRate / 2000.0).clamp(0.0, 24.0)).toStringAsFixed(1));
 
-      double cutoffKhz = 20.8;
-      int score = 50;
-      String verdict = 'Moderate Quality';
-      String status = 'genuine';
-      bool isFake24 = false;
+      // Close random access file before running decoder on the file
+      await raf?.close();
+      raf = null;
 
-      if (bitDepth >= 24 && sampleRate >= 88200) {
-        if (bitrateKbps >= 1400) {
-          cutoffKhz = 22.0;
-          score = 100;
-          verdict = 'Genuine Hi-Res Studio Master';
-          status = 'genuine';
-        } else {
-          cutoffKhz = 19.5;
-          score = 72;
-          verdict = 'Suspicious: Low Bitrate 24-bit';
-          status = 'suspicious';
-          isFake24 = true;
-        }
-      } else if (bitrateKbps >= 780) {
-        cutoffKhz = 20.8;
-        score = 98;
-        verdict = 'Genuine CD Lossless (> 20.5 kHz)';
-        status = 'genuine';
-      } else if (bitrateKbps >= 600) {
-        cutoffKhz = 19.5;
-        score = 82;
-        verdict = 'Genuine Lossless Master';
-        status = 'genuine';
-      } else if (bitrateKbps >= 480) {
-        cutoffKhz = 18.2;
-        score = 62;
-        verdict = 'Suspicious: Lossy Upscale (~18 kHz)';
-        status = 'suspicious';
-      } else if (bitrateKbps >= 300) {
-        cutoffKhz = 16.0;
-        score = 38;
-        verdict = 'Fake: MP3 Upscale (~16 kHz)';
-        status = 'fake';
-      } else {
-        cutoffKhz = 14.5;
-        score = 20;
-        verdict = 'Fake: Brickwall Lossy Transcode';
-        status = 'fake';
-      }
+      // Real DSP Forensic Frequency & Cutoff Analysis (Desktop Parity)
+      final dspResult = await AudioDspEngine.analyze(
+        filePath: filePath,
+        sampleRate: sampleRate,
+        statedBitDepth: bitDepth,
+        durationSec: durationSec,
+        bitrateKbps: bitrateKbps,
+      );
 
       return FlacInfo(
         filePath: filePath,
@@ -214,12 +184,16 @@ class FlacParser {
         bitrateKbps: bitrateKbps,
         hasCover: hasCover,
         coverBytes: coverBytes,
-        cutoffKhz: cutoffKhz,
+        cutoffKhz: dspResult.cutoffKhz,
         maxKhz: maxKhz,
-        score: score,
-        verdict: verdict,
-        status: status,
-        isFake24: isFake24,
+        slopeDropDb: dspResult.slopeDropDb,
+        score: dspResult.score,
+        verdict: dspResult.verdict,
+        status: dspResult.status,
+        isFake24: dspResult.isFake24,
+        spectrumBands: dspResult.spectrumBands,
+        hasLyrics: hasLyrics,
+        lyricsText: lyrics,
       );
     } catch (e) {
       return FlacInfo.withError(filePath, fileName, 'Read error: $e');

@@ -744,6 +744,7 @@ class _TrackDetailModal extends StatelessWidget {
             score: track.score,
             cutoffKhz: track.cutoffKhz,
             maxKhz: track.maxKhz,
+            spectrumBands: track.spectrumBands,
             status: track.status,
             shortBadge: track.shortBadge,
             statusColor: statusColor,
