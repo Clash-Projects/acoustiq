@@ -13,12 +13,12 @@ import '../widgets/luminous_feedback.dart';
 /// 1:1 Port of LastWave Studio-Grade Audio Inspector Architecture
 ///
 /// Features:
-/// - Borderless AMOLED / Light mode container (zero cartoon box strokes).
+/// - Apple WWDC25 Frosted Glass Substrate with delicate 0.5dp specular light rim.
 /// - Embedded album cover artwork (72dp continuous squircle).
 /// - Studio Spectral Nyquist Analyzer Stage (32-band real-time audio frequency visualizer).
 /// - Iconic wavy-circle verified seal (Icons.verified_rounded) for genuine FLACs.
 /// - Concise studio-grade badges that never truncate.
-/// - 160dp bottom clearance (guarantees floating dock never obstructs content).
+/// - Calibrated 96dp bottom padding (content glides behind the liquid glass dock).
 class InspectScreen extends StatefulWidget {
   final FlacInfo? initialTrack;
 
@@ -94,6 +94,7 @@ class _InspectScreenState extends State<InspectScreen> {
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
+              // 96dp bottom padding: content glides behind the liquid glass dock!
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
               physics: const BouncingScrollPhysics(),
               child: Column(
@@ -116,7 +117,7 @@ class _InspectScreenState extends State<InspectScreen> {
 
                   const SizedBox(height: 12),
 
-                  // 1. Studio Audio Hero Stage (Zero-Border Architecture)
+                  // 1. Studio Audio Hero Stage (WWDC25 Frosted Glass Substrate)
                   _buildStudioHeroStage(isDark, textColor, subTextColor),
 
                   const SizedBox(height: 18),
@@ -145,7 +146,7 @@ class _InspectScreenState extends State<InspectScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(28),
         style: GlassStyle.frosted,
-        borderless: true, // ZERO BORDERS matching LastWave!
+        borderless: false, // Refined WWDC25 specular light rim active
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,7 +187,7 @@ class _InspectScreenState extends State<InspectScreen> {
                           : _fallbackArtwork(statusColor)),
                 ),
                 const SizedBox(width: 14),
-                // Title & Subtitle with Clean Wrapping
+                // Title & Subtitle with Clean 2-Line Soft Wrapping
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,6 +201,7 @@ class _InspectScreenState extends State<InspectScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: textColor,
+                          height: 1.25,
                         ),
                         maxLines: 2,
                         softWrap: true,
@@ -229,7 +231,7 @@ class _InspectScreenState extends State<InspectScreen> {
                 GlassSurface(
                   borderRadius: BorderRadius.circular(12),
                   style: GlassStyle.clear,
-                  borderless: true,
+                  borderless: false,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   child: Text(
                     _info != null ? 'Change' : 'Browse',
@@ -338,13 +340,14 @@ class _InspectScreenState extends State<InspectScreen> {
                     color: subTextColor,
                   ),
                   maxLines: 2,
+                  softWrap: true,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
 
               const SizedBox(height: 12),
 
-              // 4. Clean High-Contrast Spec Pills in Clear Glass (Zero Borders)
+              // 4. Clean High-Contrast Spec Pills in Clear Glass (WWDC25 Clear Glass)
               Row(
                 children: [
                   _buildSpecTile('${_info!.bitDepth}-bit', 'Depth', isDark),
@@ -378,7 +381,7 @@ class _InspectScreenState extends State<InspectScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(14),
         style: GlassStyle.clear,
-        borderless: true,
+        borderless: false,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         child: Column(
           children: [

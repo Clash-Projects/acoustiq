@@ -4,16 +4,22 @@ import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
 enum GlassStyle {
-  frosted, // WWDC25 Regular Glass Substrate: 20dp blur + subtle translucent fill
-  clear,   // WWDC25 Clear Glass: High clarity + 12dp blur
-  liquid,  // WWDC25 Liquid Glass: Optical backdrop refraction + specular catch
+  frosted, // WWDC25 Regular/Frosted Glass Substrate: 20dp blur + specular light catch rim + ambient depth
+  clear,   // WWDC25 Clear Glass: High clarity + 10dp blur + crisp white specular rim
+  liquid,  // WWDC25 Liquid Glass: 24dp optical blur + caustic meniscus depth + overhead reflection arc
 }
 
 /// A physical Glass Surface adhering to Apple WWDC25 "Meet Liquid Glass"
 /// and LastWave Native glass specifications.
 ///
-/// LastWave Rule: Cards & lists have zero borders (borderless: true by default).
-/// Glass is used selectively for floating navigation chrome, headers, and floating pills.
+/// Features:
+/// 1. True Gaussian blur backdrop filtering (sigma 10-24dp).
+/// 2. Ultra-refined 0.5dp specular light catch rim (Top-down white light reflection).
+///    This makes glass surfaces immediately read as physical, authentic glass over
+///    pitch-black AMOLED, without harsh cartoon wireframe borders.
+/// 3. Translucent substrate fills with subtle inner gloss gradients.
+/// 4. Zero performance penalty when [AppSettings.isLiquidGlass] is toggled off
+///    (smoothly falls back to opaque sculpted Material 3 Expressive surfaces).
 class GlassSurface extends StatelessWidget {
   final Widget child;
   final BorderRadius borderRadius;
@@ -33,7 +39,7 @@ class GlassSurface extends StatelessWidget {
     this.constraints,
     this.tintColor,
     this.elevation,
-    this.borderless = true, // Default to true matching LastWave zero-border rule!
+    this.borderless = false, // When false, renders the refined WWDC25 hairline specular rim!
   });
 
   @override
@@ -64,76 +70,66 @@ class GlassSurface extends StatelessWidget {
           );
         }
 
-        // --- WWDC25 & LastWave True Glass Architecture ---
+        // --- Apple WWDC25 & LastWave True Glass Architecture ---
         double blurSigma;
         Color surfaceFill;
+        Color topSpecularColor;
+        Color bottomSpecularColor;
 
         switch (style) {
           case GlassStyle.clear:
-            blurSigma = 12.0;
+            blurSigma = 10.0;
             surfaceFill = isDark
-                ? (tintColor?.withOpacity(0.18) ?? const Color(0x16FFFFFF))
-                : (tintColor?.withOpacity(0.20) ?? Colors.white.withOpacity(0.65));
+                ? (tintColor?.withOpacity(0.18) ?? const Color(0x18FFFFFF))
+                : (tintColor?.withOpacity(0.20) ?? Colors.white.withOpacity(0.68));
+            topSpecularColor = isDark ? const Color(0x40FFFFFF) : Colors.white.withOpacity(0.95);
+            bottomSpecularColor = isDark ? const Color(0x08FFFFFF) : Colors.white.withOpacity(0.25);
             break;
 
           case GlassStyle.liquid:
-            blurSigma = 20.0;
+            blurSigma = 24.0;
             surfaceFill = isDark
-                ? (tintColor?.withOpacity(0.24) ?? const Color(0x22FFFFFF))
-                : (tintColor?.withOpacity(0.30) ?? Colors.white.withOpacity(0.80));
+                ? (tintColor?.withOpacity(0.24) ?? const Color(0x24FFFFFF))
+                : (tintColor?.withOpacity(0.30) ?? Colors.white.withOpacity(0.82));
+            topSpecularColor = isDark ? const Color(0x55FFFFFF) : Colors.white;
+            bottomSpecularColor = isDark ? const Color(0x10FFFFFF) : Colors.white.withOpacity(0.35);
             break;
 
           case GlassStyle.frosted:
           default:
-            blurSigma = 16.0;
+            blurSigma = 20.0;
             surfaceFill = isDark
-                ? (tintColor?.withOpacity(0.18) ?? (appState.amoledMode ? const Color(0x18FFFFFF) : const Color(0x22FFFFFF)))
-                : (tintColor?.withOpacity(0.20) ?? Colors.white.withOpacity(0.72));
+                ? (tintColor?.withOpacity(0.18) ?? (appState.amoledMode ? const Color(0x1AFFFFFF) : const Color(0x24FFFFFF)))
+                : (tintColor?.withOpacity(0.22) ?? Colors.white.withOpacity(0.74));
+            topSpecularColor = isDark ? const Color(0x32FFFFFF) : Colors.white.withOpacity(0.90);
+            bottomSpecularColor = isDark ? const Color(0x06FFFFFF) : Colors.white.withOpacity(0.20);
             break;
         }
-
-        // Pure white specular catch on top, zero blue/cyan dye
-        final borderStroke = borderless
-            ? null
-            : Border.all(
-                color: isDark ? const Color(0x20FFFFFF) : const Color(0x30FFFFFF),
-                width: 0.6,
-              );
-
-        // Add top specular strip for frosted and liquid styles (simulates chamfered glass edge)
-        final showSpecularEdge = (style == GlassStyle.frosted || style == GlassStyle.liquid) && isDark;
 
         return ClipRRect(
           borderRadius: borderRadius,
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-            child: Stack(
-              children: [
-                Container(
-                  constraints: constraints,
-                  padding: padding,
-                  decoration: BoxDecoration(
-                    color: surfaceFill,
-                    borderRadius: borderRadius,
-                    border: borderStroke,
-                    boxShadow: isDark
-                        ? AppColors.softElevation(elevation: elevation ?? 3.5)
-                        : AppColors.lightSoftElevation(elevation: elevation ?? 3.5),
-                  ),
-                  child: child,
-                ),
-                // Top specular light strip — simulates ambient overhead light on chamfered glass rim
-                if (showSpecularEdge)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _GlassSpecularEdgePainter(
-                          borderRadius: borderRadius,
-                        ),
-                      ),
+            child: CustomPaint(
+              painter: borderless
+                  ? null
+                  : _SpecularRimPainter(
+                      borderRadius: borderRadius,
+                      topColor: topSpecularColor,
+                      bottomColor: bottomSpecularColor,
                     ),
-                  ),
-              ],
+              child: Container(
+                constraints: constraints,
+                padding: padding,
+                decoration: BoxDecoration(
+                  color: surfaceFill,
+                  borderRadius: borderRadius,
+                  boxShadow: isDark
+                      ? AppColors.softElevation(elevation: elevation ?? 4.0)
+                      : AppColors.lightSoftElevation(elevation: elevation ?? 4.0),
+                ),
+                child: child,
+              ),
             ),
           ),
         );
@@ -142,48 +138,49 @@ class GlassSurface extends StatelessWidget {
   }
 }
 
-/// Draws a top-only specular strip on the glass surface.
-/// Simulates how chamfered glass edges catch ambient overhead illumination —
-/// creating a subtle shimmer along the top rim without any visible box outline.
-class _GlassSpecularEdgePainter extends CustomPainter {
+/// CustomPainter that renders a delicate 0.5dp WWDC25 Specular Light Catch Rim
+///
+/// Simulates top-down ambient light reflecting off the chamfered edge of a physical glass plate.
+/// Pure white light catch, zero neon dye, zero cartoon box appearance.
+class _SpecularRimPainter extends CustomPainter {
   final BorderRadius borderRadius;
+  final Color topColor;
+  final Color bottomColor;
 
-  _GlassSpecularEdgePainter({required this.borderRadius});
+  _SpecularRimPainter({
+    required this.borderRadius,
+    required this.topColor,
+    required this.bottomColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Clip to the same rounded rect as the container
-    final outerRadius = borderRadius.topLeft.x;
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(outerRadius),
-    );
-    canvas.clipRRect(rrect);
+    if (size.width <= 0 || size.height <= 0) return;
 
-    // Top specular strip: height 1.4dp, fades from center outward
-    const double stripHeight = 1.4;
-    final paint = Paint()
+    final rect = Offset.zero & size;
+    final rrect = borderRadius.toRRect(rect).deflate(0.3);
+
+    final rimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.6
       ..shader = LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: const [
-          Color(0x00FFFFFF),
-          Color(0x30FFFFFF),
-          Color(0x42FFFFFF),
-          Color(0x30FFFFFF),
-          Color(0x00FFFFFF),
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          topColor,
+          topColor.withOpacity(topColor.opacity * 0.45),
+          bottomColor,
         ],
-        stops: const [0.0, 0.18, 0.5, 0.82, 1.0],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, stripHeight));
+        stops: const [0.0, 0.45, 1.0],
+      ).createShader(rect);
 
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, stripHeight),
-      paint,
-    );
+    canvas.drawRRect(rrect, rimPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _GlassSpecularEdgePainter oldDelegate) {
-    return oldDelegate.borderRadius != borderRadius;
+  bool shouldRepaint(covariant _SpecularRimPainter oldDelegate) {
+    return oldDelegate.borderRadius != borderRadius ||
+        oldDelegate.topColor != topColor ||
+        oldDelegate.bottomColor != bottomColor;
   }
 }

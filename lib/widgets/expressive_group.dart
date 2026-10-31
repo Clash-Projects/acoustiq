@@ -5,12 +5,12 @@ import '../ui/theme/shape.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
 
-/// 1:1 Port of LastWave Native's ExpressiveGroup Architecture
+/// 1:1 Port of LastWave Native's ExpressiveGroup Architecture with WWDC25 Glass Substrate
 ///
-/// A group of rows reads as ONE continuous premium sculpted surface rather
+/// A group of rows reads as ONE continuous premium sculpted glass surface rather
 /// than a stack of separate cards — first row rounded on top (28dp), last row
 /// rounded on the bottom (28dp), middle rows nearly square (6dp), all separated by a
-/// hairline 3dp gap with ZERO border outlines.
+/// hairline 3dp gap with a delicate top-down specular light catch.
 class ExpressiveGroup extends StatelessWidget {
   final int rowCount;
   final Widget Function(BuildContext context, int index, GroupPosition position) itemBuilder;
@@ -50,8 +50,9 @@ class ExpressiveGroup extends StatelessWidget {
 ///
 /// Features:
 /// - Exact 28dp/6dp continuous corner curvature based on position.
-/// - Borderless tonal surface (zero cartoon wireframe borders).
+/// - WWDC25 Regular Glass Substrate with delicate specular rim reflection.
 /// - 44dp squircle icon badge (14dp radius).
+/// - 2-line responsive soft-wrapping (prevents hard pixel truncation).
 /// - High-contrast readable typography in both dark AMOLED and light modes.
 /// - Luminous subtle touch feedback ripple.
 class ExpressiveGroupRow extends StatelessWidget {
@@ -105,9 +106,9 @@ class ExpressiveGroupRow extends StatelessWidget {
           child: GlassSurface(
             borderRadius: shape,
             style: GlassStyle.frosted,
-            borderless: true, // ZERO BORDERS matching LastWave!
-            constraints: const BoxConstraints(minHeight: 62),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            borderless: false, // WWDC25 specular light rim active
+            constraints: const BoxConstraints(minHeight: 64),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             child: Row(
               children: [
                 // 44dp Squircle Icon Badge
@@ -125,7 +126,7 @@ class ExpressiveGroupRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 14),
-                // Title & Subtitle with Clean Wrapping (No Cutoff)
+                // Title & Subtitle with Clean 2-Line Wrapping (No Truncation)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +140,8 @@ class ExpressiveGroupRow extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: textColor,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
+                        softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (subtitle != null) ...[
@@ -153,6 +155,7 @@ class ExpressiveGroupRow extends StatelessWidget {
                             color: subTextColor,
                           ),
                           maxLines: 2,
+                          softWrap: true,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],

@@ -9,13 +9,13 @@ import '../widgets/luminous_feedback.dart';
 /// 1:1 Port of LastWave Native's Settings Screen Architecture (Appearance & Visuals)
 ///
 /// Features:
-/// - Concise studio-grade copywriting (eliminates verbose multi-line clutter).
+/// - Apple WWDC25 Frosted & Clear Glass surfaces with refined specular rim.
 /// - Connected Group Architecture with 3dp gaps and 28dp/6dp continuous curvature.
 /// - Pure Pitch Black AMOLED vs Deep Graphite toggle with instant live repaint.
 /// - Liquid Glass toggle switching between optical translucent blur and opaque surfaces.
 /// - High-contrast Light Mode typography and segment controls.
-/// - Zero text truncation.
-/// - 160dp bottom padding clearance.
+/// - Zero text truncation: 2-line soft-wrapping on all descriptions.
+/// - Calibrated 96dp bottom padding (content glides behind the liquid glass dock).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -33,6 +33,7 @@ class SettingsScreen extends StatelessWidget {
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
+              // 96dp bottom padding: content glides behind the liquid glass dock!
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
               physics: const BouncingScrollPhysics(),
               child: Column(
@@ -200,7 +201,7 @@ class SettingsScreen extends StatelessWidget {
                             icon: Icons.library_music_rounded,
                             iconColor: const Color(0xFFA78BFA),
                             iconBgColor: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
-                            title: 'Scanned Library Tracks',
+                            title: 'Scanned Tracks',
                             subtitle: appState.lastScannedFolder != null
                                 ? appState.lastScannedFolder!.split('/').last
                                 : 'No folder scanned yet',
@@ -258,7 +259,7 @@ class SettingsScreen extends StatelessWidget {
     return GlassSurface(
       borderRadius: shape,
       style: GlassStyle.frosted,
-      borderless: true,
+      borderless: false, // Refined WWDC25 specular light rim active
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +301,8 @@ class SettingsScreen extends StatelessWidget {
                         fontSize: 11.5,
                         color: subTextColor,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
+                      softWrap: true,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -333,7 +335,7 @@ class SettingsScreen extends StatelessWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(12),
         style: GlassStyle.clear,
-        borderless: true,
+        borderless: false,
         tintColor: isSelected
             ? (isDark ? const Color(0x40818CF8) : const Color(0xFFDCE2FF))
             : null,

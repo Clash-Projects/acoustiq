@@ -13,12 +13,11 @@ import '../widgets/luminous_feedback.dart';
 /// 1:1 Port of LastWave Native's Connected Group Architecture for Duplicate Track Management
 ///
 /// Features:
-/// - WWDC25 Frosted & Clear Glass surfaces.
+/// - Apple WWDC25 Frosted & Clear Glass surfaces.
 /// - Connected Groups with 3dp gaps and 28dp/6dp continuous curvature.
 /// - Luminous amber ripple feedback on interactions.
-/// - High-contrast Light Mode typography and stat pills.
-/// - Pure pitch black AMOLED vs Graphite background with ZERO border outlines.
-/// - 160dp bottom padding clearance.
+/// - Zero Truncation: 2-line title wrapping for duplicate tracks.
+/// - Calibrated 96dp bottom padding (content glides behind the liquid glass dock).
 class DuplicatesScreen extends StatefulWidget {
   const DuplicatesScreen({super.key});
 
@@ -148,35 +147,37 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
         final best = sorted.first;
         final items = sorted.map((track) {
-          final isBest = track == best;
-          final reason = isBest
-              ? 'Highest authenticity score & bit depth (${track.score}% / ${track.bitDepth}-bit)'
-              : 'Redundant copy (${track.score}% / ${track.bitDepth}-bit)';
+          final isBest = identical(track, best);
+          String reason;
+          if (isBest) {
+            reason = 'Highest authenticity (${track.score}%) • ${track.bitDepth}-bit/${(track.sampleRate / 1000).toStringAsFixed(1)}k';
+          } else {
+            reason = 'Redundant copy (${track.score}% purity) • ${(track.sampleRate / 1000).toStringAsFixed(1)}k';
+          }
           return DuplicateItem(info: track, isBest: isBest, reason: reason);
         }).toList();
 
-        groups.add(
-          DuplicateGroup(
-            key: entry.key,
-            title: best.title.isNotEmpty ? best.title : best.fileName,
-            artist: best.artist.isNotEmpty ? best.artist : 'Unknown Artist',
-            items: items,
-          ),
-        );
+        final first = sorted.first;
+        groups.add(DuplicateGroup(
+          key: entry.key,
+          title: first.title.isNotEmpty ? first.title : first.fileName,
+          artist: first.artist.isNotEmpty ? first.artist : 'Unknown Artist',
+          items: items,
+        ));
       }
     }
 
-    setState(() {
-      _groups = groups;
-    });
+    if (mounted) {
+      setState(() => _groups = groups);
+    }
   }
 
-  String _sanitize(String s) {
-    return s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  String _sanitize(String text) {
+    return text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
-  Future<void> _confirmDeleteTrack(FlacInfo track) async {
-    final confirmed = await showDialog<bool>(
+  void _confirmDeleteTrack(FlacInfo track) {
+    showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: appState.getCardBgColor(context),
@@ -189,7 +190,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
           ),
         ),
         content: Text(
-          'Are you sure you want to permanently delete:\n\n${track.fileName}\n(${track.filePath})?',
+          'This will permanently delete:\n${track.fileName}\n(${track.fileSizeMb.toStringAsFixed(1)} MB)\n\nYour highest quality version will be preserved.',
           style: TextStyle(
             color: appState.getSubTextColor(context),
             fontSize: 13,
@@ -275,7 +276,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   ),
                 ),
 
-                // Hero Stage (Frosted Glass Substrate)
+                // Hero Stage (WWDC25 Frosted Glass Substrate)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -290,12 +291,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   ),
                 ),
 
-                // Duplicate Sets List (Connected Groups)
-                if (_groups.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: Center(
+                // Duplicate Sets List
+                if (_groups.isEmpty && !_isScanning)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -323,6 +325,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   )
                 else
                   SliverPadding(
+                    // 96dp bottom padding: content glides behind the liquid glass dock!
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
@@ -360,6 +363,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(28),
         style: GlassStyle.frosted,
+        borderless: false, // Refined WWDC25 specular light rim active
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -465,6 +469,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(14),
         style: GlassStyle.clear,
+        borderless: false,
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
         child: Column(
           children: [
@@ -518,6 +523,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: textColor,
+                    height: 1.25,
                   ),
                   maxLines: 2,
                   softWrap: true,
@@ -548,6 +554,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             return GlassSurface(
               borderRadius: shape,
               style: GlassStyle.frosted,
+              borderless: false, // Refined WWDC25 specular light rim active
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [

@@ -15,10 +15,9 @@ import '../widgets/luminous_feedback.dart';
 /// - Borderless AMOLED Track Rows (Tracks sit natively on #000000 canvas with zero cartoon borders).
 /// - 48dp Squircle Album Art with smooth 12dp continuous curvature.
 /// - Iconic wavy-circle verified seal (Icons.verified_rounded) for genuine FLACs.
+/// - Zero Truncation Architecture: 2-line title wrapping + isolated fixed-width audio specs capsule.
 /// - Rich Studio Spectral Nyquist Analyzer Stage inside song details modal bottom sheet.
-/// - Concise studio-grade badges that never truncate.
-/// - Luminous emerald touch feedback ripple across track items.
-/// - 160dp bottom padding clearance.
+/// - Calibrated 96dp bottom padding (album art smoothly flows behind the liquid glass dock).
 class AuditScreen extends StatefulWidget {
   const AuditScreen({super.key});
 
@@ -153,7 +152,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   ),
                 ),
 
-                // 2. Library Hero Action & Statistics Card (Borderless)
+                // 2. Library Hero Action & Statistics Card (WWDC25 Frosted Glass Substrate)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -170,7 +169,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   ),
                 ),
 
-                // 3. Filter Segment Pills Row (Borderless)
+                // 3. Filter Segment Pills Row (Clear Glass)
                 if (tracks.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -231,6 +230,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   )
                 else
                   SliverPadding(
+                    // 96dp bottom padding: Content smoothly glides behind the 56dp liquid glass dock!
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
@@ -273,7 +273,7 @@ class _AuditScreenState extends State<AuditScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(28),
         style: GlassStyle.frosted,
-        borderless: true, // ZERO BORDERS!
+        borderless: false, // Refined WWDC25 specular light rim active
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -358,7 +358,7 @@ class _AuditScreenState extends State<AuditScreen> {
 
             const SizedBox(height: 18),
 
-            // Telemetry Pills Row (Borderless)
+            // Telemetry Pills Row (Clear Glass Substrates)
             Row(
               children: [
                 _buildStatPill(
@@ -411,7 +411,7 @@ class _AuditScreenState extends State<AuditScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(16),
         style: GlassStyle.clear,
-        borderless: true,
+        borderless: false,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         child: Column(
           children: [
@@ -454,7 +454,7 @@ class _AuditScreenState extends State<AuditScreen> {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(20),
         style: GlassStyle.clear,
-        borderless: true,
+        borderless: false,
         tintColor: isSelected
             ? (isDark ? const Color(0x4000D2FF) : const Color(0xFFCCE8FE))
             : null,
@@ -472,13 +472,13 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
-  /// LastWave Borderless Track Row Architecture
+  /// LastWave Borderless Track Row Architecture (Zero Truncation)
   ///
   /// Matches LastWave screenshot_1.png and screenshot_6.png:
   /// - 0 box containers or outlines. Tracks sit directly on AMOLED black.
   /// - 48dp continuous squircle artwork.
-  /// - Single-line semibold track title with clean ellipsis.
-  /// - Muted technical metadata subtitle (sample rate, bit depth, format).
+  /// - 2-line title wrapping (prevents truncation on long song names).
+  /// - Dedicated audio specs capsule (sample rate, bit depth, bitrate are never pushed off).
   /// - Wavy circle verified seal (Icons.verified_rounded) for genuine FLACs.
   /// - Luminous subtle touch feedback on tap.
   Widget _buildBorderlessTrackRow({
@@ -502,6 +502,7 @@ class _AuditScreenState extends State<AuditScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 48dp Squircle Artwork Thumbnail (12dp radius)
                 Container(
@@ -525,12 +526,13 @@ class _AuditScreenState extends State<AuditScreen> {
                 ),
                 const SizedBox(width: 14),
 
-                // Title & Subtitle with Clean Wrapping
+                // Title (2-line soft wrap) & Subtitle Specs
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Song Title: up to 2 lines with graceful wrap
                       Text(
                         track.title.isNotEmpty ? track.title : track.fileName,
                         style: TextStyle(
@@ -538,12 +540,14 @@ class _AuditScreenState extends State<AuditScreen> {
                           fontSize: 14.5,
                           fontWeight: FontWeight.w600,
                           color: textColor,
+                          height: 1.25,
                         ),
                         maxLines: 2,
+                        softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 3),
-                      // Split subtitle: artist (truncatable) + spec badge (always visible)
+                      const SizedBox(height: 4),
+                      // Subtitle Row: Artist + Isolated Audio Specs Capsule (Zero Truncation!)
                       Row(
                         children: [
                           Flexible(
@@ -558,20 +562,20 @@ class _AuditScreenState extends State<AuditScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 6),
                           Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0x1AFFFFFF) : const Color(0xFFE5E5EA),
-                              borderRadius: BorderRadius.circular(6),
+                              color: isDark ? const Color(0x20FFFFFF) : const Color(0xFFE5E7EB),
+                              borderRadius: BorderRadius.circular(5),
                             ),
                             child: Text(
-                              '${track.bitDepth}b·${(track.sampleRate / 1000).toStringAsFixed(0)}k',
+                              '${(track.sampleRate / 1000).toStringAsFixed(0)}k • ${track.bitDepth}b • ${track.bitrateKbps}k',
                               style: TextStyle(
                                 fontFamily: 'JetBrainsMono',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? const Color(0xAAFFFFFF) : AppColors.lightTextMuted,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xCCFFFFFF) : AppColors.lightTextSecondary,
                               ),
                             ),
                           ),
@@ -633,8 +637,7 @@ class _AuditScreenState extends State<AuditScreen> {
 
 /// Rich Studio Audio Inspector Modal Bottom Sheet with Spectral Analyzer Stage
 ///
-/// Fixes User Complaint #4: Displays the full Studio Spectral Nyquist Analyzer Stage,
-/// dynamic cutoff frequency, score ring/gauge, and verified seal for individual songs!
+/// Features Apple WWDC25 Frosted Glass Substrate with real Gaussian blur & specular rim.
 class _TrackDetailModal extends StatelessWidget {
   final FlacInfo track;
 
@@ -661,7 +664,7 @@ class _TrackDetailModal extends StatelessWidget {
     return GlassSurface(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       style: GlassStyle.frosted,
-      borderless: true,
+      borderless: false, // Refined WWDC25 top specular rim
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -680,7 +683,7 @@ class _TrackDetailModal extends StatelessWidget {
           ),
           const SizedBox(height: 18),
 
-          // 1. Header: Artwork + Title + Artist + Verified Seal
+          // 1. Header: Artwork + Title + Artist + Verified Seal (No Truncation)
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -714,6 +717,7 @@ class _TrackDetailModal extends StatelessWidget {
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: textColor,
+                              height: 1.25,
                             ),
                             maxLines: 2,
                             softWrap: true,
@@ -819,7 +823,7 @@ class _TrackDetailModal extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // 3. Studio Spectral Nyquist Analyzer Stage (Fixes User Item #4!)
+          // 3. Studio Spectral Nyquist Analyzer Stage
           AudioSpectrumStage(
             cutoffKhz: track.cutoffKhz,
             maxKhz: track.maxKhz,
@@ -838,13 +842,14 @@ class _TrackDetailModal extends StatelessWidget {
                 color: subTextColor,
               ),
               maxLines: 2,
+              softWrap: true,
               overflow: TextOverflow.ellipsis,
             ),
           ),
 
           const SizedBox(height: 12),
 
-          // 4. Quick Specs in Clear Glass (Zero Borders)
+          // 4. Quick Specs in Clear Glass (WWDC25 Clear Glass)
           Row(
             children: [
               _buildModalSpecTile('${track.bitDepth}-bit', 'Depth', isDark),
@@ -863,7 +868,7 @@ class _TrackDetailModal extends StatelessWidget {
           GlassSurface(
             borderRadius: BorderRadius.circular(14),
             style: GlassStyle.clear,
-            borderless: true,
+            borderless: false,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
@@ -895,7 +900,7 @@ class _TrackDetailModal extends StatelessWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(12),
         style: GlassStyle.clear,
-        borderless: true,
+        borderless: false,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           children: [
