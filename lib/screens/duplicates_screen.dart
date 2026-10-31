@@ -70,9 +70,19 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     }
   }
 
-  Future<void> _scanForDuplicates() async {
-    final dirPath = await FilePicker.platform.getDirectoryPath();
-    if (dirPath == null) return;
+  Future<void> _startScan(String dirPath) async {
+    final dir = Directory(dirPath);
+    if (!dir.existsSync()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Folder not found: $dirPath'),
+            backgroundColor: AppColors.fakeCoral,
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
       _isScanning = true;
@@ -83,13 +93,21 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     final List<FlacInfo> tracks = [];
 
     try {
-      final dir = Directory(dirPath);
       final List<File> flacFiles = [];
 
       await for (final entity in dir.list(recursive: true, followLinks: false)) {
         if (entity is File && entity.path.toLowerCase().endsWith('.flac')) {
           flacFiles.add(entity);
         }
+      }
+
+      if (flacFiles.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No .flac files found in $dirPath'),
+            backgroundColor: AppColors.suspiciousAmber,
+          ),
+        );
       }
 
       for (final file in flacFiles) {
@@ -118,6 +136,297 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         setState(() => _isScanning = false);
       }
     }
+  }
+
+  Future<void> _pickFolderAndScan() async {
+    final dirPath = await FilePicker.platform.getDirectoryPath();
+    if (dirPath != null) {
+      _startScan(dirPath);
+    }
+  }
+
+  void _showScanOptions() {
+    final isDark = appState.isCurrentDark(context);
+    final textColor = appState.getTextColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+    final activeAccent = appState.getAccentColor(context);
+    final lastFolder = appState.lastScannedFolder;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: GlassSurface(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            style: GlassStyle.frosted,
+            borderless: false,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Scan Audio Duplicates',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Select a music source to find redundant and lossy duplicates',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: subTextColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (lastFolder != null && lastFolder.isNotEmpty) ...[
+                  LuminousFeedback(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _startScan(lastFolder);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: GlassSurface(
+                      borderRadius: BorderRadius.circular(16),
+                      style: GlassStyle.clear,
+                      borderless: false,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.replay_rounded, color: activeAccent, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Re-scan Recent Folder',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  lastFolder,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 11,
+                                    color: subTextColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                LuminousFeedback(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _startScan('/storage/emulated/0/Music');
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: GlassSurface(
+                    borderRadius: BorderRadius.circular(16),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.library_music_rounded, color: AppColors.genuineEmerald, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Quick Scan Device Music',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '/storage/emulated/0/Music • 1-Tap direct scan',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  color: subTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                LuminousFeedback(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _startScan('/storage/emulated/0/Download');
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: GlassSurface(
+                    borderRadius: BorderRadius.circular(16),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.download_rounded, color: Color(0xFF38BDF8), size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Quick Scan Downloads',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '/storage/emulated/0/Download • FLAC downloads',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  color: subTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                LuminousFeedback(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickFolderAndScan();
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: GlassSurface(
+                    borderRadius: BorderRadius.circular(16),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.suspiciousAmber.withOpacity(isDark ? 0.20 : 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.folder_open_rounded, color: AppColors.suspiciousAmber, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Browse Custom Folder...',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Select any directory using system file picker',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  color: subTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _analyzeDuplicates(List<FlacInfo> tracks) {
@@ -311,7 +620,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             const SizedBox(height: 12),
                             Text(
                               appState.sharedLibrary.isEmpty
-                                  ? 'No library scanned yet\nTap the hero card above to audit your music folder'
+                                  ? 'No library scanned yet\nChoose a music source below to audit duplicates'
                                   : 'No duplicate FLAC sets found in library!\nYour collection has zero redundant audio files',
                               textAlign: TextAlign.center,
                               style: TextStyle(
@@ -320,6 +629,68 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                 color: subTextColor,
                               ),
                             ),
+                            if (appState.sharedLibrary.isEmpty) ...[
+                              const SizedBox(height: 18),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  LuminousFeedback(
+                                    onTap: () => _startScan('/storage/emulated/0/Music'),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: GlassSurface(
+                                      borderRadius: BorderRadius.circular(14),
+                                      style: GlassStyle.clear,
+                                      borderless: false,
+                                      tintColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.library_music_rounded, size: 16, color: activeAccent),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Quick Scan Music',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: activeAccent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  LuminousFeedback(
+                                    onTap: _showScanOptions,
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: GlassSurface(
+                                      borderRadius: BorderRadius.circular(14),
+                                      style: GlassStyle.clear,
+                                      borderless: false,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.folder_open_rounded, size: 16, color: subTextColor),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Browse',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -360,7 +731,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     required Color activeAccent,
   }) {
     return LuminousFeedback(
-      onTap: _isScanning ? null : _scanForDuplicates,
+      onTap: _isScanning ? null : _showScanOptions,
       variant: LuminousVariant.amber,
       borderRadius: BorderRadius.circular(28),
       child: GlassSurface(

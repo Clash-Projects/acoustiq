@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_settings.dart';
@@ -8,6 +9,7 @@ import '../ui/theme/shape.dart';
 import '../widgets/audio_spectrum_stage.dart';
 import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
+import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Studio-Grade Audio Inspector Architecture
@@ -52,6 +54,296 @@ class _InspectScreenState extends State<InspectScreen> {
         break;
       }
     }
+  }
+
+  Future<void> _loadFileFromPath(String path) async {
+    setState(() => _isLoading = true);
+    try {
+      final analyzed = await FlacParser.analyzeFile(path);
+      if (analyzed.error == null) {
+        appState.addRecentFilePath(path);
+      }
+      if (mounted) {
+        setState(() {
+          _info = analyzed;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error analyzing file: $e'),
+            backgroundColor: AppColors.fakeCoral,
+          ),
+        );
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _onSelectTrackTapped() {
+    if (appState.recentFilePaths.isEmpty && appState.sharedLibrary.isEmpty) {
+      _pickAndAnalyzeFile();
+    } else {
+      _showTrackSelectionSheet();
+    }
+  }
+
+  void _showTrackSelectionSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = appState.isCurrentDark(context);
+        final textColor = appState.getTextColor(context);
+        final subTextColor = appState.getSubTextColor(context);
+        final activeAccent = appState.getAccentColor(context);
+        final recent = appState.recentFilePaths;
+        final library = appState.sharedLibrary;
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.78,
+          ),
+          child: GlassSurface(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            style: GlassStyle.frosted,
+            borderless: false,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Choose FLAC Track',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
+                    ),
+                    LuminousFeedback(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pickAndAnalyzeFile();
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: GlassSurface(
+                        borderRadius: BorderRadius.circular(12),
+                        style: GlassStyle.clear,
+                        borderless: false,
+                        tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.12),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.folder_open_rounded, size: 14, color: activeAccent),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Browse Files',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: activeAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      if (recent.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 6),
+                          child: Text(
+                            'RECENT TRACKS',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: subTextColor,
+                            ),
+                          ),
+                        ),
+                        ...recent.take(5).map((path) {
+                          final name = path.split('/').last;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: LuminousFeedback(
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _loadFileFromPath(path);
+                              },
+                              borderRadius: BorderRadius.circular(14),
+                              child: GlassSurface(
+                                borderRadius: BorderRadius.circular(14),
+                                style: GlassStyle.clear,
+                                borderless: false,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.history_rounded, size: 20, color: activeAccent),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: textColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            path,
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 10.5,
+                                              color: subTextColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.chevron_right_rounded, size: 16, color: subTextColor),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                      if (library.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12, bottom: 6),
+                          child: Text(
+                            'FROM AUDITED LIBRARY (${library.length})',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: subTextColor,
+                            ),
+                          ),
+                        ),
+                        ...library.take(30).map((t) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: LuminousFeedback(
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                setState(() => _info = t);
+                                appState.addRecentFilePath(t.filePath);
+                              },
+                              borderRadius: BorderRadius.circular(14),
+                              child: GlassSurface(
+                                borderRadius: BorderRadius.circular(14),
+                                style: GlassStyle.clear,
+                                borderless: false,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(10),
+                                        color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: t.hasCover && t.coverBytes != null
+                                          ? Image.memory(t.coverBytes!, fit: BoxFit.cover)
+                                          : Icon(Icons.album_rounded, size: 18, color: _getStatusColor(t.status)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            t.title.isNotEmpty ? t.title : t.fileName,
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: textColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            t.artist.isNotEmpty ? t.artist : '${t.bitDepth}-bit • ${(t.sampleRate / 1000).toStringAsFixed(1)}k',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 11,
+                                              color: subTextColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '${t.score}%',
+                                      style: TextStyle(
+                                        fontFamily: 'JetBrainsMono',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: _getStatusColor(t.status),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _pickAndAnalyzeFile() async {
@@ -160,7 +452,7 @@ class _InspectScreenState extends State<InspectScreen> {
     final statusColor = _info != null ? _getStatusColor(_info!.status) : activeAccent;
 
     return LuminousFeedback(
-      onTap: _isLoading ? null : _pickAndAnalyzeFile,
+      onTap: _isLoading ? null : _onSelectTrackTapped,
       variant: _info?.status == 'genuine' ? LuminousVariant.emerald : LuminousVariant.cyan,
       borderRadius: BorderRadius.circular(28),
       child: GlassSurface(
@@ -248,19 +540,23 @@ class _InspectScreenState extends State<InspectScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                GlassSurface(
+                LuminousFeedback(
+                  onTap: _isLoading ? null : _onSelectTrackTapped,
                   borderRadius: BorderRadius.circular(12),
-                  style: GlassStyle.clear,
-                  borderless: false,
-                  tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.12),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  child: Text(
-                    _info != null ? 'Change' : 'Browse',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: activeAccent,
+                  child: GlassSurface(
+                    borderRadius: BorderRadius.circular(12),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    child: Text(
+                      _info != null ? 'Change' : 'Browse',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: activeAccent,
+                      ),
                     ),
                   ),
                 ),
@@ -392,6 +688,7 @@ class _InspectScreenState extends State<InspectScreen> {
                 : AppColors.fakeCoral,
           ),
         ),
+        onTap: null,
       ),
       (
         icon: Icons.graphic_eq_rounded,
@@ -408,6 +705,7 @@ class _InspectScreenState extends State<InspectScreen> {
             color: subTextColor,
           ),
         ),
+        onTap: null,
       ),
       (
         icon: Icons.timer_outlined,
@@ -424,22 +722,35 @@ class _InspectScreenState extends State<InspectScreen> {
             color: textColor,
           ),
         ),
+        onTap: null,
       ),
       (
         icon: Icons.lyrics_rounded,
         iconColor: const Color(0xFF38BDF8),
         iconBg: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
         title: 'Integrated Lyrics',
-        subtitle: _info!.hasLyrics ? 'Vorbis Lyrics embedded in FLAC stream' : 'No lyrics metadata detected in file',
-        trailing: Text(
-          _info!.hasLyrics ? 'Present' : 'None',
-          style: TextStyle(
-            fontFamily: 'JetBrainsMono',
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: _info!.hasLyrics ? AppColors.genuineEmerald : subTextColor,
-          ),
+        subtitle: _info!.hasLyrics
+            ? 'Vorbis Lyrics embedded in FLAC • Tap to view'
+            : 'No lyrics metadata detected in file',
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _info!.hasLyrics ? 'View' : 'None',
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _info!.hasLyrics ? AppColors.genuineEmerald : subTextColor,
+              ),
+            ),
+            if (_info!.hasLyrics) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded, size: 16, color: activeAccent),
+            ],
+          ],
         ),
+        onTap: _info!.hasLyrics ? () => showLyricsViewerSheet(context, _info!) : null,
       ),
       (
         icon: Icons.folder_open_rounded,
@@ -448,6 +759,7 @@ class _InspectScreenState extends State<InspectScreen> {
         title: 'File Location',
         subtitle: _info!.filePath,
         trailing: null,
+        onTap: null,
       ),
     ];
 
@@ -463,6 +775,7 @@ class _InspectScreenState extends State<InspectScreen> {
           subtitle: r.subtitle,
           position: position,
           trailing: r.trailing,
+          onTap: r.onTap,
         );
       },
     );

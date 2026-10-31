@@ -6,11 +6,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/app_settings.dart';
+import '../models/flac_info.dart';
+import '../services/flac_parser.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
 import '../widgets/ambient_wallpaper.dart';
 import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
+import '../widgets/luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's Settings Architecture (Appearance & Visuals)
 ///
@@ -25,6 +28,57 @@ import '../widgets/glass_surface.dart';
 /// 7. 96dp bottom padding (content glides behind the floating dock).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  Future<void> _quickScanDeviceMusic(BuildContext context) async {
+    const path = '/storage/emulated/0/Music';
+    final dir = Directory(path);
+    if (!dir.existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Music directory /storage/emulated/0/Music not found'),
+          backgroundColor: AppColors.fakeCoral,
+        ),
+      );
+      return;
+    }
+
+    if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Scanning /storage/emulated/0/Music in background...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final List<FlacInfo> tracks = [];
+    try {
+      await for (final entity in dir.list(recursive: true, followLinks: false)) {
+        if (entity is File && entity.path.toLowerCase().endsWith('.flac')) {
+          final info = await FlacParser.analyzeFile(entity.path);
+          tracks.add(info);
+        }
+      }
+      appState.setSharedLibrary(tracks, path);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Audited ${tracks.length} tracks from Music folder'),
+            backgroundColor: AppColors.genuineEmerald,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Scan error: $e'),
+            backgroundColor: AppColors.fakeCoral,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,35 +185,20 @@ class SettingsScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 3. EXPERIMENTAL & INTERACTION
-                  buildSectionHeader('Experimental & Physics', subTextColor),
+                  // 4. FORENSIC AUDIO ENGINE & DSP
+                  buildSectionHeader('Forensic Audio Engine & DSP', subTextColor),
                   ExpressiveGroup(
-                    rowCount: 3,
+                    rowCount: 4,
                     itemBuilder: (context, index, position) {
                       switch (index) {
                         case 0:
-                          // Haptic Feedback
-                          return ExpressiveGroupRow(
-                            icon: Icons.vibration_rounded,
-                            iconColor: AppColors.genuineEmerald,
-                            iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-                            title: 'Haptic Feedback',
-                            subtitle: 'Tactile spring clicks on dock glide & actions',
-                            position: position,
-                            trailing: Switch.adaptive(
-                              value: appState.hapticsEnabled,
-                              activeColor: AppColors.genuineEmerald,
-                              onChanged: (val) => appState.setHaptics(val),
-                            ),
-                          );
-                        case 1:
-                          // High-Precision Forensic Analyzer
+                          // High-Precision Forensic FFT Analyzer
                           return ExpressiveGroupRow(
                             icon: Icons.graphic_eq_rounded,
                             iconColor: activeAccent,
                             iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
                             title: 'Forensic Spectrum Stage',
-                            subtitle: '2D Nyquist shelf curve with brickwall cutoff detector',
+                            subtitle: '128-band FFT spectral analyzer with Welch PSD & Hann windowing',
                             position: position,
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -178,15 +217,67 @@ class SettingsScreen extends StatelessWidget {
                               ),
                             ),
                           );
+                        case 1:
+                          // Brickwall Cutoff Steepness Probe
+                          return ExpressiveGroupRow(
+                            icon: Icons.analytics_outlined,
+                            iconColor: const Color(0xFF38BDF8),
+                            iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
+                            title: 'Brickwall Cutoff Detector',
+                            subtitle: '38 dB acoustic steepness check flags MP3/AAC transcodes',
+                            position: position,
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'ACTIVE',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF38BDF8),
+                                ),
+                              ),
+                            ),
+                          );
                         case 2:
+                          // Hardware MediaCodec Bit-Depth Probe
+                          return ExpressiveGroupRow(
+                            icon: Icons.memory_rounded,
+                            iconColor: const Color(0xFFA78BFA),
+                            iconBgColor: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
+                            title: 'Hardware MediaCodec Probe',
+                            subtitle: 'Decodes raw PCM chunks to expose 24-bit zero-padded upscales',
+                            position: position,
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFA78BFA).withOpacity(isDark ? 0.20 : 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'ON',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFA78BFA),
+                                ),
+                              ),
+                            ),
+                          );
+                        case 3:
                         default:
-                          // Duplicate FLAC Auto-Marking
+                          // Duplicate FLAC Auto-Ranking Engine
                           return ExpressiveGroupRow(
                             icon: Icons.copy_all_rounded,
                             iconColor: AppColors.suspiciousAmber,
                             iconBgColor: isDark ? const Color(0x30FFB300) : const Color(0xFFFEF3C7),
                             title: 'Duplicate FLAC Engine',
-                            subtitle: 'Auto-identify and rank pure audio vs lossy upscales',
+                            subtitle: 'Auto-identify and rank pure studio masters vs redundant copies',
                             position: position,
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -211,39 +302,19 @@ class SettingsScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 4. ABOUT & STORAGE
-                  buildSectionHeader('System & Storage', subTextColor),
+                  // 5. STORAGE & MUSIC LIBRARY
+                  buildSectionHeader('Storage & Music Library', subTextColor),
                   ExpressiveGroup(
-                    rowCount: 3,
+                    rowCount: 4,
                     itemBuilder: (context, index, position) {
                       switch (index) {
                         case 0:
-                          return ExpressiveGroupRow(
-                            icon: Icons.info_outline_rounded,
-                            iconColor: const Color(0xFF38BDF8),
-                            iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
-                            title: 'Engine Version',
-                            subtitle: 'FLAC Toolkit Mobile • Build 19 (Release)',
-                            position: position,
-                            trailing: Text(
-                              'v1.1.0',
-                              style: TextStyle(
-                                fontFamily: 'JetBrainsMono',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
-                              ),
-                            ),
-                          );
-                        case 1:
                           return ExpressiveGroupRow(
                             icon: Icons.library_music_rounded,
                             iconColor: const Color(0xFFA78BFA),
                             iconBgColor: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
                             title: 'Audited Library',
-                            subtitle: appState.lastScannedFolder != null
-                                ? appState.lastScannedFolder!.split('/').last
-                                : 'No folder scanned yet',
+                            subtitle: 'Indexed and verified FLAC tracks in memory',
                             position: position,
                             trailing: Text(
                               '${appState.sharedLibrary.length} tracks',
@@ -255,7 +326,30 @@ class SettingsScreen extends StatelessWidget {
                               ),
                             ),
                           );
+                        case 1:
+                          return ExpressiveGroupRow(
+                            icon: Icons.folder_rounded,
+                            iconColor: AppColors.suspiciousAmber,
+                            iconBgColor: isDark ? const Color(0x30FFB300) : const Color(0xFFFEF3C7),
+                            title: 'Source Music Directory',
+                            subtitle: appState.lastScannedFolder != null
+                                ? appState.lastScannedFolder!
+                                : 'No folder scanned yet',
+                            position: position,
+                            trailing: null,
+                          );
                         case 2:
+                          return ExpressiveGroupRow(
+                            icon: Icons.flash_on_rounded,
+                            iconColor: AppColors.genuineEmerald,
+                            iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
+                            title: '1-Tap Quick Scan Music',
+                            subtitle: '/storage/emulated/0/Music • Direct scan with zero SAF prompt',
+                            position: position,
+                            onTap: () => _quickScanDeviceMusic(context),
+                            trailing: Icon(Icons.play_arrow_rounded, color: AppColors.genuineEmerald, size: 20),
+                          );
+                        case 3:
                         default:
                           return ExpressiveGroupRow(
                             icon: Icons.delete_outline_rounded,
@@ -273,6 +367,83 @@ class SettingsScreen extends StatelessWidget {
                                 ),
                               );
                             },
+                          );
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 6. ABOUT & TOOLKIT DIAGNOSTICS
+                  buildSectionHeader('About & Toolkit Diagnostics', subTextColor),
+                  ExpressiveGroup(
+                    rowCount: 3,
+                    itemBuilder: (context, index, position) {
+                      switch (index) {
+                        case 0:
+                          return ExpressiveGroupRow(
+                            icon: Icons.info_outline_rounded,
+                            iconColor: const Color(0xFF38BDF8),
+                            iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
+                            title: 'Engine Version',
+                            subtitle: 'FLAC Toolkit Mobile • Build 20 (Release)',
+                            position: position,
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'v1.1.0+20',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: activeAccent,
+                                ),
+                              ),
+                            ),
+                          );
+                        case 1:
+                          return ExpressiveGroupRow(
+                            icon: Icons.vibration_rounded,
+                            iconColor: AppColors.genuineEmerald,
+                            iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
+                            title: 'Haptic Feedback',
+                            subtitle: 'Tactile spring clicks on dock glide & button taps',
+                            position: position,
+                            trailing: Switch.adaptive(
+                              value: appState.hapticsEnabled,
+                              activeColor: AppColors.genuineEmerald,
+                              onChanged: (val) => appState.setHaptics(val),
+                            ),
+                          );
+                        case 2:
+                        default:
+                          return ExpressiveGroupRow(
+                            icon: Icons.verified_user_rounded,
+                            iconColor: AppColors.genuineEmerald,
+                            iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
+                            title: 'Integrity Standard',
+                            subtitle: 'Read-only forensic analysis engine guarantees 100% audio safety',
+                            position: position,
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'VERIFIED',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.genuineEmerald,
+                                ),
+                              ),
+                            ),
                           );
                       }
                     },
