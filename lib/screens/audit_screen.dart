@@ -741,7 +741,7 @@ class _TrackDetailModal extends StatelessWidget {
             status: track.status,
             shortBadge: track.shortBadge,
             statusColor: statusColor,
-            height: 94,
+            height: 136,
           ),
 
           Padding(

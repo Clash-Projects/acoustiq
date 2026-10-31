@@ -257,7 +257,7 @@ class _InspectScreenState extends State<InspectScreen> {
                 status: _info!.status,
                 shortBadge: _info!.shortBadge,
                 statusColor: statusColor,
-                height: 94,
+                height: 136,
               ),
 
               // Detailed explanation text under spectrum

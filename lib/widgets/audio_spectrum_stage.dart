@@ -33,7 +33,7 @@ class AudioSpectrumStage extends StatefulWidget {
     this.status = 'genuine',
     this.shortBadge = 'GENUINE LOSSLESS',
     required this.statusColor,
-    this.height = 94.0,
+    this.height = 136.0,
   });
 
   @override
@@ -106,21 +106,21 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 1. Left: Radial Purity Speedometer Dial (~88dp width)
+                  // 1. Left: Radial Purity Speedometer Dial (~104dp width)
                   SizedBox(
-                    width: 88,
+                    width: 104,
                     height: widget.height,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(
-                          width: 66,
-                          height: 66,
+                          width: 88,
+                          height: 88,
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
                               CustomPaint(
-                                size: const Size(66, 66),
+                                size: const Size(88, 88),
                                 painter: _SpeedometerDialPainter(
                                   score: widget.score,
                                   entryProgress: entryVal,
@@ -136,20 +136,21 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                                     '${(widget.score * entryVal).round()}%',
                                     style: TextStyle(
                                       fontFamily: 'JetBrainsMono',
-                                      fontSize: 16,
+                                      fontSize: 22,
                                       fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.5,
+                                      letterSpacing: -0.6,
                                       color: textColor,
-                                      height: 1.1,
+                                      height: 1.05,
                                     ),
                                   ),
+                                  const SizedBox(height: 1),
                                   Text(
                                     'PURITY',
                                     style: TextStyle(
                                       fontFamily: 'Inter',
-                                      fontSize: 7.5,
+                                      fontSize: 8.5,
                                       fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.6,
+                                      letterSpacing: 0.8,
                                       color: subTextColor,
                                     ),
                                   ),
@@ -158,10 +159,10 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         // Status Badge Tag below dial
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                           decoration: BoxDecoration(
                             color: widget.statusColor.withOpacity(isDark ? 0.20 : 0.12),
                             borderRadius: BorderRadius.circular(10),
@@ -175,16 +176,16 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                                     : (widget.status == 'suspicious'
                                         ? Icons.warning_amber_rounded
                                         : Icons.cancel_rounded),
-                                size: 10,
+                                size: 11,
                                 color: widget.statusColor,
                               ),
-                              const SizedBox(width: 3),
+                              const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
                                   widget.status.toUpperCase(),
                                   style: TextStyle(
                                     fontFamily: 'Inter',
-                                    fontSize: 8.5,
+                                    fontSize: 9.0,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.4,
                                     color: widget.statusColor,
@@ -203,8 +204,8 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                   // Divider
                   Container(
                     width: 1,
-                    height: widget.height - 12,
-                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    height: widget.height - 16,
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
                     color: isDark ? const Color(0x18FFFFFF) : const Color(0x12000000),
                   ),
 
@@ -221,13 +222,13 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.graphic_eq_rounded, size: 12, color: widget.statusColor),
+                                  Icon(Icons.graphic_eq_rounded, size: 13, color: widget.statusColor),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Cutoff: ${widget.cutoffKhz.toStringAsFixed(1)} kHz',
                                     style: TextStyle(
                                       fontFamily: 'JetBrainsMono',
-                                      fontSize: 11,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                       color: textColor,
                                     ),
@@ -238,7 +239,7 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                                 'Limit: ${safeMax.toStringAsFixed(1)}k',
                                 style: TextStyle(
                                   fontFamily: 'JetBrainsMono',
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: subTextColor,
                                 ),
@@ -293,7 +294,7 @@ class _SpeedometerDialPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    const strokeWidth = 5.2;
+    const strokeWidth = 6.4;
     final radius = (size.width - strokeWidth) / 2;
 
     const startAngle = 135 * (math.pi / 180); // 135 deg
@@ -352,14 +353,14 @@ class _SpeedometerDialPainter extends CustomPainter {
       // Diffuse halo glow
       canvas.drawCircle(
         tipPos,
-        5.5 * pulse,
+        6.5 * pulse,
         Paint()..color = statusColor.withOpacity(0.38 * pulse),
       );
 
       // Bright solid core bead
       canvas.drawCircle(
         tipPos,
-        3.0,
+        3.5,
         Paint()..color = Colors.white,
       );
     }
@@ -398,8 +399,8 @@ class _FrequencyShelfPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final baselineY = size.height - 13.0; // Leaves 13dp for bottom axis labels
-    const peakY = 5.0;
+    final baselineY = size.height - 15.0; // Leaves 15dp for bottom axis labels
+    const peakY = 4.0;
     final availableHeight = baselineY - peakY;
 
     final cutoffRatio = (cutoffKhz / maxKhz).clamp(0.05, 1.0);
@@ -432,7 +433,7 @@ class _FrequencyShelfPainter extends CustomPainter {
         // Natural acoustic slope: strong dynamic energy with gentle taper
         final baseAmplitude = 0.88 - (progressInActive * 0.22);
         // Live harmonic micro-shimmer ripple
-        final shimmer = math.sin(progressInActive * 5 * math.pi + shimmerProgress * 2 * math.pi) * 2.2;
+        final shimmer = math.sin(progressInActive * 5 * math.pi + shimmerProgress * 2 * math.pi) * 2.8;
 
         if (isBrickwall && progressInActive > 0.94) {
           // Sharp vertical cliff drop for fake MP3
@@ -496,7 +497,7 @@ class _FrequencyShelfPainter extends CustomPainter {
 
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
+      ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round
       ..color = statusColor;
 
@@ -507,7 +508,7 @@ class _FrequencyShelfPainter extends CustomPainter {
       final laserPulse = 0.70 + 0.30 * math.sin(shimmerProgress * 2 * math.pi);
       final laserPaint = Paint()
         ..color = statusColor.withOpacity(0.70 * laserPulse)
-        ..strokeWidth = 1.2
+        ..strokeWidth = 1.3
         ..style = PaintingStyle.stroke;
 
       // Draw vertical dashed guide
@@ -524,7 +525,7 @@ class _FrequencyShelfPainter extends CustomPainter {
       // Small glowing bead at cutoff apex
       canvas.drawCircle(
         Offset(cutoffX, peakY + 2),
-        2.5,
+        3.0,
         Paint()..color = statusColor,
       );
     }
@@ -568,7 +569,7 @@ class _FrequencyShelfPainter extends CustomPainter {
       text: text,
       style: TextStyle(
         fontFamily: 'JetBrainsMono',
-        fontSize: 8.0,
+        fontSize: 9.0,
         fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
         color: color ?? subTextColor.withOpacity(0.6),
       ),
