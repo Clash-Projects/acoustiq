@@ -1,21 +1,23 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
 import '../ui/theme/colors.dart';
+import '../widgets/audio_spectrum_stage.dart';
+import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's Mix & Track List Stage for FLAC Audio Auditing
 ///
 /// Features:
 /// - Iconic wavy-circle verified seal (Icons.verified_rounded) for genuine FLACs.
+/// - WWDC25 Frosted & Clear Glass surfaces across hero cards, stat pills, and filters.
+/// - Rich Studio Spectral Nyquist Analyzer Stage inside song details modal bottom sheet.
+/// - Multi-line title wrapping for long track names.
 /// - Luminous emerald touch feedback ripple across track items.
-/// - High-contrast Light Mode typography and stat pills.
-/// - Pure pitch black AMOLED vs Graphite background with ZERO border outlines.
-/// - 140dp bottom padding clearance.
+/// - 160dp bottom padding clearance.
 class AuditScreen extends StatefulWidget {
   const AuditScreen({super.key});
 
@@ -150,7 +152,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   ),
                 ),
 
-                // 2. Hero Stage (Single Sculpted Obsidian Surface, Zero Borders)
+                // 2. Hero Stage (Frosted Glass Substrate)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -167,7 +169,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   ),
                 ),
 
-                // 3. Filter Chips Row
+                // 3. Filter Chips Row (Clear Glass Pills)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -222,13 +224,13 @@ class _AuditScreenState extends State<AuditScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final track = filteredTracks[index];
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: _buildTransparentTrackRow(
                               track: track,
                               isDark: isDark,
@@ -260,151 +262,155 @@ class _AuditScreenState extends State<AuditScreen> {
     required Color textColor,
     required Color subTextColor,
   }) {
-    final cardBg = appState.getCardBgColor(context);
-
-    return Material(
-      color: cardBg,
+    return LuminousFeedback(
+      onTap: _isScanning ? null : _scanFolder,
+      variant: LuminousVariant.emerald,
       borderRadius: BorderRadius.circular(28),
-      elevation: isDark ? 0 : 2,
-      shadowColor: Colors.black.withOpacity(0.04),
-      child: InkWell(
-        onTap: _isScanning ? null : _scanFolder,
+      child: GlassSurface(
         borderRadius: BorderRadius.circular(28),
-        splashColor: AppColors.accentPrimary.withOpacity(0.10),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '$tracksCount',
-                              style: TextStyle(
-                                fontFamily: 'JetBrainsMono',
-                                fontSize: 36,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.8,
-                                color: textColor,
-                              ),
+        style: GlassStyle.frosted,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '$tracksCount',
+                            style: TextStyle(
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 36,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.8,
+                              color: textColor,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'FLACs Audited',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: subTextColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _isScanning
-                              ? 'Scanning... audited $_scannedCount tracks'
-                              : (appState.lastScannedFolder != null
-                                  ? appState.lastScannedFolder!.split('/').last
-                                  : 'Tap to select music folder to batch audit'),
-                          maxLines: 2,
-                          softWrap: true,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            color: subTextColor,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E2638) : const Color(0xFFE0F7FE),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: _isScanning
-                        ? const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: AppColors.accentPrimary,
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'FLACs Audited',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: subTextColor,
                             ),
-                          )
-                        : const Icon(
-                            Icons.folder_open_rounded,
-                            color: AppColors.accentPrimary,
-                            size: 22,
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _isScanning
+                            ? 'Scanning... audited $_scannedCount tracks'
+                            : (appState.lastScannedFolder != null
+                                ? appState.lastScannedFolder!.split('/').last
+                                : 'Tap to select music folder to batch audit'),
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: _isScanning
+                      ? const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: AppColors.accentPrimary,
+                            ),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.folder_open_rounded,
+                          color: AppColors.accentPrimary,
+                          size: 22,
+                        ),
+                ),
+              ],
+            ),
 
-              const SizedBox(height: 18),
+            const SizedBox(height: 18),
 
-              // High-Contrast Telemetry Pills Row
-              Row(
-                children: [
-                  _buildStatPill('Genuine', '$genuineCount', AppColors.genuineEmerald, isDark),
-                  const SizedBox(width: 6),
-                  _buildStatPill('Suspect', '$suspiciousCount', AppColors.suspiciousAmber, isDark),
-                  const SizedBox(width: 6),
-                  _buildStatPill('Fake', '$fakeCount', AppColors.fakeCoral, isDark),
-                  const SizedBox(width: 6),
-                  _buildStatPill('Avg Score', '$averageScore%', AppColors.accentPrimary, isDark),
-                ],
-              ),
-            ],
-          ),
+            // High-Contrast Clear Glass Telemetry Pills Row
+            Row(
+              children: [
+                _buildStatPill(
+                  'GENUINE',
+                  '$genuineCount',
+                  AppColors.genuineEmerald,
+                  isDark ? const Color(0x2500E676) : const Color(0xFFDCFCE7),
+                  isDark,
+                ),
+                const SizedBox(width: 6),
+                _buildStatPill(
+                  'SUSPECT',
+                  '$suspiciousCount',
+                  AppColors.suspiciousAmber,
+                  isDark ? const Color(0x25FFB300) : const Color(0xFFFEF3C7),
+                  isDark,
+                ),
+                const SizedBox(width: 6),
+                _buildStatPill(
+                  'FAKE',
+                  '$fakeCount',
+                  AppColors.fakeCoral,
+                  isDark ? const Color(0x25FF5252) : const Color(0xFFFFEBEE),
+                  isDark,
+                ),
+                const SizedBox(width: 6),
+                _buildStatPill(
+                  'AVG SCORE',
+                  '$averageScore%',
+                  AppColors.accentPrimary,
+                  isDark ? const Color(0x2500D2FF) : const Color(0xFFE0F7FE),
+                  isDark,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStatPill(String label, String value, Color color, bool isDark) {
-    Color pillBg = isDark ? const Color(0xFF1B1B1B) : const Color(0xFFF0F0F4);
-    Color fgColor = color;
-
-    if (!isDark) {
-      if (color == AppColors.genuineEmerald) {
-        pillBg = AppColors.lightEmeraldPillBg;
-        fgColor = AppColors.lightEmeraldText;
-      } else if (color == AppColors.suspiciousAmber) {
-        pillBg = AppColors.lightAmberPillBg;
-        fgColor = AppColors.lightAmberText;
-      } else if (color == AppColors.fakeCoral) {
-        pillBg = AppColors.lightCoralPillBg;
-        fgColor = AppColors.lightCoralText;
-      } else {
-        pillBg = AppColors.lightCyanPillBg;
-        fgColor = AppColors.lightCyanText;
-      }
-    }
-
+  Widget _buildStatPill(
+    String label,
+    String value,
+    Color accentColor,
+    Color chipBg,
+    bool isDark,
+  ) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
-        decoration: BoxDecoration(
-          color: pillBg,
-          borderRadius: BorderRadius.circular(14),
-        ),
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(16),
+        style: GlassStyle.clear,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         child: Column(
           children: [
             Text(
-              label.toUpperCase(),
+              label,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 8.5,
@@ -414,15 +420,16 @@ class _AuditScreenState extends State<AuditScreen> {
               ),
               maxLines: 1,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               value,
               style: TextStyle(
                 fontFamily: 'JetBrainsMono',
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: fgColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: accentColor,
               ),
+              maxLines: 1,
             ),
           ],
         ),
@@ -432,21 +439,19 @@ class _AuditScreenState extends State<AuditScreen> {
 
   Widget _buildFilterPill(String label, String filterKey, bool isDark) {
     final isSelected = _filter == filterKey;
-    final bg = isSelected
-        ? (isDark ? const Color(0xFF242E3D) : const Color(0xFFE0F2FE))
-        : (isDark ? const Color(0xFF141414) : const Color(0xFFEAEAEE));
     final fg = isSelected
-        ? AppColors.accentPrimary
+        ? (isDark ? Colors.white : AppColors.lightTextPrimary)
         : (isDark ? const Color(0x99FFFFFF) : AppColors.lightTextSecondary);
 
     return GestureDetector(
       onTap: () => setState(() => _filter = filterKey),
-      child: Container(
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(20),
+        style: GlassStyle.clear,
+        tintColor: isSelected
+            ? (isDark ? const Color(0x4000D2FF) : const Color(0xFFCCE8FE))
+            : null,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(100),
-        ),
         child: Text(
           label,
           style: TextStyle(
@@ -460,7 +465,7 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
-  /// Seamless Transparent Track Row with Luminous Emerald Touch Feedback
+  /// Track Row with Soft Wrapping & Luminous Emerald Feedback
   Widget _buildTransparentTrackRow({
     required FlacInfo track,
     required bool isDark,
@@ -473,21 +478,19 @@ class _AuditScreenState extends State<AuditScreen> {
     return LuminousFeedback(
       onTap: onTap,
       variant: LuminousVariant.emerald,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.transparent : Colors.white.withOpacity(0.50),
-          borderRadius: BorderRadius.circular(16),
-        ),
+      borderRadius: BorderRadius.circular(18),
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(18),
+        style: GlassStyle.frosted,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         child: Row(
           children: [
-            // 52dp Continuous Squircle Artwork Thumbnail
+            // 52dp Squircle Artwork Thumbnail
             Container(
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5EA),
+                color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
@@ -507,7 +510,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   : _fallbackCover(statusColor),
             ),
             const SizedBox(width: 14),
-            // Title, Artist & Technical Badges
+            // Title (2-line soft wrap), Artist & Technical Badges
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,10 +520,11 @@ class _AuditScreenState extends State<AuditScreen> {
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: textColor,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
@@ -536,67 +540,59 @@ class _AuditScreenState extends State<AuditScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
-                      _buildTinyBadge('${track.bitDepth}-bit', isDark),
+                      _buildSpecChip('${track.bitDepth}-bit', isDark),
                       const SizedBox(width: 4),
-                      _buildTinyBadge('${(track.sampleRate / 1000).toStringAsFixed(1)}k', isDark),
+                      _buildSpecChip('${(track.sampleRate / 1000).toStringAsFixed(1)}k', isDark),
                       const SizedBox(width: 4),
-                      _buildTinyBadge('${track.bitrateKbps}k', isDark),
+                      _buildSpecChip('${track.bitrateKbps}k', isDark),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            // Wavy Circle Verified Seal & Purity Score
+            const SizedBox(width: 10),
+            // Status Icon & Authenticity Score Badge
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      track.status == 'genuine'
-                          ? Icons.verified_rounded
-                          : (track.status == 'suspicious'
-                              ? Icons.warning_amber_rounded
-                              : Icons.cancel_rounded),
-                      size: 16,
-                      color: isDark
-                          ? statusColor
-                          : (track.status == 'genuine'
-                              ? AppColors.lightEmeraldText
-                              : (track.status == 'suspicious'
-                                  ? AppColors.lightAmberText
-                                  : AppColors.lightCoralText)),
-                    ),
+                    if (track.status == 'genuine')
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 16,
+                        color: AppColors.genuineEmerald,
+                      )
+                    else
+                      Icon(
+                        track.status == 'suspicious'
+                            ? Icons.warning_amber_rounded
+                            : Icons.cancel_rounded,
+                        size: 16,
+                        color: statusColor,
+                      ),
                     const SizedBox(width: 4),
                     Text(
                       '${track.score}%',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
                         fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? statusColor
-                            : (track.status == 'genuine'
-                                ? AppColors.lightEmeraldText
-                                : (track.status == 'suspicious'
-                                    ? AppColors.lightAmberText
-                                    : AppColors.lightCoralText)),
+                        fontWeight: FontWeight.w800,
+                        color: statusColor,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   track.durationStr,
                   style: TextStyle(
                     fontFamily: 'JetBrainsMono',
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
                     color: subTextColor,
                   ),
                 ),
@@ -608,11 +604,11 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
-  Widget _buildTinyBadge(String text, bool isDark) {
+  Widget _buildSpecChip(String text, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8E8EE),
+        color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFF0F0F4),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -638,7 +634,7 @@ class _AuditScreenState extends State<AuditScreen> {
   }
 }
 
-/// Track Detail Modal Bottom Sheet (Frosted Glass with 28dp Blur)
+/// Rich Studio Audio Inspector Modal Bottom Sheet with Spectral Analyzer Stage
 class _TrackDetailModal extends StatelessWidget {
   final FlacInfo track;
 
@@ -650,138 +646,270 @@ class _TrackDetailModal extends StatelessWidget {
     final textColor = appState.getTextColor(context);
     final subTextColor = appState.getSubTextColor(context);
 
-    return ClipRRect(
+    Color statusColor;
+    switch (track.status) {
+      case 'genuine':
+        statusColor = AppColors.genuineEmerald;
+        break;
+      case 'suspicious':
+        statusColor = AppColors.suspiciousAmber;
+        break;
+      default:
+        statusColor = AppColors.fakeCoral;
+    }
+
+    return GlassSurface(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xE6121212) : Colors.white.withOpacity(0.92),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 38),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
+      style: GlassStyle.frosted,
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Drag Handle
+          Center(
+            child: Container(
+              width: 38,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
+                borderRadius: BorderRadius.circular(3),
               ),
-              const SizedBox(height: 20),
-              // Track Title, Artwork & Verified Seal
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5EA),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // 1. Header: Artwork + Title + Artist + Verified Seal
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: track.hasCover && track.coverBytes != null
-                        ? Image.memory(track.coverBytes!, fit: BoxFit.cover)
-                        : const Icon(Icons.album_rounded, size: 30),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: track.hasCover && track.coverBytes != null
+                    ? Image.memory(track.coverBytes!, fit: BoxFit.cover)
+                    : Icon(Icons.album_rounded, size: 32, color: statusColor),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                track.title.isNotEmpty ? track.title : track.fileName,
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
-                                maxLines: 2,
-                                softWrap: true,
-                              ),
+                        Expanded(
+                          child: Text(
+                            track.title.isNotEmpty ? track.title : track.fileName,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
                             ),
-                            if (track.status == 'genuine') ...[
-                              const SizedBox(width: 6),
-                              const Icon(
-                                Icons.verified_rounded,
-                                size: 20,
-                                color: AppColors.genuineEmerald,
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          track.artist.isNotEmpty ? track.artist : 'Unknown Artist',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            color: subTextColor,
+                            maxLines: 2,
+                            softWrap: true,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (track.status == 'genuine') ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.verified_rounded,
+                            size: 20,
+                            color: AppColors.genuineEmerald,
+                          ),
+                        ],
                       ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      track.artist.isNotEmpty ? '${track.artist} • ${track.album}' : 'Unknown Artist',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12.5,
+                        color: subTextColor,
+                      ),
+                      maxLines: 2,
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // 2. Score Badge
+          Row(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '${track.score}',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: textColor,
+                    ),
+                  ),
+                  Text(
+                    '%',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: subTextColor,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
-              // Technical Metadata Rows
-              _buildModalRow('Authenticity Score', '${track.score}%', isDark, textColor),
-              _buildModalRow('Cutoff Frequency', '${track.cutoffKhz.toStringAsFixed(1)} kHz', isDark, textColor),
-              _buildModalRow('Sample Rate & Depth', '${track.bitDepth}-bit / ${(track.sampleRate / 1000).toStringAsFixed(1)} kHz', isDark, textColor),
-              _buildModalRow('Bitrate', '${track.bitrateKbps} kbps', isDark, textColor),
-              _buildModalRow('File Size', '${track.fileSizeMb.toStringAsFixed(2)} MB', isDark, textColor),
-              _buildModalRow('Duration', track.durationStr, isDark, textColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(isDark ? 0.18 : 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor.withOpacity(0.35), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        track.status == 'genuine'
+                            ? Icons.verified_rounded
+                            : Icons.warning_amber_rounded,
+                        size: 15,
+                        color: statusColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          track.verdict.toUpperCase(),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: statusColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
+
+          const SizedBox(height: 14),
+
+          // 3. Studio Spectral Nyquist Analyzer Stage (Requested by user!)
+          AudioSpectrumStage(
+            cutoffKhz: track.cutoffKhz,
+            maxKhz: track.maxKhz,
+            statusColor: statusColor,
+            height: 38,
+          ),
+
+          const SizedBox(height: 14),
+
+          // 4. Quick Specs in Clear Glass
+          Row(
+            children: [
+              _buildModalSpecTile('${track.bitDepth}-bit', 'Depth', isDark),
+              const SizedBox(width: 6),
+              _buildModalSpecTile('${(track.sampleRate / 1000).toStringAsFixed(1)}k', 'Sampling', isDark),
+              const SizedBox(width: 6),
+              _buildModalSpecTile('${track.bitrateKbps}k', 'Bitrate', isDark),
+              const SizedBox(width: 6),
+              _buildModalSpecTile('${track.fileSizeMb.toStringAsFixed(1)}MB', 'Size', isDark),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // 5. File Location Row
+          GlassSurface(
+            borderRadius: BorderRadius.circular(14),
+            style: GlassStyle.clear,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.folder_open_rounded, size: 18, color: subTextColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    track.filePath,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: subTextColor,
+                    ),
+                    maxLines: 2,
+                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildModalRow(String label, String value, bool isDark, Color textColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 13,
-              color: isDark ? const Color(0x99FFFFFF) : AppColors.lightTextSecondary,
+  Widget _buildModalSpecTile(String value, String label, bool isDark) {
+    return Expanded(
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(12),
+        style: GlassStyle.clear,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        child: Column(
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 8.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: isDark ? const Color(0x80FFFFFF) : AppColors.lightTextMuted,
+              ),
+              maxLines: 1,
             ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'JetBrainsMono',
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: textColor,
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : AppColors.lightTextPrimary,
+              ),
+              maxLines: 1,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

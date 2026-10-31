@@ -3,17 +3,19 @@ import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
 import '../widgets/expressive_group.dart';
+import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's Settings Screen Architecture (Appearance & Visuals)
 ///
 /// Features:
+/// - WWDC25 Frosted & Clear Glass surfaces.
 /// - Connected Group Architecture with 3dp gaps and 28dp/6dp continuous curvature.
 /// - Pure Pitch Black AMOLED vs Deep Graphite toggle with instant live repaint.
 /// - Liquid Glass toggle switching between optical translucent blur and opaque surfaces.
 /// - High-contrast Light Mode typography and segment controls.
-/// - Zero text truncation (natural soft-wrapping).
-/// - 140dp bottom padding clearance.
+/// - Zero text truncation (natural multiline soft-wrapping).
+/// - 160dp bottom padding clearance.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -31,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 140),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -66,7 +68,7 @@ class SettingsScreen extends StatelessWidget {
                           return ExpressiveGroupRow(
                             icon: Icons.brightness_2_rounded,
                             iconColor: const Color(0xFFC084FC),
-                            iconBgColor: isDark ? const Color(0xFF261D36) : const Color(0xFFF3E8FF),
+                            iconBgColor: isDark ? const Color(0x30C084FC) : const Color(0xFFF3E8FF),
                             title: 'AMOLED Mode',
                             subtitle: isDark
                                 ? (appState.amoledMode
@@ -86,10 +88,10 @@ class SettingsScreen extends StatelessWidget {
                           return ExpressiveGroupRow(
                             icon: Icons.blur_on_rounded,
                             iconColor: AppColors.accentPrimary,
-                            iconBgColor: isDark ? const Color(0xFF162B38) : const Color(0xFFE0F7FE),
+                            iconBgColor: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
                             title: 'Liquid Glass',
                             subtitle: appState.isLiquidGlass
-                                ? '3D optical lens with lensing & 24dp blur active'
+                                ? 'WWDC25 Frosted glass substrates & 3D optical lens active'
                                 : 'Opaque Material 3 Expressive surfaces active',
                             position: position,
                             luminousVariant: LuminousVariant.cyan,
@@ -105,7 +107,7 @@ class SettingsScreen extends StatelessWidget {
                           return ExpressiveGroupRow(
                             icon: Icons.vibration_rounded,
                             iconColor: AppColors.genuineEmerald,
-                            iconBgColor: isDark ? const Color(0xFF142B1F) : const Color(0xFFDCFCE7),
+                            iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
                             title: 'Haptic Feedback',
                             subtitle: 'Tactile spring clicks on dock transitions & interactions',
                             position: position,
@@ -131,7 +133,7 @@ class SettingsScreen extends StatelessWidget {
                           return ExpressiveGroupRow(
                             icon: Icons.graphic_eq_rounded,
                             iconColor: AppColors.accentPrimary,
-                            iconBgColor: isDark ? const Color(0xFF162B38) : const Color(0xFFE0F7FE),
+                            iconBgColor: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
                             title: 'Bitstream Auditor',
                             subtitle: 'Lossless header verification & spectral Nyquist check',
                             position: position,
@@ -150,7 +152,7 @@ class SettingsScreen extends StatelessWidget {
                           return ExpressiveGroupRow(
                             icon: Icons.auto_awesome_rounded,
                             iconColor: AppColors.suspiciousAmber,
-                            iconBgColor: isDark ? const Color(0xFF332714) : const Color(0xFFFEF3C7),
+                            iconBgColor: isDark ? const Color(0x30FFB300) : const Color(0xFFFEF3C7),
                             title: 'Auto-scan Duplicate Hashes',
                             subtitle: 'Detect identical audio streams with mismatched tags',
                             position: position,
@@ -179,9 +181,9 @@ class SettingsScreen extends StatelessWidget {
                           return ExpressiveGroupRow(
                             icon: Icons.info_outline_rounded,
                             iconColor: const Color(0xFF38BDF8),
-                            iconBgColor: isDark ? const Color(0xFF132A38) : const Color(0xFFE0F2FE),
+                            iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                             title: 'Version',
-                            subtitle: 'FLAC Toolkit Mobile • Build 12 (Release)',
+                            subtitle: 'FLAC Toolkit Mobile • Build 13 (Release)',
                             position: position,
                             trailing: Text(
                               'v1.1.0',
@@ -197,7 +199,7 @@ class SettingsScreen extends StatelessWidget {
                           return ExpressiveGroupRow(
                             icon: Icons.library_music_rounded,
                             iconColor: const Color(0xFFA78BFA),
-                            iconBgColor: isDark ? const Color(0xFF261D3B) : const Color(0xFFEDE9FE),
+                            iconBgColor: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
                             title: 'Scanned Library Tracks',
                             subtitle: appState.lastScannedFolder != null
                                 ? appState.lastScannedFolder!.split('/').last
@@ -252,90 +254,88 @@ class SettingsScreen extends StatelessWidget {
     Color subTextColor,
   ) {
     final shape = groupShape(position);
-    final rowBg = appState.getCardBgColor(context);
 
-    return Material(
-      color: rowBg,
+    return GlassSurface(
       borderRadius: shape,
-      elevation: isDark ? 0 : 2,
-      shadowColor: Colors.black.withOpacity(0.04),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E2638) : const Color(0xFFE0E7FF),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.palette_rounded,
-                    size: 22,
-                    color: Color(0xFF818CF8),
-                  ),
+      style: GlassStyle.frosted,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0x30818CF8) : const Color(0xFFE0E7FF),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Theme',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Choose system default, light, or dark look',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11.5,
-                          color: subTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: const Icon(
+                  Icons.palette_rounded,
+                  size: 22,
+                  color: Color(0xFF818CF8),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // High-Contrast Segmented Button Row (WCAG Compliant)
-            Row(
-              children: [
-                _buildThemeSegment('System', Icons.settings_brightness_rounded, 'system', isDark),
-                const SizedBox(width: 6),
-                _buildThemeSegment('Light', Icons.light_mode_rounded, 'light', isDark),
-                const SizedBox(width: 6),
-                _buildThemeSegment('Dark', Icons.dark_mode_rounded, 'dark', isDark),
-              ],
-            ),
-          ],
-        ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Theme',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Choose system default, light, or dark look',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11.5,
+                        color: subTextColor,
+                      ),
+                      maxLines: 2,
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // High-Contrast Clear Glass Segmented Button Row
+          Row(
+            children: [
+              _buildThemeSegment('System', Icons.settings_brightness_rounded, 'system', isDark),
+              const SizedBox(width: 6),
+              _buildThemeSegment('Light', Icons.light_mode_rounded, 'light', isDark),
+              const SizedBox(width: 6),
+              _buildThemeSegment('Dark', Icons.dark_mode_rounded, 'dark', isDark),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildThemeSegment(String label, IconData icon, String mode, bool isDark) {
     final isSelected = appState.themeMode == mode;
-    final selectedBg = isDark ? const Color(0xFF283548) : const Color(0xFFE0E7FF);
     final selectedFg = isDark ? Colors.white : const Color(0xFF1E1B4B);
-
-    final unselectedBg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE5E5EB);
     final unselectedFg = isDark ? const Color(0x99FFFFFF) : AppColors.lightTextSecondary;
 
     return Expanded(
-      child: Material(
-        color: isSelected ? selectedBg : unselectedBg,
+      child: GlassSurface(
         borderRadius: BorderRadius.circular(12),
+        style: GlassStyle.clear,
+        tintColor: isSelected
+            ? (isDark ? const Color(0x40818CF8) : const Color(0xFFDCE2FF))
+            : null,
         child: InkWell(
           onTap: () => appState.setThemeMode(mode),
           borderRadius: BorderRadius.circular(12),

@@ -7,16 +7,18 @@ import '../services/flac_parser.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
 import '../widgets/expressive_group.dart';
+import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's Connected Group Architecture for Duplicate Track Management
 ///
 /// Features:
+/// - WWDC25 Frosted & Clear Glass surfaces.
 /// - Connected Groups with 3dp gaps and 28dp/6dp continuous curvature.
 /// - Luminous amber ripple feedback on interactions.
 /// - High-contrast Light Mode typography and stat pills.
 /// - Pure pitch black AMOLED vs Graphite background with ZERO border outlines.
-/// - 140dp bottom padding clearance.
+/// - 160dp bottom padding clearance.
 class DuplicatesScreen extends StatefulWidget {
   const DuplicatesScreen({super.key});
 
@@ -148,11 +150,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         final items = sorted.map((track) {
           final isBest = track == best;
           final reason = isBest
-              ? 'Highest purity (${track.score}% • ${track.bitDepth}-bit/${(track.sampleRate / 1000).toStringAsFixed(1)}k)'
-              : (track.score < best.score
-                  ? 'Lower score (${track.score}% vs ${best.score}%)'
-                  : 'Lower resolution (${track.bitDepth}-bit vs ${best.bitDepth}-bit)');
-
+              ? 'Highest authenticity score & bit depth (${track.score}% / ${track.bitDepth}-bit)'
+              : 'Redundant copy (${track.score}% / ${track.bitDepth}-bit)';
           return DuplicateItem(info: track, isBest: isBest, reason: reason);
         }).toList();
 
@@ -172,28 +171,28 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     });
   }
 
-  String _sanitize(String s) =>
-      s.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+  String _sanitize(String s) {
+    return s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
 
-  void _confirmDeleteTrack(FlacInfo track) {
-    showDialog(
+  Future<void> _confirmDeleteTrack(FlacInfo track) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: appState.getCardBgColor(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedCornerShape(20),
         title: Text(
-          'Delete File',
+          'Delete Redundant Copy?',
           style: TextStyle(
             color: appState.getTextColor(context),
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Are you sure you want to delete this redundant copy?\n\n${track.filePath.split('/').last}',
+          'Are you sure you want to permanently delete:\n\n${track.fileName}\n(${track.filePath})?',
           style: TextStyle(
             color: appState.getSubTextColor(context),
             fontSize: 13,
-            height: 1.3,
           ),
         ),
         actions: [
@@ -276,7 +275,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   ),
                 ),
 
-                // Hero Stage (Single Sculpted Obsidian Container, Zero Borders)
+                // Hero Stage (Frosted Glass Substrate)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -324,7 +323,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -354,142 +353,119 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     required Color textColor,
     required Color subTextColor,
   }) {
-    final cardBg = appState.getCardBgColor(context);
-
-    return Material(
-      color: cardBg,
+    return LuminousFeedback(
+      onTap: _isScanning ? null : _scanForDuplicates,
+      variant: LuminousVariant.amber,
       borderRadius: BorderRadius.circular(28),
-      elevation: isDark ? 0 : 2,
-      shadowColor: Colors.black.withOpacity(0.04),
-      child: InkWell(
-        onTap: _isScanning ? null : _scanForDuplicates,
+      child: GlassSurface(
         borderRadius: BorderRadius.circular(28),
-        splashColor: AppColors.accentPrimary.withOpacity(0.10),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '$groupsCount',
-                              style: TextStyle(
-                                fontFamily: 'JetBrainsMono',
-                                fontSize: 36,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.8,
-                                color: textColor,
-                              ),
+        style: GlassStyle.frosted,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '$groupsCount',
+                            style: TextStyle(
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 36,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.8,
+                              color: textColor,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Duplicate Sets',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: subTextColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _isScanning
-                              ? 'Scanning... inspected $_scannedCount tracks'
-                              : (groupsCount > 0
-                                  ? '$groupsCount duplicate sets ($duplicatesCount redundant files)'
-                                  : 'Tap to scan music folders and keep the purest FLAC'),
-                          maxLines: 2,
-                          softWrap: true,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            color: subTextColor,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E2638) : const Color(0xFFE0F7FE),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: _isScanning
-                        ? const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: AppColors.accentPrimary,
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Duplicate Sets',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: subTextColor,
                             ),
-                          )
-                        : const Icon(
-                            Icons.search_rounded,
-                            color: AppColors.accentPrimary,
-                            size: 22,
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _isScanning
+                            ? 'Scanning... inspected $_scannedCount tracks'
+                            : (groupsCount > 0
+                                ? '$groupsCount duplicate sets ($duplicatesCount redundant files)'
+                                : 'Tap to scan music folders and keep the purest FLAC'),
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: _isScanning
+                      ? const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: AppColors.accentPrimary,
+                            ),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.search_rounded,
+                          color: AppColors.accentPrimary,
+                          size: 22,
+                        ),
+                ),
+              ],
+            ),
 
-              const SizedBox(height: 18),
+            const SizedBox(height: 18),
 
-              // High-Contrast Telemetry Pills Row
-              Row(
-                children: [
-                  _buildStatPill('Sets', '$groupsCount', AppColors.accentPrimary, isDark),
-                  const SizedBox(width: 6),
-                  _buildStatPill('Redundant', '$duplicatesCount', AppColors.suspiciousAmber, isDark),
-                  const SizedBox(width: 6),
-                  _buildStatPill('Storage to Free', '${wastedMb.toStringAsFixed(0)} MB', AppColors.genuineEmerald, isDark),
-                ],
-              ),
-            ],
-          ),
+            // High-Contrast Clear Glass Telemetry Pills Row
+            Row(
+              children: [
+                _buildStatPill('Sets', '$groupsCount', AppColors.accentPrimary, isDark),
+                const SizedBox(width: 6),
+                _buildStatPill('Redundant', '$duplicatesCount', AppColors.suspiciousAmber, isDark),
+                const SizedBox(width: 6),
+                _buildStatPill('Storage to Free', '${wastedMb.toStringAsFixed(0)} MB', AppColors.genuineEmerald, isDark),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildStatPill(String label, String value, Color color, bool isDark) {
-    Color pillBg = isDark ? const Color(0xFF1B1B1B) : const Color(0xFFF0F0F4);
-    Color fgColor = color;
-
-    if (!isDark) {
-      if (color == AppColors.genuineEmerald) {
-        pillBg = AppColors.lightEmeraldPillBg;
-        fgColor = AppColors.lightEmeraldText;
-      } else if (color == AppColors.suspiciousAmber) {
-        pillBg = AppColors.lightAmberPillBg;
-        fgColor = AppColors.lightAmberText;
-      } else {
-        pillBg = AppColors.lightCyanPillBg;
-        fgColor = AppColors.lightCyanText;
-      }
-    }
-
     return Expanded(
-      child: Container(
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(14),
+        style: GlassStyle.clear,
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
-        decoration: BoxDecoration(
-          color: pillBg,
-          borderRadius: BorderRadius.circular(14),
-        ),
         child: Column(
           children: [
             Text(
@@ -510,7 +486,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 fontFamily: 'JetBrainsMono',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: fgColor,
+                color: color,
               ),
             ),
           ],
@@ -545,6 +521,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   ),
                   maxLines: 2,
                   softWrap: true,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
@@ -561,106 +538,101 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
           ),
         ),
 
-        // Connected Rows with Luminous Feedback
+        // Connected Rows with Frosted Glass & Luminous Feedback
         ExpressiveGroup(
           rowCount: group.items.length,
           itemBuilder: (context, index, position) {
             final item = group.items[index];
             final shape = groupShape(position);
-            final rowBg = appState.getCardBgColor(context);
 
-            return Material(
-              color: rowBg,
+            return GlassSurface(
               borderRadius: shape,
-              elevation: isDark ? 0 : 1,
-              shadowColor: Colors.black.withOpacity(0.04),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
-                  children: [
-                    // Badge: Wavy verified seal for best vs copy icon for redundant
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: item.isBest
-                            ? (isDark ? const Color(0xFF142B1F) : AppColors.lightEmeraldPillBg)
-                            : (isDark ? const Color(0xFF261D1D) : AppColors.lightCoralPillBg),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        item.isBest ? Icons.verified_rounded : Icons.copy_rounded,
-                        size: 20,
-                        color: item.isBest
-                            ? (isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText)
-                            : (isDark ? AppColors.fakeCoral : AppColors.lightCoralText),
-                      ),
+              style: GlassStyle.frosted,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  // Badge: Wavy verified seal for best vs copy icon for redundant
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: item.isBest
+                          ? (isDark ? const Color(0x3000E676) : AppColors.lightEmeraldPillBg)
+                          : (isDark ? const Color(0x30FF5252) : AppColors.lightCoralPillBg),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                item.isBest ? 'BEST VERSION' : 'REDUNDANT COPY',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.6,
-                                  color: item.isBest
-                                      ? (isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText)
-                                      : (isDark ? AppColors.fakeCoral : AppColors.lightCoralText),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${item.info.score}% purity',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: textColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k • ${item.info.fileSizeMb.toStringAsFixed(1)} MB',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11.5,
-                              color: subTextColor,
-                            ),
-                          ),
-                          Text(
-                            item.info.filePath.split('/').last,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 10.5,
-                              color: subTextColor.withOpacity(0.7),
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: Icon(
+                      item.isBest ? Icons.verified_rounded : Icons.copy_rounded,
+                      size: 20,
+                      color: item.isBest
+                          ? (isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText)
+                          : (isDark ? AppColors.fakeCoral : AppColors.lightCoralText),
                     ),
-                    if (!item.isBest)
-                      IconButton(
-                        onPressed: () => _confirmDeleteTrack(item.info),
-                        icon: const Icon(
-                          Icons.delete_outline_rounded,
-                          size: 20,
-                          color: AppColors.fakeCoral,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              item.isBest ? 'BEST VERSION' : 'REDUNDANT COPY',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                                color: item.isBest
+                                    ? (isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText)
+                                    : (isDark ? AppColors.fakeCoral : AppColors.lightCoralText),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${item.info.score}% purity',
+                              style: TextStyle(
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
                         ),
-                        splashRadius: 20,
+                        const SizedBox(height: 2),
+                        Text(
+                          '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k • ${item.info.fileSizeMb.toStringAsFixed(1)} MB',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11.5,
+                            color: subTextColor,
+                          ),
+                        ),
+                        Text(
+                          item.info.filePath.split('/').last,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10.5,
+                            color: subTextColor.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!item.isBest)
+                    IconButton(
+                      onPressed: () => _confirmDeleteTrack(item.info),
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: AppColors.fakeCoral,
                       ),
-                  ],
-                ),
+                      splashRadius: 20,
+                    ),
+                ],
               ),
             );
           },

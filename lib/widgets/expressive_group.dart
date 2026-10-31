@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
+import 'glass_surface.dart';
 import 'luminous_feedback.dart';
 
 /// 1:1 Port of LastWave Native's ExpressiveGroup Architecture
 ///
-/// A group of rows reads as ONE continuous premium sculpted surface rather
+/// A group of rows reads as ONE continuous premium sculpted glass surface rather
 /// than a stack of separate cards — first row rounded on top (28dp), last row
 /// rounded on the bottom (28dp), middle rows nearly square (6dp), all separated by a
-/// hairline 3dp gap instead of normal item spacing.
+/// hairline 3dp gap.
 class ExpressiveGroup extends StatelessWidget {
   final int rowCount;
   final Widget Function(BuildContext context, int index, GroupPosition position) itemBuilder;
@@ -45,12 +46,12 @@ class ExpressiveGroup extends StatelessWidget {
   }
 }
 
-/// A tappable row inside an [ExpressiveGroup] that navigates or toggles an action.
+/// A tappable row inside an [ExpressiveGroup] with WWDC25 Frosted Glass Substrate styling.
 ///
 /// Features:
 /// - Exact 28dp/6dp continuous corner curvature based on position.
-/// - Pure LastWave obsidian container with ZERO borders.
-/// - Natural multiline text wrapping (eliminates text truncation).
+/// - WWDC25 Frosted Glass substrate with real Gaussian blur & specular edge highlights.
+/// - Natural multiline text wrapping (up to 3 lines with graceful ellipsis, eliminating hard truncation).
 /// - Luminous chromatic ripple feedback on touch.
 /// - 44dp squircle icon badge with continuous 14dp curvature.
 class ExpressiveGroupRow extends StatelessWidget {
@@ -90,11 +91,10 @@ class ExpressiveGroupRow extends StatelessWidget {
             : appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
 
-        final rowBg = appState.getCardBgColor(context);
         final shape = groupShape(position);
 
         final iconBg = iconBgColor ??
-            (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F4));
+            (isDark ? const Color(0x30FFFFFF) : const Color(0xFFF0F0F4));
         final iconClr = iconColor ??
             (danger ? AppColors.fakeCoral : AppColors.accentPrimary);
 
@@ -102,20 +102,11 @@ class ExpressiveGroupRow extends StatelessWidget {
           onTap: onTap,
           variant: luminousVariant,
           borderRadius: shape,
-          child: Container(
+          child: GlassSurface(
+            borderRadius: shape,
+            style: GlassStyle.frosted,
             constraints: const BoxConstraints(minHeight: 64),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-            decoration: BoxDecoration(
-              color: rowBg,
-              borderRadius: shape,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.20 : 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
             child: Row(
               children: [
                 // 44dp Squircle Icon Badge
@@ -149,6 +140,7 @@ class ExpressiveGroupRow extends StatelessWidget {
                         ),
                         maxLines: 2,
                         softWrap: true,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (subtitle != null) ...[
                         const SizedBox(height: 3),
@@ -157,11 +149,12 @@ class ExpressiveGroupRow extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 11.5,
-                            height: 1.3,
+                            height: 1.35,
                             color: subTextColor,
                           ),
-                          maxLines: 2,
+                          maxLines: 3,
                           softWrap: true,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],
@@ -184,21 +177,4 @@ class ExpressiveGroupRow extends StatelessWidget {
       },
     );
   }
-}
-
-/// Section header label (muted uppercase, matching LastWave's Settings headers)
-Widget buildSectionHeader(String label, Color color) {
-  return Padding(
-    padding: const EdgeInsets.only(left: 4, bottom: 8, top: 18),
-    child: Text(
-      label.toUpperCase(),
-      style: TextStyle(
-        fontFamily: 'Inter',
-        fontSize: 11.5,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
-        color: color,
-      ),
-    ),
-  );
 }
