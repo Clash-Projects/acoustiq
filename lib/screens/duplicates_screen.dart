@@ -180,7 +180,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: appState.getCardBgColor(context),
-        shape: RoundedCornerShape(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Delete Redundant Copy?',
           style: TextStyle(

@@ -178,3 +178,20 @@ class ExpressiveGroupRow extends StatelessWidget {
     );
   }
 }
+
+/// Section header label (muted uppercase, matching LastWave's Settings headers)
+Widget buildSectionHeader(String label, Color color) {
+  return Padding(
+    padding: const EdgeInsets.only(left: 4, bottom: 8, top: 18),
+    child: Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 11.5,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.2,
+        color: color,
+      ),
+    ),
+  );
+}
