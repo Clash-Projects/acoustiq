@@ -105,11 +105,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
             : Colors.black.withOpacity(0.08);
 
         return Center(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (details) => _handleTouchPosition(details.localPosition),
-            onHorizontalDragUpdate: (details) => _handleTouchPosition(details.localPosition),
-            child: ClipRRect(
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) => _handleTouchPosition(details.localPosition),
+              onHorizontalDragUpdate: (details) => _handleTouchPosition(details.localPosition),
+              child: ClipRRect(
               borderRadius: BorderRadius.circular(32),
               child: BackdropFilter(
                 filter: useGlass
@@ -203,6 +205,7 @@ class _IntegratedDockTab extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
+          mouseCursor: SystemMouseCursors.click,
           borderRadius: BorderRadius.circular(24),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,

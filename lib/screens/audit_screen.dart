@@ -455,23 +455,26 @@ class _AuditScreenState extends State<AuditScreen> {
         ? (isDark ? Colors.white : AppColors.lightTextPrimary)
         : (isDark ? const Color(0x99FFFFFF) : AppColors.lightTextSecondary);
 
-    return GestureDetector(
-      onTap: () => setState(() => _filter = filterKey),
-      child: GlassSurface(
-        borderRadius: BorderRadius.circular(20),
-        style: GlassStyle.clear,
-        borderless: false,
-        tintColor: isSelected
-            ? activeAccent.withOpacity(isDark ? 0.30 : 0.16)
-            : null,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? (isDark ? Colors.white : activeAccent) : fg,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _filter = filterKey),
+        child: GlassSurface(
+          borderRadius: BorderRadius.circular(20),
+          style: GlassStyle.clear,
+          borderless: false,
+          tintColor: isSelected
+              ? activeAccent.withOpacity(isDark ? 0.30 : 0.16)
+              : null,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              color: isSelected ? (isDark ? Colors.white : activeAccent) : fg,
+            ),
           ),
         ),
       ),

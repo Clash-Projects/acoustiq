@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -46,6 +47,7 @@ class FlacToolkitApp extends StatelessWidget {
         return MaterialApp(
           title: 'FLAC Toolkit',
           debugShowCheckedModeBanner: false,
+          scrollBehavior: const AppScrollBehavior(),
           themeMode: appState.themeMode == 'light'
               ? ThemeMode.light
               : (appState.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.system),
@@ -169,4 +171,20 @@ class _MainShellState extends State<MainShell> {
       },
     );
   }
+}
+
+/// Universal Mouse, Touch & Trackpad Scroll Behavior
+/// Enables fluid mouse click-and-drag scrolling, mouse wheel navigation,
+/// and stylus gestures across Android devices, emulators, DeX, and desktop.
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.unknown,
+  };
 }

@@ -449,93 +449,96 @@ class SettingsScreen extends StatelessWidget {
     required Color subTextColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          AspectRatio(
-            aspectRatio: 1.0,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected
-                      ? (isDark ? Colors.white : const Color(0xFF101828))
-                      : Colors.transparent,
-                  width: 2.0,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          children: [
+            AspectRatio(
+              aspectRatio: 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark ? Colors.white : const Color(0xFF101828))
+                        : Colors.transparent,
+                    width: 2.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: shades.last.withOpacity(0.40),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: shades.last.withOpacity(0.40),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Stack(
-                  children: [
-                    // 2x2 Quadrant Shades
-                    Column(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Expanded(child: Container(color: shades[0])),
-                              Expanded(child: Container(color: shades[1])),
-                            ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    children: [
+                      // 2x2 Quadrant Shades
+                      Column(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(child: Container(color: shades[0])),
+                                Expanded(child: Container(color: shades[1])),
+                              ],
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Expanded(child: Container(color: shades[2])),
-                              Expanded(child: Container(color: shades[3])),
-                            ],
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(child: Container(color: shades[2])),
+                                Expanded(child: Container(color: shades[3])),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    // Checkmark Badge when selected
-                    if (isSelected)
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.45),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_rounded,
-                            size: 13,
-                            color: Colors.white,
-                          ),
-                        ),
+                        ],
                       ),
-                  ],
+                      // Checkmark Badge when selected
+                      if (isSelected)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.45),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            name,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? textColor : subTextColor,
+            const SizedBox(height: 5),
+            Text(
+              name,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? textColor : subTextColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -554,75 +557,78 @@ class SettingsScreen extends StatelessWidget {
     required Color iconColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          AspectRatio(
-            aspectRatio: 1.0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: bg,
-                gradient: gradient,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected
-                      ? (isDark ? Colors.white : const Color(0xFF101828))
-                      : Colors.transparent,
-                  width: 2.0,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          children: [
+            AspectRatio(
+              aspectRatio: 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: bg,
+                  gradient: gradient,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark ? Colors.white : const Color(0xFF101828))
+                        : Colors.transparent,
+                    width: 2.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: (bg ?? const Color(0xFFE03030)).withOpacity(0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: (bg ?? const Color(0xFFE03030)).withOpacity(0.35),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(icon, size: 22, color: iconColor),
-                    if (isSelected)
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.45),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_rounded,
-                            size: 13,
-                            color: Colors.white,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(icon, size: 22, color: iconColor),
+                      if (isSelected)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.45),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            name,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? textColor : subTextColor,
+            const SizedBox(height: 5),
+            Text(
+              name,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? textColor : subTextColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -682,10 +688,12 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 2. Custom Wallpaper Loader Card (Apple Photos / Gallery Style)
-          GestureDetector(
-            onTap: () => _pickCustomWallpaper(context),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => _pickCustomWallpaper(context),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
@@ -829,6 +837,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
+        ),
         ],
       ),
     );
@@ -846,10 +855,12 @@ class SettingsScreen extends StatelessWidget {
     required Color activeAccent,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
         children: [
           AspectRatio(
             aspectRatio: 1.0,
@@ -920,7 +931,8 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   /// Launch file picker for custom gallery image
@@ -1112,39 +1124,42 @@ class SettingsScreen extends StatelessWidget {
                       alignment: WrapAlignment.spaceBetween,
                       children: [
                         for (final c in swatches)
-                          GestureDetector(
-                            onTap: () {
-                              if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                              appState.setAccentPreset('Custom', c);
-                              setModalState(() {
-                                currentHue = HSVColor.fromColor(c).hue;
-                              });
-                            },
-                            child: Container(
-                              width: (MediaQuery.of(context).size.width - 40 - (5 * 12)) / 6,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: c,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: activeCustom.value == c.value
-                                      ? Colors.white
-                                      : Colors.transparent,
-                                  width: 2.5,
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                                appState.setAccentPreset('Custom', c);
+                                setModalState(() {
+                                  currentHue = HSVColor.fromColor(c).hue;
+                                });
+                              },
+                              child: Container(
+                                width: (MediaQuery.of(context).size.width - 40 - (5 * 12)) / 6,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: c,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: activeCustom.value == c.value
+                                        ? Colors.white
+                                        : Colors.transparent,
+                                    width: 2.5,
+                                  ),
+                                  boxShadow: activeCustom.value == c.value
+                                      ? [
+                                          BoxShadow(
+                                            color: c.withOpacity(0.55),
+                                            blurRadius: 8,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
-                                boxShadow: activeCustom.value == c.value
-                                    ? [
-                                        BoxShadow(
-                                          color: c.withOpacity(0.55),
-                                          blurRadius: 8,
-                                          spreadRadius: 1,
-                                        ),
-                                      ]
+                                child: activeCustom.value == c.value
+                                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
                                     : null,
                               ),
-                              child: activeCustom.value == c.value
-                                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                                  : null,
                             ),
                           ),
                       ],
@@ -1193,6 +1208,7 @@ class SettingsScreen extends StatelessWidget {
                             elevation: 4,
                           ),
                           overlayColor: Colors.transparent,
+                          mouseCursor: const MaterialStatePropertyAll(SystemMouseCursors.click),
                         ),
                         child: Slider(
                           value: currentHue,
@@ -1210,33 +1226,36 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // Done / Apply Pill Button
-                    GestureDetector(
-                      onTap: () {
-                        if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
-                        Navigator.pop(modalCtx);
-                      },
-                      child: Container(
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: activeCustom,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: activeCustom.withOpacity(0.35),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+                          Navigator.pop(modalCtx);
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: activeCustom,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: activeCustom.withOpacity(0.35),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'Apply Accent Color',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: -0.2,
                             ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Apply Accent Color',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: -0.2,
                           ),
                         ),
                       ),

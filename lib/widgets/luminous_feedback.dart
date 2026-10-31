@@ -96,41 +96,44 @@ class _LuminousFeedbackState extends State<LuminousFeedback>
   Widget build(BuildContext context) {
     final radius = widget.borderRadius ?? BorderRadius.circular(16);
 
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      child: AnimatedScale(
-        scale: _isPressed ? widget.scaleOnPress : 1.0,
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.fastOutSlowIn,
-        child: ClipRRect(
-          borderRadius: radius,
-          child: Stack(
-            children: [
-              widget.child,
-              // Luminous Glitter & Chromatic Ripple Overlay
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _controller,
-                    builder: (context, _) {
-                      if (_controller.value == 0.0 || _controller.value == 1.0) {
-                        return const SizedBox.shrink();
-                      }
-                      return CustomPaint(
-                        painter: _GlitterRipplePainter(
-                          progress: _controller.value,
-                          origin: _tapPosition,
-                          color: _accentColor,
-                          variant: widget.variant,
-                        ),
-                      );
-                    },
+    return MouseRegion(
+      cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        child: AnimatedScale(
+          scale: _isPressed ? widget.scaleOnPress : 1.0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.fastOutSlowIn,
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Stack(
+              children: [
+                widget.child,
+                // Luminous Glitter & Chromatic Ripple Overlay
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, _) {
+                        if (_controller.value == 0.0 || _controller.value == 1.0) {
+                          return const SizedBox.shrink();
+                        }
+                        return CustomPaint(
+                          painter: _GlitterRipplePainter(
+                            progress: _controller.value,
+                            origin: _tapPosition,
+                            color: _accentColor,
+                            variant: widget.variant,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
