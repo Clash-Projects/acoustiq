@@ -427,15 +427,18 @@ class _AuditScreenState extends State<AuditScreen> {
               maxLines: 1,
             ),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: accentColor,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: accentColor,
+                ),
+                maxLines: 1,
               ),
-              maxLines: 1,
             ),
           ],
         ),

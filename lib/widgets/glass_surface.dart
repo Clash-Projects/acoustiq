@@ -56,12 +56,17 @@ class GlassSurface extends StatelessWidget {
               ? (appState.amoledMode ? const Color(0xFF101214) : const Color(0xFF1E2228))
               : AppColors.lightSurface;
 
+          final solidBorder = isDark
+              ? Border.all(color: const Color(0x22FFFFFF), width: 0.8)
+              : Border.all(color: const Color(0xFFE4E7EC), width: 0.8);
+
           return Container(
             constraints: constraints,
             padding: padding,
             decoration: BoxDecoration(
               color: tintColor ?? solidBg,
               borderRadius: borderRadius,
+              border: borderless ? null : solidBorder,
               boxShadow: isDark
                   ? AppColors.softElevation(elevation: elevation ?? 3.0)
                   : AppColors.lightSoftElevation(elevation: elevation ?? 3.0),
@@ -81,18 +86,18 @@ class GlassSurface extends StatelessWidget {
             blurSigma = 10.0;
             surfaceFill = isDark
                 ? (tintColor?.withOpacity(0.18) ?? const Color(0x18FFFFFF))
-                : (tintColor?.withOpacity(0.20) ?? Colors.white.withOpacity(0.68));
-            topSpecularColor = isDark ? const Color(0x40FFFFFF) : Colors.white.withOpacity(0.95);
-            bottomSpecularColor = isDark ? const Color(0x08FFFFFF) : Colors.white.withOpacity(0.25);
+                : (tintColor?.withOpacity(0.20) ?? Colors.white.withOpacity(0.72));
+            topSpecularColor = isDark ? const Color(0x40FFFFFF) : Colors.white;
+            bottomSpecularColor = isDark ? const Color(0x08FFFFFF) : const Color(0x1E000000);
             break;
 
           case GlassStyle.liquid:
             blurSigma = 24.0;
             surfaceFill = isDark
                 ? (tintColor?.withOpacity(0.24) ?? const Color(0x24FFFFFF))
-                : (tintColor?.withOpacity(0.30) ?? Colors.white.withOpacity(0.82));
+                : (tintColor?.withOpacity(0.30) ?? Colors.white.withOpacity(0.85));
             topSpecularColor = isDark ? const Color(0x55FFFFFF) : Colors.white;
-            bottomSpecularColor = isDark ? const Color(0x10FFFFFF) : Colors.white.withOpacity(0.35);
+            bottomSpecularColor = isDark ? const Color(0x10FFFFFF) : const Color(0x24000000);
             break;
 
           case GlassStyle.frosted:
@@ -100,9 +105,9 @@ class GlassSurface extends StatelessWidget {
             blurSigma = 20.0;
             surfaceFill = isDark
                 ? (tintColor?.withOpacity(0.18) ?? (appState.amoledMode ? const Color(0x1AFFFFFF) : const Color(0x24FFFFFF)))
-                : (tintColor?.withOpacity(0.22) ?? Colors.white.withOpacity(0.74));
-            topSpecularColor = isDark ? const Color(0x32FFFFFF) : Colors.white.withOpacity(0.90);
-            bottomSpecularColor = isDark ? const Color(0x06FFFFFF) : Colors.white.withOpacity(0.20);
+                : (tintColor?.withOpacity(0.22) ?? Colors.white.withOpacity(0.78));
+            topSpecularColor = isDark ? const Color(0x35FFFFFF) : Colors.white;
+            bottomSpecularColor = isDark ? const Color(0x06FFFFFF) : const Color(0x1F000000);
             break;
         }
 
