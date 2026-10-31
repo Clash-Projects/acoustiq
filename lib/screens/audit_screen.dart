@@ -121,6 +121,7 @@ class _AuditScreenState extends State<AuditScreen> {
         final genuineCount = tracks.where((t) => t.status == 'genuine').length;
         final suspiciousCount = tracks.where((t) => t.status == 'suspicious').length;
         final fakeCount = tracks.where((t) => t.status == 'fake').length;
+        final activeAccent = appState.getAccentColor(context);
 
         int averageScore = 0;
         if (tracks.isNotEmpty) {
@@ -165,6 +166,7 @@ class _AuditScreenState extends State<AuditScreen> {
                       isDark: isDark,
                       textColor: textColor,
                       subTextColor: subTextColor,
+                      activeAccent: activeAccent,
                     ),
                   ),
                 ),
@@ -179,13 +181,13 @@ class _AuditScreenState extends State<AuditScreen> {
                         physics: const BouncingScrollPhysics(),
                         child: Row(
                           children: [
-                            _buildFilterPill('All (${tracks.length})', 'all', isDark),
+                            _buildFilterPill('All (${tracks.length})', 'all', isDark, activeAccent),
                             const SizedBox(width: 8),
-                            _buildFilterPill('Genuine ($genuineCount)', 'genuine', isDark),
+                            _buildFilterPill('Genuine ($genuineCount)', 'genuine', isDark, activeAccent),
                             const SizedBox(width: 8),
-                            _buildFilterPill('Suspicious ($suspiciousCount)', 'suspicious', isDark),
+                            _buildFilterPill('Suspicious ($suspiciousCount)', 'suspicious', isDark, activeAccent),
                             const SizedBox(width: 8),
-                            _buildFilterPill('Fake ($fakeCount)', 'fake', isDark),
+                            _buildFilterPill('Fake ($fakeCount)', 'fake', isDark, activeAccent),
                           ],
                         ),
                       ),
@@ -203,7 +205,7 @@ class _AuditScreenState extends State<AuditScreen> {
                           Icon(
                             Icons.folder_open_rounded,
                             size: 56,
-                            color: subTextColor.withOpacity(0.4),
+                            color: activeAccent.withOpacity(0.45),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -265,6 +267,7 @@ class _AuditScreenState extends State<AuditScreen> {
     required bool isDark,
     required Color textColor,
     required Color subTextColor,
+    required Color activeAccent,
   }) {
     return LuminousFeedback(
       onTap: _isScanning ? null : _scanFolder,
@@ -388,8 +391,8 @@ class _AuditScreenState extends State<AuditScreen> {
                 _buildStatPill(
                   'AVG SCORE',
                   '$averageScore%',
-                  AppColors.accentPrimary,
-                  isDark ? const Color(0x2500D2FF) : const Color(0xFFE0F7FE),
+                  activeAccent,
+                  activeAccent.withOpacity(isDark ? 0.22 : 0.14),
                   isDark,
                 ),
               ],
@@ -446,7 +449,7 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
-  Widget _buildFilterPill(String label, String filterKey, bool isDark) {
+  Widget _buildFilterPill(String label, String filterKey, bool isDark, Color activeAccent) {
     final isSelected = _filter == filterKey;
     final fg = isSelected
         ? (isDark ? Colors.white : AppColors.lightTextPrimary)
@@ -459,7 +462,7 @@ class _AuditScreenState extends State<AuditScreen> {
         style: GlassStyle.clear,
         borderless: false,
         tintColor: isSelected
-            ? (isDark ? const Color(0x4000D2FF) : const Color(0xFFCCE8FE))
+            ? activeAccent.withOpacity(isDark ? 0.30 : 0.16)
             : null,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Text(
@@ -468,7 +471,7 @@ class _AuditScreenState extends State<AuditScreen> {
             fontFamily: 'Inter',
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: fg,
+            color: isSelected ? (isDark ? Colors.white : activeAccent) : fg,
           ),
         ),
       ),

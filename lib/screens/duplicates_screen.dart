@@ -247,6 +247,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         final isDark = appState.isCurrentDark(context);
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
+        final activeAccent = appState.getAccentColor(context);
 
         final duplicatesCount = _groups.fold<int>(
             0, (sum, g) => sum + (g.items.length > 1 ? g.items.length - 1 : 0));
@@ -287,6 +288,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       isDark: isDark,
                       textColor: textColor,
                       subTextColor: subTextColor,
+                      activeAccent: activeAccent,
                     ),
                   ),
                 ),
@@ -304,7 +306,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             Icon(
                               Icons.copy_all_outlined,
                               size: 44,
-                              color: isDark ? const Color(0x40FFFFFF) : AppColors.lightTextMuted,
+                              color: activeAccent.withOpacity(0.40),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -355,6 +357,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     required bool isDark,
     required Color textColor,
     required Color subTextColor,
+    required Color activeAccent,
   }) {
     return LuminousFeedback(
       onTap: _isScanning ? null : _scanForDuplicates,
@@ -423,23 +426,25 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
+                    color: isDark
+                        ? activeAccent.withOpacity(0.20)
+                        : activeAccent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: _isScanning
-                      ? const Center(
+                      ? Center(
                           child: SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.2,
-                              color: AppColors.accentPrimary,
+                              color: activeAccent,
                             ),
                           ),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.search_rounded,
-                          color: AppColors.accentPrimary,
+                          color: activeAccent,
                           size: 22,
                         ),
                 ),
@@ -451,7 +456,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             // High-Contrast Clear Glass Telemetry Pills Row
             Row(
               children: [
-                _buildStatPill('Sets', '$groupsCount', AppColors.accentPrimary, isDark),
+                _buildStatPill('Sets', '$groupsCount', activeAccent, isDark),
                 const SizedBox(width: 6),
                 _buildStatPill('Redundant', '$duplicatesCount', AppColors.suspiciousAmber, isDark),
                 const SizedBox(width: 6),

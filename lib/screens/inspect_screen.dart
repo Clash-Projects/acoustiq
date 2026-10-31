@@ -137,7 +137,8 @@ class _InspectScreenState extends State<InspectScreen> {
   }
 
   Widget _buildStudioHeroStage(bool isDark, Color textColor, Color subTextColor) {
-    final statusColor = _info != null ? _getStatusColor(_info!.status) : AppColors.accentPrimary;
+    final activeAccent = appState.getAccentColor(context);
+    final statusColor = _info != null ? _getStatusColor(_info!.status) : activeAccent;
 
     return LuminousFeedback(
       onTap: _isLoading ? null : _pickAndAnalyzeFile,
@@ -168,13 +169,13 @@ class _InspectScreenState extends State<InspectScreen> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _isLoading
-                      ? const Center(
+                      ? Center(
                           child: SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
-                              color: AppColors.accentPrimary,
+                              color: activeAccent,
                             ),
                           ),
                         )
@@ -232,6 +233,7 @@ class _InspectScreenState extends State<InspectScreen> {
                   borderRadius: BorderRadius.circular(12),
                   style: GlassStyle.clear,
                   borderless: false,
+                  tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.12),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   child: Text(
                     _info != null ? 'Change' : 'Browse',
@@ -239,7 +241,7 @@ class _InspectScreenState extends State<InspectScreen> {
                       fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: textColor,
+                      color: activeAccent,
                     ),
                   ),
                 ),
@@ -350,6 +352,7 @@ class _InspectScreenState extends State<InspectScreen> {
 
   Widget _buildStreamTelemetryGroup(bool isDark, Color textColor, Color subTextColor) {
     if (_info == null) return const SizedBox.shrink();
+    final activeAccent = appState.getAccentColor(context);
 
     final rows = [
       (
@@ -372,8 +375,8 @@ class _InspectScreenState extends State<InspectScreen> {
       ),
       (
         icon: Icons.graphic_eq_rounded,
-        iconColor: AppColors.accentPrimary,
-        iconBg: isDark ? const Color(0x3000D2FF) : const Color(0xFFE0F7FE),
+        iconColor: activeAccent,
+        iconBg: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
         title: 'Audio Channels',
         subtitle: '${_info!.channels == 2 ? 'Stereo (2.0)' : 'Mono'} • FLAC Stream',
         trailing: Text(

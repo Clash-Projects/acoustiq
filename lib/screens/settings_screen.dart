@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
@@ -426,6 +427,7 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () {
                     if (appState.hapticsEnabled) HapticFeedback.selectionClick();
                     appState.setAccentPreset('Custom');
+                    _openCustomColorPicker(context, isDark, textColor, subTextColor);
                   },
                 ),
               ),
@@ -958,6 +960,295 @@ class SettingsScreen extends StatelessWidget {
         );
       }
     }
+  }
+
+  /// Apple WWDC25 Frosted Glass Custom Accent Palette & Hue Scrub Sheet
+  void _openCustomColorPicker(
+    BuildContext context,
+    bool isDark,
+    Color textColor,
+    Color subTextColor,
+  ) {
+    final curColor = appState.customColor;
+    final hsv = HSVColor.fromColor(curColor);
+    double currentHue = hsv.hue;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.55),
+      isScrollControlled: true,
+      builder: (modalCtx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final activeCustom = appState.customColor;
+            final hexStr = '#${activeCustom.value.toRadixString(16).substring(2).toUpperCase()}';
+
+            const swatches = [
+              Color(0xFF00D2FF), // Electric Cyan
+              Color(0xFF00E5FF), // Neon Teal
+              Color(0xFF0091EA), // Deep Azure
+              Color(0xFF536DFE), // Royal Indigo
+              Color(0xFF7C4DFF), // Electric Purple
+              Color(0xFFE040FB), // Vivid Magenta
+              Color(0xFFFF4081), // Hot Pink
+              Color(0xFFFF5252), // Sunset Coral
+              Color(0xFFFF6E40), // Flame Orange
+              Color(0xFFFFD700), // Amber Gold
+              Color(0xFF00E676), // Lime Emerald
+              Color(0xFF1DE9B6), // Mint Jade
+            ];
+
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 28),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xE012161A) : const Color(0xF5FFFFFF),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark ? const Color(0x33FFFFFF) : const Color(0x20000000),
+                      width: 1.0,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Drag Handle
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4.5,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x40FFFFFF) : const Color(0x30000000),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+
+                    // Header Row: Title & Active Color Swatch Pill
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Custom Accent Color',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Live chromatic palette across all surfaces',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Live Swatch Pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: activeCustom.withOpacity(0.60),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: activeCustom,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: activeCustom.withOpacity(0.40),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                hexStr,
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 12 Curated Swatches Grid (6 across x 2 rows)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        for (final c in swatches)
+                          GestureDetector(
+                            onTap: () {
+                              if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                              appState.setAccentPreset('Custom', c);
+                              setModalState(() {
+                                currentHue = HSVColor.fromColor(c).hue;
+                              });
+                            },
+                            child: Container(
+                              width: (MediaQuery.of(context).size.width - 40 - (5 * 12)) / 6,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: c,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: activeCustom.value == c.value
+                                      ? Colors.white
+                                      : Colors.transparent,
+                                  width: 2.5,
+                                ),
+                                boxShadow: activeCustom.value == c.value
+                                    ? [
+                                        BoxShadow(
+                                          color: c.withOpacity(0.55),
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: activeCustom.value == c.value
+                                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                                  : null,
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // Spectrum Hue Slider Title
+                    Text(
+                      'SPECTRUM HUE',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: subTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Rainbow Track Container with Overlay Slider
+                    Container(
+                      height: 36,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFFF0000),
+                            Color(0xFFFFFF00),
+                            Color(0xFF00FF00),
+                            Color(0xFF00FFFF),
+                            Color(0xFF0000FF),
+                            Color(0xFFFF00FF),
+                            Color(0xFFFF0000),
+                          ],
+                        ),
+                      ),
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 36,
+                          activeTrackColor: Colors.transparent,
+                          inactiveTrackColor: Colors.transparent,
+                          thumbColor: Colors.white,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 14,
+                            elevation: 4,
+                          ),
+                          overlayColor: Colors.transparent,
+                        ),
+                        child: Slider(
+                          value: currentHue,
+                          min: 0.0,
+                          max: 360.0,
+                          onChanged: (val) {
+                            setModalState(() => currentHue = val);
+                            final newCol = HSVColor.fromAHSV(1.0, val, 0.85, 0.95).toColor();
+                            appState.setAccentPreset('Custom', newCol);
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Done / Apply Pill Button
+                    GestureDetector(
+                      onTap: () {
+                        if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+                        Navigator.pop(modalCtx);
+                      },
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: activeCustom,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: activeCustom.withOpacity(0.35),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Apply Accent Color',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildThemeModeRow(
