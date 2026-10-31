@@ -93,13 +93,14 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         final isDark = appState.isCurrentDark(context);
         final useGlass = appState.isLiquidGlass;
 
-        // Apple HIG Calibrated Obsidian Glass: 69% dark tint for stunning background refraction + AAA legibility
+        // 1:1 LastWave Architecture: Pure Achromatic Black Translucent Substrate (ZERO navy blue)
+        // Scrim alpha 0.48 lets scrolling album art bleed through naturally without color distortion
         final dockBg = isDark
-            ? (useGlass ? const Color(0xB00D1117) : const Color(0xFF14171C))
-            : (useGlass ? Colors.white.withOpacity(0.80) : Colors.white);
+            ? (useGlass ? Colors.black.withOpacity(0.48) : const Color(0xFF14171C))
+            : (useGlass ? Colors.white.withOpacity(0.70) : Colors.white);
 
         final specularBorder = isDark
-            ? const Color(0x35FFFFFF)
+            ? Colors.white.withOpacity(0.14)
             : Colors.black.withOpacity(0.08);
 
         return Center(
@@ -187,7 +188,7 @@ class _IntegratedDockTab extends StatelessWidget {
     const inactiveWidth = 48.0;
 
     final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final inactiveColor = isDark ? const Color(0x80FFFFFF) : AppColors.lightTextMuted;
+    final inactiveColor = isDark ? Colors.white.withOpacity(0.60) : AppColors.lightTextMuted;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -323,21 +324,21 @@ class _WaterDropletLensPainter extends CustomPainter {
       const Radius.circular(23),
     );
 
-    // 1. Water-Clear Translucent Refraction Body (Achromatic, NO cyan dye!)
+    // 1. Water-Clear Translucent Refraction Body (100% Achromatic, ZERO cyan or blue)
     final bodyPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                const Color(0x3EFFFFFF), // Clean white specular catch top
-                const Color(0x18FFFFFF),
-                const Color(0x28354552), // Subtle slate-teal depth base
+                Colors.white.withOpacity(0.22), // Clean ambient specular catch
+                Colors.white.withOpacity(0.14),
+                Colors.white.withOpacity(0.09), // Pure neutral achromatic base
               ]
             : [
-                Colors.white.withOpacity(0.96),
-                Colors.white.withOpacity(0.75),
-                const Color(0x14000000),
+                Colors.black.withOpacity(0.08),
+                Colors.black.withOpacity(0.06),
+                Colors.black.withOpacity(0.04),
               ],
       ).createShader(Offset.zero & size);
 
