@@ -472,9 +472,9 @@ class SettingsScreen extends StatelessWidget {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: shades.last.withOpacity(0.40),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                            color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
                         ]
                       : null,
@@ -582,9 +582,9 @@ class SettingsScreen extends StatelessWidget {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: (bg ?? const Color(0xFFE03030)).withOpacity(0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                            color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
                         ]
                       : null,
@@ -878,9 +878,9 @@ class SettingsScreen extends StatelessWidget {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: activeAccent.withOpacity(0.35),
-                          blurRadius: 10,
-                          spreadRadius: 1,
+                          color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
                       ]
                     : null,
@@ -1095,12 +1095,10 @@ class SettingsScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: activeCustom,
                                   shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: activeCustom.withOpacity(0.40),
-                                      blurRadius: 6,
-                                    ),
-                                  ],
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.35),
+                                    width: 1.0,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -1151,11 +1149,11 @@ class SettingsScreen extends StatelessWidget {
                                     width: 2.5,
                                   ),
                                   boxShadow: activeCustom.value == c.value
-                                      ? [
+                                      ? const [
                                           BoxShadow(
-                                            color: c.withOpacity(0.55),
-                                            blurRadius: 8,
-                                            spreadRadius: 1,
+                                            color: Color(0x40000000),
+                                            blurRadius: 6,
+                                            offset: Offset(0, 2),
                                           ),
                                         ]
                                       : null,
@@ -1242,11 +1240,11 @@ class SettingsScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: activeCustom,
                             borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
+                            boxShadow: const [
                               BoxShadow(
-                                color: activeCustom.withOpacity(0.35),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
+                                color: Color(0x33000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
                               ),
                             ],
                           ),

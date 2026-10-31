@@ -94,15 +94,15 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         final useGlass = appState.isLiquidGlass;
         final activeAccent = appState.getAccentColor(context);
 
-        // 1:1 LastWave Architecture: Pure Achromatic Black Translucent Substrate (ZERO navy blue)
-        // Scrim alpha 0.48 lets scrolling album art bleed through naturally without color distortion
+        // LastWave Architecture: Ultra-Translucent Achromatic Glass Substrate (Zero opaque black)
+        // Scrim alpha 0.22 lets scrolling content, album art, and text glide through clearly with optical blur
         final dockBg = isDark
-            ? (useGlass ? Colors.black.withOpacity(0.48) : const Color(0xFF14171C))
-            : (useGlass ? Colors.white.withOpacity(0.70) : Colors.white);
+            ? (useGlass ? const Color(0x2B141820) : const Color(0xFF14171C))
+            : (useGlass ? Colors.white.withOpacity(0.65) : Colors.white);
 
         final specularBorder = isDark
-            ? Colors.white.withOpacity(0.14)
-            : Colors.black.withOpacity(0.08);
+            ? Colors.white.withOpacity(0.12)
+            : Colors.black.withOpacity(0.06);
 
         return Center(
           child: MouseRegion(
@@ -309,10 +309,8 @@ class _AchromaticWaterLensPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(23),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? activeAccent.withOpacity(0.18)
-                  : activeAccent.withOpacity(0.10),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(isDark ? 0.32 : 0.08),
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
@@ -338,21 +336,21 @@ class _WaterDropletLensPainter extends CustomPainter {
       const Radius.circular(23),
     );
 
-    // 1. Water-Clear Translucent Refraction Body with delicate harmonic accent aura
+    // 1. Water-Clear Translucent Refraction Body (LastWave 28% Alpha, Never Opaque)
     final bodyPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                Color.lerp(Colors.white, activeAccent, 0.16)!.withOpacity(0.24),
-                Color.lerp(Colors.white, activeAccent, 0.12)!.withOpacity(0.15),
-                Color.lerp(Colors.white, activeAccent, 0.08)!.withOpacity(0.10),
+                Color.lerp(Colors.white, activeAccent, 0.12)!.withOpacity(0.22),
+                Color.lerp(Colors.white, activeAccent, 0.08)!.withOpacity(0.14),
+                Color.lerp(Colors.white, activeAccent, 0.04)!.withOpacity(0.08),
               ]
             : [
-                Color.lerp(Colors.black, activeAccent, 0.12)!.withOpacity(0.09),
-                Color.lerp(Colors.black, activeAccent, 0.08)!.withOpacity(0.06),
-                Color.lerp(Colors.black, activeAccent, 0.04)!.withOpacity(0.04),
+                Color.lerp(Colors.black, activeAccent, 0.10)!.withOpacity(0.09),
+                Color.lerp(Colors.black, activeAccent, 0.06)!.withOpacity(0.06),
+                Color.lerp(Colors.black, activeAccent, 0.02)!.withOpacity(0.03),
               ],
       ).createShader(Offset.zero & size);
 
