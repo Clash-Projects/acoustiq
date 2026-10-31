@@ -100,26 +100,90 @@ class GlassSurface extends StatelessWidget {
                 width: 0.6,
               );
 
+        // Add top specular strip for frosted and liquid styles (simulates chamfered glass edge)
+        final showSpecularEdge = (style == GlassStyle.frosted || style == GlassStyle.liquid) && isDark;
+
         return ClipRRect(
           borderRadius: borderRadius,
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-            child: Container(
-              constraints: constraints,
-              padding: padding,
-              decoration: BoxDecoration(
-                color: surfaceFill,
-                borderRadius: borderRadius,
-                border: borderStroke,
-                boxShadow: isDark
-                    ? AppColors.softElevation(elevation: elevation ?? 3.5)
-                    : AppColors.lightSoftElevation(elevation: elevation ?? 3.5),
-              ),
-              child: child,
+            child: Stack(
+              children: [
+                Container(
+                  constraints: constraints,
+                  padding: padding,
+                  decoration: BoxDecoration(
+                    color: surfaceFill,
+                    borderRadius: borderRadius,
+                    border: borderStroke,
+                    boxShadow: isDark
+                        ? AppColors.softElevation(elevation: elevation ?? 3.5)
+                        : AppColors.lightSoftElevation(elevation: elevation ?? 3.5),
+                  ),
+                  child: child,
+                ),
+                // Top specular light strip — simulates ambient overhead light on chamfered glass rim
+                if (showSpecularEdge)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _GlassSpecularEdgePainter(
+                          borderRadius: borderRadius,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         );
       },
     );
+  }
+}
+
+/// Draws a top-only specular strip on the glass surface.
+/// Simulates how chamfered glass edges catch ambient overhead illumination —
+/// creating a subtle shimmer along the top rim without any visible box outline.
+class _GlassSpecularEdgePainter extends CustomPainter {
+  final BorderRadius borderRadius;
+
+  _GlassSpecularEdgePainter({required this.borderRadius});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Clip to the same rounded rect as the container
+    final outerRadius = borderRadius.topLeft.x;
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Radius.circular(outerRadius),
+    );
+    canvas.clipRRect(rrect);
+
+    // Top specular strip: height 1.4dp, fades from center outward
+    const double stripHeight = 1.4;
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: const [
+          Color(0x00FFFFFF),
+          Color(0x30FFFFFF),
+          Color(0x42FFFFFF),
+          Color(0x30FFFFFF),
+          Color(0x00FFFFFF),
+        ],
+        stops: const [0.0, 0.18, 0.5, 0.82, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, stripHeight));
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, stripHeight),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlassSpecularEdgePainter oldDelegate) {
+    return oldDelegate.borderRadius != borderRadius;
   }
 }

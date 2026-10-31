@@ -323,7 +323,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {

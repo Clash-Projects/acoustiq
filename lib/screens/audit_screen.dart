@@ -231,7 +231,7 @@ class _AuditScreenState extends State<AuditScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -539,19 +539,43 @@ class _AuditScreenState extends State<AuditScreen> {
                           fontWeight: FontWeight.w600,
                           color: textColor,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        '${track.artist.isNotEmpty ? track.artist : 'Unknown'} • ${(track.sampleRate / 1000).toStringAsFixed(1)}kHz/${track.bitDepth}bit • ${track.bitrateKbps}k',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11.5,
-                          color: subTextColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      // Split subtitle: artist (truncatable) + spec badge (always visible)
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              track.artist.isNotEmpty ? track.artist : 'Unknown Artist',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11.5,
+                                color: subTextColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x1AFFFFFF) : const Color(0xFFE5E5EA),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${track.bitDepth}b·${(track.sampleRate / 1000).toStringAsFixed(0)}k',
+                              style: TextStyle(
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? const Color(0xAAFFFFFF) : AppColors.lightTextMuted,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

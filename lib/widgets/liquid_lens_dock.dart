@@ -94,7 +94,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         final useGlass = appState.isLiquidGlass;
 
         final dockBg = isDark
-            ? (useGlass ? const Color(0x9912151A) : const Color(0xFF14171C))
+            ? (useGlass ? const Color(0xB00D1117) : const Color(0xFF14171C))
             : (useGlass ? Colors.white.withOpacity(0.82) : Colors.white);
 
         final specularBorder = isDark
@@ -110,7 +110,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
               borderRadius: BorderRadius.circular(32),
               child: BackdropFilter(
                 filter: useGlass
-                    ? ImageFilter.blur(sigmaX: 20, sigmaY: 20)
+                    ? ImageFilter.blur(sigmaX: 24, sigmaY: 24)
                     : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                 child: Container(
                   width: _kTotalWidth,

@@ -94,7 +94,7 @@ class _InspectScreenState extends State<InspectScreen> {
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -33,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,7 +183,7 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: const Color(0xFF38BDF8),
                             iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                             title: 'Version',
-                            subtitle: 'FLAC Toolkit Mobile • Build 15 (Release)',
+                            subtitle: 'FLAC Toolkit Mobile • Build 16 (Release)',
                             position: position,
                             trailing: Text(
                               'v1.1.0',
