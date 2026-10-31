@@ -730,81 +730,15 @@ class _TrackDetailModal extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // 2. Score Badge & Wavy Verified Seal (Concise, no truncation)
-          Row(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '${track.score}',
-                    style: TextStyle(
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
-                      color: textColor,
-                    ),
-                  ),
-                  Text(
-                    '%',
-                    style: TextStyle(
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: subTextColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(isDark ? 0.20 : 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        track.status == 'genuine'
-                            ? Icons.verified_rounded
-                            : Icons.warning_amber_rounded,
-                        size: 16,
-                        color: statusColor,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          track.shortBadge,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            color: statusColor,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // 3. Studio Spectral Nyquist Analyzer Stage
+          // 2. Hybrid Forensic Audio Engine (Speedometer Dial + Scientific Nyquist Shelf Graph)
           AudioSpectrumStage(
+            score: track.score,
             cutoffKhz: track.cutoffKhz,
             maxKhz: track.maxKhz,
+            status: track.status,
+            shortBadge: track.shortBadge,
             statusColor: statusColor,
-            height: 38,
+            height: 94,
           ),
 
           Padding(

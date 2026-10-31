@@ -249,83 +249,15 @@ class _InspectScreenState extends State<InspectScreen> {
             if (_info != null) ...[
               const SizedBox(height: 20),
 
-              // 2. Score Row with Wavy Circle Verified Seal & Concise Badge (No Truncation)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        '${_info!.score}',
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 44,
-                          fontWeight: FontWeight.w800,
-                          color: textColor,
-                        ),
-                      ),
-                      Text(
-                        '%',
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: subTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  // Concise Studio Badge (Fits cleanly in 1 line with no truncation)
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(isDark ? 0.20 : 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _info!.status == 'genuine'
-                                ? Icons.verified_rounded
-                                : Icons.warning_amber_rounded,
-                            size: 16,
-                            color: statusColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              _info!.shortBadge,
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                                color: statusColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // 3. Pro Studio Spectral Nyquist Analyzer Stage
+              // 2. Hybrid Forensic Audio Engine (Speedometer Dial + Scientific Nyquist Shelf Graph)
               AudioSpectrumStage(
+                score: _info!.score,
                 cutoffKhz: _info!.cutoffKhz,
                 maxKhz: _info!.maxKhz,
+                status: _info!.status,
+                shortBadge: _info!.shortBadge,
                 statusColor: statusColor,
-                height: 42,
+                height: 94,
               ),
 
               // Detailed explanation text under spectrum
