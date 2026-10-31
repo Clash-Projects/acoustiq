@@ -7,6 +7,8 @@ class AppState extends ChangeNotifier {
   bool _hapticsEnabled = true;
   bool _amoledMode = true;
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
+  String _accentPreset = 'Ocean'; // 'Crimson', 'Violet', 'Ocean', 'Sage', 'Amber', 'Rose', 'Mono', 'Custom'
+  Color _customColor = const Color(0xFF2196C6);
   
   List<FlacInfo> _sharedLibrary = [];
   String? _lastScannedFolder;
@@ -15,8 +17,32 @@ class AppState extends ChangeNotifier {
   bool get hapticsEnabled => _hapticsEnabled;
   bool get amoledMode => _amoledMode;
   String get themeMode => _themeMode;
+  String get accentPreset => _accentPreset;
+  Color get customColor => _customColor;
   List<FlacInfo> get sharedLibrary => _sharedLibrary;
   String? get lastScannedFolder => _lastScannedFolder;
+
+  Color getAccentColor(BuildContext context) {
+    switch (_accentPreset) {
+      case 'Crimson':
+        return const Color(0xFFE03030);
+      case 'Violet':
+        return const Color(0xFF7C4DFF);
+      case 'Ocean':
+        return const Color(0xFF2196C6);
+      case 'Sage':
+        return const Color(0xFF6B9E6B);
+      case 'Amber':
+        return const Color(0xFFE0A030);
+      case 'Rose':
+        return const Color(0xFFE0507A);
+      case 'Mono':
+        return isCurrentDark(context) ? Colors.white : const Color(0xFF101828);
+      case 'Custom':
+      default:
+        return _customColor;
+    }
+  }
 
   bool isCurrentDark(BuildContext context) {
     if (_themeMode == 'light') return false;
@@ -75,6 +101,14 @@ class AppState extends ChangeNotifier {
 
   void setThemeMode(String value) {
     _themeMode = value;
+    notifyListeners();
+  }
+
+  void setAccentPreset(String preset, [Color? customColor]) {
+    _accentPreset = preset;
+    if (customColor != null) {
+      _customColor = customColor;
+    }
     notifyListeners();
   }
 
