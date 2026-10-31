@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
+import '../widgets/ambient_wallpaper.dart';
 import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 
@@ -31,7 +34,7 @@ class SettingsScreen extends StatelessWidget {
         final activeAccent = appState.getAccentColor(context);
 
         return Scaffold(
-          backgroundColor: appState.getBgColor(context),
+          backgroundColor: Colors.transparent,
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
@@ -61,7 +64,13 @@ class SettingsScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 2. THEME & GLASS MATERIALS
+                  // 2. AMBIENT ENVIRONMENT & WALLPAPER
+                  buildSectionHeader('Ambient Glass Environment', subTextColor),
+                  _buildWallpaperSection(context, isDark, textColor, subTextColor, activeAccent),
+
+                  const SizedBox(height: 16),
+
+                  // 3. THEME & GLASS MATERIALS
                   buildSectionHeader('Theme & Materials', subTextColor),
                   ExpressiveGroup(
                     rowCount: 3,
@@ -614,6 +623,341 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Curated Ambient Glass Wallpaper & Environment Selector
+  Widget _buildWallpaperSection(
+    BuildContext context,
+    bool isDark,
+    Color textColor,
+    Color subTextColor,
+    Color activeAccent,
+  ) {
+    const presets = [
+      (key: 'nebula', name: 'Obsidian\nNebula'),
+      (key: 'abyss', name: 'Emerald\nAbyss'),
+      (key: 'sunset', name: 'Sunset\nHorizon'),
+      (key: 'pure_black', name: 'Pure\nAMOLED'),
+    ];
+
+    final isCustom = appState.wallpaperPreset == 'custom';
+    final customPath = appState.customWallpaperPath;
+    final hasValidCustomFile = customPath != null && File(customPath).existsSync();
+
+    return GlassSurface(
+      borderRadius: BorderRadius.circular(24),
+      style: GlassStyle.frosted,
+      borderless: false,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Presets Row (4 Curated Atmospheric Environments)
+          Row(
+            children: [
+              for (int i = 0; i < presets.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(
+                  child: _buildWallpaperPresetTile(
+                    context: context,
+                    presetKey: presets[i].key,
+                    name: presets[i].name,
+                    isSelected: appState.wallpaperPreset == presets[i].key,
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                    activeAccent: activeAccent,
+                    onTap: () {
+                      if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                      appState.setWallpaperPreset(presets[i].key);
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // 2. Custom Wallpaper Loader Card (Apple Photos / Gallery Style)
+          GestureDetector(
+            onTap: () => _pickCustomWallpaper(context),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isCustom
+                      ? activeAccent.withOpacity(0.6)
+                      : (isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000)),
+                  width: isCustom ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Thumbnail preview or Gallery Icon
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE2E8F0),
+                      border: Border.all(
+                        color: isDark ? const Color(0x22FFFFFF) : const Color(0x22000000),
+                        width: 1,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: hasValidCustomFile
+                        ? Image.file(
+                            File(customPath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.broken_image_rounded,
+                              size: 20,
+                              color: Color(0x88FFFFFF),
+                            ),
+                          )
+                        : Icon(
+                            Icons.wallpaper_rounded,
+                            size: 22,
+                            color: isCustom ? activeAccent : subTextColor,
+                          ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Text Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Custom Gallery Image',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
+                            if (isCustom) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: activeAccent.withOpacity(0.20),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'ACTIVE',
+                                  style: TextStyle(
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: activeAccent,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isCustom && hasValidCustomFile
+                              ? customPath.split('/').last
+                              : 'Set personal photo to illuminate glass blur',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11.5,
+                            color: subTextColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Browse / Reset Buttons
+                  if (isCustom && hasValidCustomFile) ...[
+                    // Clear button
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      color: subTextColor,
+                      tooltip: 'Reset to preset',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () {
+                        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                        appState.clearCustomWallpaper();
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+
+                  // Browse Pill Button
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: activeAccent.withOpacity(0.35),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      isCustom ? 'Change' : 'Browse',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: activeAccent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Preset Swatch Tile with Miniature Mesh Preview
+  Widget _buildWallpaperPresetTile({
+    required BuildContext context,
+    required String presetKey,
+    required String name,
+    required bool isSelected,
+    required bool isDark,
+    required Color textColor,
+    required Color subTextColor,
+    required Color activeAccent,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          AspectRatio(
+            aspectRatio: 1.0,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected
+                      ? activeAccent
+                      : (isDark ? const Color(0x24FFFFFF) : const Color(0x18000000)),
+                  width: isSelected ? 2.5 : 1.0,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: activeAccent.withOpacity(0.35),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Mini live gradient preview
+                    AmbientWallpaperView.buildPreview(presetKey, isDark),
+
+                    // Active checkmark badge
+                    if (isSelected)
+                      Center(
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.55),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.6),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.check_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 10.5,
+              height: 1.15,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+              color: isSelected ? textColor : subTextColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Launch file picker for custom gallery image
+  Future<void> _pickCustomWallpaper(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
+      if (result != null && result.files.single.path != null) {
+        final path = result.files.single.path!;
+        appState.setCustomWallpaperPath(path);
+        if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Custom wallpaper applied to ambient environment',
+                style: TextStyle(fontFamily: 'Inter'),
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to pick wallpaper: $e',
+              style: const TextStyle(fontFamily: 'Inter'),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildThemeModeRow(

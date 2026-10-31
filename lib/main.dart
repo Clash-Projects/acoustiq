@@ -7,6 +7,7 @@ import 'screens/audit_screen.dart';
 import 'screens/duplicates_screen.dart';
 import 'screens/settings_screen.dart';
 import 'ui/theme/colors.dart';
+import 'widgets/ambient_wallpaper.dart';
 import 'widgets/liquid_lens_dock.dart';
 
 void main() {
@@ -126,9 +127,14 @@ class _MainShellState extends State<MainShell> {
         );
 
         return Scaffold(
-          backgroundColor: bg,
+          backgroundColor: Colors.transparent,
           body: Stack(
             children: [
+              // 0. Ambient Glass Wallpaper & Environment Engine
+              const Positioned.fill(
+                child: AmbientWallpaperView(),
+              ),
+
               // 1. Full Screen Responsive Workspace (Centered on tablet/desktop)
               Positioned.fill(
                 child: Center(

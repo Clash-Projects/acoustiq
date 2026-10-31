@@ -9,6 +9,8 @@ class AppState extends ChangeNotifier {
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
   String _accentPreset = 'Ocean'; // 'Crimson', 'Violet', 'Ocean', 'Sage', 'Amber', 'Rose', 'Mono', 'Custom'
   Color _customColor = const Color(0xFF2196C6);
+  String _wallpaperPreset = 'nebula'; // 'nebula', 'abyss', 'sunset', 'pure_black', 'custom'
+  String? _customWallpaperPath;
   
   List<FlacInfo> _sharedLibrary = [];
   String? _lastScannedFolder;
@@ -19,6 +21,8 @@ class AppState extends ChangeNotifier {
   String get themeMode => _themeMode;
   String get accentPreset => _accentPreset;
   Color get customColor => _customColor;
+  String get wallpaperPreset => _wallpaperPreset;
+  String? get customWallpaperPath => _customWallpaperPath;
   List<FlacInfo> get sharedLibrary => _sharedLibrary;
   String? get lastScannedFolder => _lastScannedFolder;
 
@@ -109,6 +113,25 @@ class AppState extends ChangeNotifier {
     if (customColor != null) {
       _customColor = customColor;
     }
+    notifyListeners();
+  }
+
+  void setWallpaperPreset(String preset) {
+    _wallpaperPreset = preset;
+    notifyListeners();
+  }
+
+  void setCustomWallpaperPath(String? path) {
+    _customWallpaperPath = path;
+    if (path != null) {
+      _wallpaperPreset = 'custom';
+    }
+    notifyListeners();
+  }
+
+  void clearCustomWallpaper() {
+    _customWallpaperPath = null;
+    _wallpaperPreset = 'nebula';
     notifyListeners();
   }
 

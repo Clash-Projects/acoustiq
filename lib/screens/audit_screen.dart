@@ -129,7 +129,7 @@ class _AuditScreenState extends State<AuditScreen> {
         }
 
         return Scaffold(
-          backgroundColor: appState.getBgColor(context),
+          backgroundColor: Colors.transparent,
           body: SafeArea(
             bottom: false,
             child: CustomScrollView(

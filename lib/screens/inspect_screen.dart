@@ -90,7 +90,7 @@ class _InspectScreenState extends State<InspectScreen> {
         final subTextColor = appState.getSubTextColor(context);
 
         return Scaffold(
-          backgroundColor: appState.getBgColor(context),
+          backgroundColor: Colors.transparent,
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(

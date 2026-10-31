@@ -253,7 +253,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         final wastedMb = _groups.fold<double>(0.0, (sum, g) => sum + g.wastedMb);
 
         return Scaffold(
-          backgroundColor: appState.getBgColor(context),
+          backgroundColor: Colors.transparent,
           body: SafeArea(
             bottom: false,
             child: CustomScrollView(
