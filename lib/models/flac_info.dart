@@ -53,9 +53,8 @@ class FlacInfo {
     this.spectrumBands = const [],
     this.hasLyrics = false,
     this.lyricsText,
-    String? lyrics,
     this.error,
-  }) : lyricsText = lyricsText ?? lyrics;
+  });
 
   /// Concise Studio Badge (Prevents mobile UI text truncation)
   String get shortBadge {
