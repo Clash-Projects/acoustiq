@@ -9,6 +9,7 @@ import '../widgets/audio_spectrum_stage.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
+import '../widgets/app_snack_bar.dart';
 
 /// 1:1 Port of LastWave Native's Borderless AMOLED Track List Stage for FLAC Audio Auditing
 ///
@@ -41,11 +42,11 @@ class _AuditScreenState extends State<AuditScreen> {
     final dir = Directory(dirPath);
     if (!dir.existsSync()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Folder not found: $dirPath'),
-            backgroundColor: AppColors.fakeCoral,
-          ),
+        showThemedSnackBar(
+          context,
+          'Folder not found: $dirPath',
+          icon: Icons.error_outline_rounded,
+          accentColor: AppColors.fakeCoral,
         );
       }
       return;
@@ -68,11 +69,11 @@ class _AuditScreenState extends State<AuditScreen> {
       }
 
       if (flacFiles.isEmpty && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('No .flac files found in $dirPath'),
-            backgroundColor: AppColors.suspiciousAmber,
-          ),
+        showThemedSnackBar(
+          context,
+          'No .flac files found in $dirPath',
+          icon: Icons.info_outline_rounded,
+          accentColor: AppColors.suspiciousAmber,
         );
       }
 
@@ -87,13 +88,21 @@ class _AuditScreenState extends State<AuditScreen> {
       }
 
       appState.setSharedLibrary(newTracks, dirPath);
+      if (mounted) {
+        showThemedSnackBar(
+          context,
+          'Audited ${newTracks.length} FLAC tracks successfully',
+          icon: Icons.verified_rounded,
+          accentColor: AppColors.genuineEmerald,
+        );
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Scan error: $e'),
-            backgroundColor: AppColors.fakeCoral,
-          ),
+        showThemedSnackBar(
+          context,
+          'Scan error: $e',
+          icon: Icons.error_outline_rounded,
+          accentColor: AppColors.fakeCoral,
         );
       }
     } finally {
@@ -1109,19 +1118,20 @@ class _TrackDetailModal extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // 2. Hybrid Forensic Audio Engine (32-Bar Waveform + 2D STFT Spectrogram)
+          // 2. Hybrid Forensic Audio Engine (Speedometer + Waveform Switcher)
           AudioSpectrumStage(
             score: track.score,
             cutoffKhz: track.cutoffKhz,
             maxKhz: track.maxKhz,
             spectrumBands: track.spectrumBands,
+            spectrogramMatrix: track.spectrogramMatrix,
             status: track.status,
             shortBadge: track.shortBadge,
             statusColor: statusColor,
             sampleRate: track.sampleRate,
             bitDepth: track.bitDepth,
             verdict: track.verdict,
-            height: 136,
+            height: 140,
           ),
 
           Padding(
@@ -1131,10 +1141,10 @@ class _TrackDetailModal extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 11.5,
-                height: 1.3,
+                height: 1.35,
                 color: subTextColor,
               ),
-              maxLines: 2,
+              maxLines: 3,
               softWrap: true,
               overflow: TextOverflow.ellipsis,
             ),

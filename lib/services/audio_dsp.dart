@@ -10,6 +10,7 @@ class DspAnalysisResult {
   final String status; // 'genuine' | 'suspicious' | 'fake'
   final bool isFake24;
   final List<double> spectrumBands; // 128 normalized frequency bands (0.0 to 1.0)
+  final List<List<double>> spectrogramMatrix; // Real 32x32 time x frequency STFT matrix
 
   const DspAnalysisResult({
     required this.cutoffKhz,
@@ -19,6 +20,7 @@ class DspAnalysisResult {
     required this.status,
     required this.isFake24,
     required this.spectrumBands,
+    this.spectrogramMatrix = const [],
   });
 }
 
@@ -81,10 +83,16 @@ class AudioDspEngine {
       );
     }
 
-    // 2. Compute Welch Power Spectral Density across sample windows
+    // 2. Compute Welch Power Spectral Density & Real 32x32 STFT Matrix
     final numSlices = rawSamples.length ~/ _fftSize;
     final int halfSize = _fftSize ~/ 2;
     List<double> maxPsdDb = List.filled(halfSize, -120.0);
+
+    const int targetCols = 32;
+    const int targetRows = 32;
+    final int colStep = math.max(1, numSlices ~/ targetCols);
+    final int binStep = math.max(1, halfSize ~/ targetRows);
+    List<List<double>> realSpectrogramMatrix = [];
 
     for (int s = 0; s < numSlices; s++) {
       final slice = rawSamples.sublist(s * _fftSize, (s + 1) * _fftSize);
@@ -93,6 +101,29 @@ class AudioDspEngine {
         if (psdSlice[i] > maxPsdDb[i]) {
           maxPsdDb[i] = psdSlice[i];
         }
+      }
+
+      if (s % colStep == 0 && realSpectrogramMatrix.length < targetCols) {
+        List<double> rowEnergies = List<double>.filled(targetRows, 0.0);
+        for (int r = 0; r < targetRows; r++) {
+          double sumDb = 0.0;
+          final startB = r * binStep;
+          for (int k = 0; k < binStep && (startB + k) < halfSize; k++) {
+            sumDb += psdSlice[startB + k];
+          }
+          final avgDb = sumDb / binStep;
+          // Normalize -90 dB (silence) to -10 dB (loud) into 0.02 to 1.0
+          rowEnergies[r] = ((avgDb + 90.0) / 80.0).clamp(0.02, 1.0);
+        }
+        realSpectrogramMatrix.add(rowEnergies);
+      }
+    }
+
+    while (realSpectrogramMatrix.length < targetCols) {
+      if (realSpectrogramMatrix.isNotEmpty) {
+        realSpectrogramMatrix.add(List.from(realSpectrogramMatrix.last));
+      } else {
+        realSpectrogramMatrix.add(List.filled(targetRows, 0.04));
       }
     }
 
@@ -236,6 +267,7 @@ class AudioDspEngine {
       status: status,
       isFake24: isFake24,
       spectrumBands: bands,
+      spectrogramMatrix: realSpectrogramMatrix,
     );
   }
 

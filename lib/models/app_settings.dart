@@ -16,6 +16,9 @@ class AppState extends ChangeNotifier {
   String _wallpaperPreset = 'nebula'; // 'nebula', 'abyss', 'sunset', 'solid', 'custom'
   String? _customWallpaperPath;
 
+  bool _audiophileMode = false; // false = Everyday Music Lover, true = Acoustic Engineer / Pro
+  String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
+
   List<FlacInfo> _sharedLibrary = [];
   String? _lastScannedFolder;
   List<String> _recentFilePaths = [];
@@ -23,6 +26,8 @@ class AppState extends ChangeNotifier {
   bool get isLiquidGlass => _isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get amoledMode => _amoledMode;
+  bool get audiophileMode => _audiophileMode;
+  String get visualizerMode => _visualizerMode;
   String get themeMode => _themeMode;
   String get accentPreset => _accentPreset;
   Color get customColor => _customColor;
@@ -49,6 +54,9 @@ class AppState extends ChangeNotifier {
 
       _wallpaperPreset = _prefs?.getString('wallpaper_preset') ?? 'nebula';
       _customWallpaperPath = _prefs?.getString('custom_wallpaper_path');
+
+      _audiophileMode = _prefs?.getBool('audiophile_mode') ?? false;
+      _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
 
       // Verify custom wallpaper file still exists on disk
       if (_customWallpaperPath != null && !File(_customWallpaperPath!).existsSync()) {
@@ -157,6 +165,18 @@ class AppState extends ChangeNotifier {
       _customColor = customColor;
       _prefs?.setInt('custom_color_value', customColor.value);
     }
+    notifyListeners();
+  }
+
+  void setAudiophileMode(bool value) {
+    _audiophileMode = value;
+    _prefs?.setBool('audiophile_mode', value);
+    notifyListeners();
+  }
+
+  void setVisualizerMode(String mode) {
+    _visualizerMode = mode;
+    _prefs?.setString('visualizer_mode', mode);
     notifyListeners();
   }
 

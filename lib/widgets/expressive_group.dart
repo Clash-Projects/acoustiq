@@ -151,10 +151,10 @@ class ExpressiveGroupRow extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 12.0,
-                            height: 1.3,
+                            height: 1.35,
                             color: subTextColor,
                           ),
-                          maxLines: 2,
+                          maxLines: 3,
                           softWrap: true,
                           overflow: TextOverflow.ellipsis,
                         ),

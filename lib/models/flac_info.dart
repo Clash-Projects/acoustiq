@@ -23,6 +23,7 @@ class FlacInfo {
   final String status; // "genuine", "suspicious", "fake"
   final bool isFake24;
   final List<double> spectrumBands;
+  final List<List<double>> spectrogramMatrix;
   final bool hasLyrics;
   final String? lyricsText;
   String? get lyrics => lyricsText;
@@ -51,6 +52,7 @@ class FlacInfo {
     required this.status,
     required this.isFake24,
     this.spectrumBands = const [],
+    this.spectrogramMatrix = const [],
     this.hasLyrics = false,
     this.lyricsText,
     this.error,
@@ -88,6 +90,7 @@ class FlacInfo {
       status: 'fake',
       isFake24: false,
       spectrumBands: const [],
+      spectrogramMatrix: const [],
       hasLyrics: false,
       lyricsText: null,
       error: error,

@@ -11,6 +11,7 @@ import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
+import '../widgets/app_snack_bar.dart';
 
 /// 1:1 Port of LastWave Studio-Grade Audio Inspector Architecture
 ///
@@ -71,11 +72,10 @@ class _InspectScreenState extends State<InspectScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error analyzing file: $e'),
-            backgroundColor: AppColors.fakeCoral,
-          ),
+        showThemedSnackBar(
+          context,
+          'Error analyzing file: $e',
+          icon: Icons.error_outline_rounded,
         );
         setState(() => _isLoading = false);
       }
@@ -372,11 +372,10 @@ class _InspectScreenState extends State<InspectScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error choosing file: $e'),
-            backgroundColor: AppColors.fakeCoral,
-          ),
+        showThemedSnackBar(
+          context,
+          'Error choosing file: $e',
+          icon: Icons.error_outline_rounded,
         );
       }
       setState(() => _isLoading = false);
@@ -569,19 +568,20 @@ class _InspectScreenState extends State<InspectScreen> {
             if (_info != null) ...[
               const SizedBox(height: 20),
 
-              // 2. Hybrid Forensic Audio Engine (32-Bar Waveform + 2D STFT Spectrogram)
+              // 2. Hybrid Forensic Audio Engine (Speedometer + Waveform Switcher)
               AudioSpectrumStage(
                 score: _info!.score,
                 cutoffKhz: _info!.cutoffKhz,
                 maxKhz: _info!.maxKhz,
                 spectrumBands: _info!.spectrumBands,
+                spectrogramMatrix: _info!.spectrogramMatrix,
                 status: _info!.status,
                 shortBadge: _info!.shortBadge,
                 statusColor: statusColor,
                 sampleRate: _info!.sampleRate,
                 bitDepth: _info!.bitDepth,
                 verdict: _info!.verdict,
-                height: 136,
+                height: 140,
               ),
 
               // Detailed explanation text under spectrum
@@ -592,10 +592,10 @@ class _InspectScreenState extends State<InspectScreen> {
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 11.5,
-                    height: 1.3,
+                    height: 1.35,
                     color: subTextColor,
                   ),
-                  maxLines: 2,
+                  maxLines: 3,
                   softWrap: true,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -681,10 +681,12 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.verified_user_rounded,
         iconColor: AppColors.genuineEmerald,
         iconBg: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-        title: 'Audio Integrity',
-        subtitle: _info!.verdict,
+        title: 'Audio Quality',
+        subtitle: _info!.status == 'genuine'
+            ? 'Full dynamic range preserved'
+            : 'Lossy cutoff at ${_info!.cutoffKhz.toStringAsFixed(1)} kHz',
         trailing: Text(
-          _info!.status == 'genuine' ? 'Lossless' : 'Transcode',
+          _info!.status == 'genuine' ? 'Lossless' : 'Cutoff',
           style: TextStyle(
             fontFamily: 'JetBrainsMono',
             fontSize: 12,
@@ -700,8 +702,8 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.graphic_eq_rounded,
         iconColor: activeAccent,
         iconBg: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-        title: 'Audio Channels',
-        subtitle: '${_info!.channels == 2 ? 'Stereo (2.0)' : 'Mono'} • FLAC Stream',
+        title: 'Channels',
+        subtitle: '${_info!.channels == 2 ? 'Stereo (2.0)' : 'Mono'} lossless sound',
         trailing: Text(
           '${_info!.channels} ch',
           style: TextStyle(
@@ -717,7 +719,7 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.timer_outlined,
         iconColor: const Color(0xFFA78BFA),
         iconBg: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
-        title: 'Duration & Bitrate',
+        title: 'Length & Bitrate',
         subtitle: '${_info!.bitrateKbps} kbps average',
         trailing: Text(
           _info!.durationStr,
@@ -734,10 +736,10 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.lyrics_rounded,
         iconColor: const Color(0xFF38BDF8),
         iconBg: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
-        title: 'Integrated Lyrics',
+        title: 'Song Lyrics',
         subtitle: _info!.hasLyrics
-            ? 'Vorbis Lyrics embedded in FLAC • Tap to view'
-            : 'No lyrics metadata detected in file',
+            ? 'Embedded lyrics • Tap to view'
+            : 'No embedded lyrics found',
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

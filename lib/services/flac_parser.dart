@@ -192,6 +192,7 @@ class FlacParser {
         status: dspResult.status,
         isFake24: dspResult.isFake24,
         spectrumBands: dspResult.spectrumBands,
+        spectrogramMatrix: dspResult.spectrogramMatrix,
         hasLyrics: hasLyrics,
         lyricsText: lyrics,
       );

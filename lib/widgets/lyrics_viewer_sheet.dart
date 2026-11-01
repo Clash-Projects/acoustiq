@@ -6,6 +6,7 @@ import '../models/flac_info.dart';
 import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
+import 'app_snack_bar.dart';
 
 /// Shows an Apple WWDC25 Frosted Glass modal bottom sheet displaying
 /// embedded Vorbis FLAC lyrics (synced LRC timestamps or plain text).
@@ -211,16 +212,10 @@ class LyricsViewerSheet extends StatelessWidget {
                         if (appState.hapticsEnabled) {
                           HapticFeedback.lightImpact();
                         }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
-                              'Lyrics copied to clipboard',
-                              style: TextStyle(fontFamily: 'Inter'),
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            duration: const Duration(seconds: 2),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
+                        showThemedSnackBar(
+                          context,
+                          'Lyrics copied to clipboard',
+                          icon: Icons.copy_rounded,
                         );
                       },
                       borderRadius: BorderRadius.circular(12),

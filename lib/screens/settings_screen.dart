@@ -14,6 +14,7 @@ import '../widgets/ambient_wallpaper.dart';
 import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
+import '../widgets/app_snack_bar.dart';
 
 /// 1:1 Port of LastWave Native's Settings Architecture (Appearance & Visuals)
 ///
@@ -33,21 +34,20 @@ class SettingsScreen extends StatelessWidget {
     const path = '/storage/emulated/0/Music';
     final dir = Directory(path);
     if (!dir.existsSync()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Music directory /storage/emulated/0/Music not found'),
-          backgroundColor: AppColors.fakeCoral,
-        ),
+      showThemedSnackBar(
+        context,
+        'Music folder /storage/emulated/0/Music not found',
+        icon: Icons.error_outline_rounded,
+        accentColor: AppColors.fakeCoral,
       );
       return;
     }
 
     if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Scanning /storage/emulated/0/Music in background...'),
-        duration: Duration(seconds: 2),
-      ),
+    showThemedSnackBar(
+      context,
+      'Scanning Music folder in background...',
+      icon: Icons.hourglass_top_rounded,
     );
 
     final List<FlacInfo> tracks = [];
@@ -60,21 +60,20 @@ class SettingsScreen extends StatelessWidget {
       }
       appState.setSharedLibrary(tracks, path);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Audited ${tracks.length} tracks from Music folder'),
-            backgroundColor: AppColors.genuineEmerald,
-            duration: const Duration(seconds: 3),
-          ),
+        showThemedSnackBar(
+          context,
+          'Audited ${tracks.length} tracks from Music folder',
+          icon: Icons.verified_rounded,
+          accentColor: AppColors.genuineEmerald,
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Scan error: $e'),
-            backgroundColor: AppColors.fakeCoral,
-          ),
+        showThemedSnackBar(
+          context,
+          'Scan error: $e',
+          icon: Icons.error_outline_rounded,
+          accentColor: AppColors.fakeCoral,
         );
       }
     }
@@ -185,99 +184,85 @@ class SettingsScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 4. FORENSIC AUDIO ENGINE & DSP
-                  buildSectionHeader('Forensic Audio Engine & DSP', subTextColor),
+                  // 4. AUDIO ENGINE & AUDIOPHILE SETTINGS
+                  buildSectionHeader('Audio Engine & Audiophile Settings', subTextColor),
                   ExpressiveGroup(
                     rowCount: 4,
                     itemBuilder: (context, index, position) {
                       switch (index) {
                         case 0:
-                          // High-Precision Forensic FFT Analyzer
+                          // Pro Audiophile Mode Switch
                           return ExpressiveGroupRow(
-                            icon: Icons.graphic_eq_rounded,
-                            iconColor: activeAccent,
-                            iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                            title: 'Forensic Spectrum Stage',
-                            subtitle: '128-band FFT spectral analyzer with Welch PSD & Hann windowing',
+                            icon: Icons.science_rounded,
+                            iconColor: const Color(0xFF00D2FF),
+                            iconBgColor: const Color(0xFF00D2FF).withOpacity(isDark ? 0.20 : 0.12),
+                            title: 'Pro Audiophile Mode',
+                            subtitle: appState.audiophileMode
+                                ? 'Displaying raw Nyquist limit, STFT dB slope, and bit-depth metrics'
+                                : 'Everyday mode active • Simple human-friendly audio terms',
                             position: position,
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'ACTIVE',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: activeAccent,
-                                ),
-                              ),
+                            trailing: Switch.adaptive(
+                              value: appState.audiophileMode,
+                              activeColor: activeAccent,
+                              onChanged: (val) {
+                                if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                                appState.setAudiophileMode(val);
+                              },
                             ),
                           );
                         case 1:
-                          // Brickwall Cutoff Steepness Probe
+                          // Visualizer Stage Switcher
                           return ExpressiveGroupRow(
-                            icon: Icons.analytics_outlined,
-                            iconColor: const Color(0xFF38BDF8),
-                            iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
-                            title: 'Brickwall Cutoff Detector',
-                            subtitle: '38 dB acoustic steepness check flags MP3/AAC transcodes',
+                            icon: Icons.auto_graph_rounded,
+                            iconColor: activeAccent,
+                            iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                            title: 'Sound Stage Visualizer',
+                            subtitle: 'Default style for the audio purity stage',
                             position: position,
                             trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              height: 28,
+                              padding: const EdgeInsets.all(2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
-                                borderRadius: BorderRadius.circular(8),
+                                color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
+                                borderRadius: BorderRadius.circular(9),
                               ),
-                              child: const Text(
-                                'ACTIVE',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF38BDF8),
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _microVisualizerButton('gauge', Icons.speed_rounded, appState.visualizerMode, isDark, activeAccent),
+                                  _microVisualizerButton('hybrid', Icons.electric_bolt_rounded, appState.visualizerMode, isDark, activeAccent),
+                                  _microVisualizerButton('waveform', Icons.bar_chart_rounded, appState.visualizerMode, isDark, activeAccent),
+                                ],
                               ),
                             ),
                           );
                         case 2:
-                          // Hardware MediaCodec Bit-Depth Probe
+                          // Haptic Feedback Switch
                           return ExpressiveGroupRow(
-                            icon: Icons.memory_rounded,
+                            icon: Icons.vibration_rounded,
                             iconColor: const Color(0xFFA78BFA),
                             iconBgColor: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
-                            title: 'Hardware MediaCodec Probe',
-                            subtitle: 'Decodes raw PCM chunks to expose 24-bit zero-padded upscales',
+                            title: 'Tactile Haptics',
+                            subtitle: 'Vibrate lightly on tab switches and interactions',
                             position: position,
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFA78BFA).withOpacity(isDark ? 0.20 : 0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'ON',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFFA78BFA),
-                                ),
-                              ),
+                            trailing: Switch.adaptive(
+                              value: appState.hapticsEnabled,
+                              activeColor: activeAccent,
+                              onChanged: (val) {
+                                appState.setHapticsEnabled(val);
+                                if (val) HapticFeedback.mediumImpact();
+                              },
                             ),
                           );
                         case 3:
                         default:
-                          // Duplicate FLAC Auto-Ranking Engine
+                          // Hardware MediaCodec Audio Engine Status
                           return ExpressiveGroupRow(
-                            icon: Icons.copy_all_rounded,
-                            iconColor: AppColors.suspiciousAmber,
-                            iconBgColor: isDark ? const Color(0x30FFB300) : const Color(0xFFFEF3C7),
-                            title: 'Duplicate FLAC Engine',
-                            subtitle: 'Auto-identify and rank pure studio masters vs redundant copies',
+                            icon: Icons.memory_rounded,
+                            iconColor: AppColors.genuineEmerald,
+                            iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
+                            title: 'DSP Decoder Pipeline',
+                            subtitle: 'MediaCodec hardware PCM extractor & 4096-pt Cooley-Tukey FFT',
                             position: position,
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -286,7 +271,7 @@ class SettingsScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
-                                'ON',
+                                'ACTIVE',
                                 style: TextStyle(
                                   fontFamily: 'JetBrainsMono',
                                   fontSize: 10,
@@ -360,11 +345,10 @@ class SettingsScreen extends StatelessWidget {
                             onTap: () {
                               if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
                               appState.setSharedLibrary([], '');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Library cache cleared successfully'),
-                                  duration: Duration(seconds: 2),
-                                ),
+                              showThemedSnackBar(
+                                context,
+                                'Library cache cleared successfully',
+                                icon: Icons.delete_sweep_rounded,
                               );
                             },
                           );
@@ -860,11 +844,19 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // 2. Custom Wallpaper Loader Card (Direct Override & Cache-Buster)
+          // 2. Custom Wallpaper Loader Card (Persistent Slot & Direct Override)
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: GestureDetector(
-              onTap: () => _pickCustomWallpaper(context),
+              onTap: () {
+                if (hasValidCustomFile && !isCustom) {
+                  // Instant 1-tap activation of already saved custom wallpaper!
+                  if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                  appState.setWallpaperPreset('custom');
+                } else {
+                  _pickCustomWallpaper(context);
+                }
+              },
               behavior: HitTestBehavior.opaque,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -953,8 +945,10 @@ class SettingsScreen extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             isCustom && hasValidCustomFile
-                                ? 'Tap to replace image'
-                                : 'Set personal photo to illuminate glass',
+                                ? 'Active • Tap to replace photo'
+                                : (hasValidCustomFile
+                                    ? 'Saved photo • Tap to apply'
+                                    : 'Choose personal photo for ambient glass'),
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 11.0,
@@ -969,25 +963,51 @@ class SettingsScreen extends StatelessWidget {
 
                     const SizedBox(width: 8),
 
-                    // Single Action: Reset when active, or Chevron when inactive
-                    if (isCustom && hasValidCustomFile)
+                    // Action controls: Edit + Reset when active, Apply when saved, Add when empty
+                    if (isCustom && hasValidCustomFile) ...[
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
+                        icon: const Icon(Icons.edit_rounded, size: 18),
+                        color: activeAccent,
+                        tooltip: 'Change photo',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        onPressed: () => _pickCustomWallpaper(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
                         color: subTextColor,
                         tooltip: 'Revert to preset',
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         onPressed: () {
                           if (appState.hapticsEnabled) HapticFeedback.selectionClick();
                           appState.clearCustomWallpaper();
                         },
-                      )
-                    else
+                      ),
+                    ] else if (hasValidCustomFile) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: activeAccent.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Apply',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: activeAccent,
+                          ),
+                        ),
+                      ),
+                    ] else ...[
                       Icon(
-                        Icons.chevron_right_rounded,
+                        Icons.add_photo_alternate_outlined,
                         size: 20,
                         color: subTextColor,
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -1090,6 +1110,39 @@ class SettingsScreen extends StatelessWidget {
   );
   }
 
+  Widget _microVisualizerButton(String targetMode, IconData icon, String currentMode, bool isDark, Color activeAccent) {
+    final isSelected = currentMode == targetMode;
+    return GestureDetector(
+      onTap: () {
+        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+        appState.setVisualizerMode(targetMode);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected ? (isDark ? const Color(0x50FFFFFF) : Colors.white) : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Icon(
+          icon,
+          size: 13,
+          color: isSelected ? activeAccent : (isDark ? const Color(0x88FFFFFF) : const Color(0x88000000)),
+        ),
+      ),
+    );
+  }
+
   /// Launch modern Android photo picker for custom gallery image & sandbox cleanly
   Future<void> _pickCustomWallpaper(BuildContext context) async {
     try {
@@ -1124,29 +1177,19 @@ class SettingsScreen extends StatelessWidget {
         appState.setCustomWallpaperPath(targetFile.path);
         if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Custom wallpaper applied to ambient environment',
-                style: TextStyle(fontFamily: 'Inter'),
-              ),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          showThemedSnackBar(
+            context,
+            'Custom wallpaper applied to ambient environment',
+            icon: Icons.wallpaper_rounded,
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to pick wallpaper: $e',
-              style: const TextStyle(fontFamily: 'Inter'),
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showThemedSnackBar(
+          context,
+          'Failed to pick wallpaper: $e',
+          icon: Icons.error_outline_rounded,
         );
       }
     }

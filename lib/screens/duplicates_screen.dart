@@ -9,6 +9,7 @@ import '../ui/theme/shape.dart';
 import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
+import '../widgets/app_snack_bar.dart';
 
 /// 1:1 Port of LastWave Native's Connected Group Architecture for Duplicate Track Management
 ///
@@ -74,11 +75,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     final dir = Directory(dirPath);
     if (!dir.existsSync()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Folder not found: $dirPath'),
-            backgroundColor: AppColors.fakeCoral,
-          ),
+        showThemedSnackBar(
+          context,
+          'Folder not found: $dirPath',
+          icon: Icons.folder_off_rounded,
         );
       }
       return;
@@ -102,11 +102,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       }
 
       if (flacFiles.isEmpty && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('No .flac files found in $dirPath'),
-            backgroundColor: AppColors.suspiciousAmber,
-          ),
+        showThemedSnackBar(
+          context,
+          'No .flac files found in $dirPath',
+          icon: Icons.info_outline_rounded,
         );
       }
 
@@ -124,11 +123,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       _analyzeDuplicates(tracks);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error scanning folder: $e'),
-            backgroundColor: AppColors.fakeCoral,
-          ),
+        showThemedSnackBar(
+          context,
+          'Error scanning folder: $e',
+          icon: Icons.error_outline_rounded,
         );
       }
     } finally {
@@ -523,15 +521,16 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 }
                 appState.removeTrackFromLibrary(track.filePath);
                 _analyzeDuplicates(appState.sharedLibrary);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Redundant file deleted'),
-                    duration: Duration(seconds: 2),
-                  ),
+                showThemedSnackBar(
+                  context,
+                  'Redundant file deleted',
+                  icon: Icons.delete_sweep_rounded,
                 );
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete file: $e')),
+                showThemedSnackBar(
+                  context,
+                  'Failed to delete file: $e',
+                  icon: Icons.error_outline_rounded,
                 );
               }
             },

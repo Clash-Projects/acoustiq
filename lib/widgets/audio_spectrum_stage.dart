@@ -5,26 +5,23 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
+import 'app_snack_bar.dart';
 
-/// Studio Audio Waveform & 2D STFT Spectrogram Stage
+/// Studio Audio Authenticity Stage (Speedometer Gauge + Waveform Hybrid Switcher)
 ///
 /// Features:
-/// 1. Main Stage: 32-Bar Studio Audio Waveform:
-///    - Frequency-binned responsive bars (sub-bass to ultrasonic Nyquist).
-///    - Fluid spring entry animation with continuous acoustic shimmer.
-///    - Precision Cutoff marker highlighting the lossy brickwall boundary.
-///    - Direct modal trigger: "View 2D Spectrogram & Forensics".
-/// 2. Forensic & Spectrogram Modal Bottom Sheet:
-///    - 2D STFT Heatmap Spectrogram with authentic Inferno colormap (par with Desktop flac_analyzer.py).
-///    - Time (0-30s) x Frequency (0 to Nyquist kHz) matrix.
-///    - Dotted Cyan line at Studio CD Standard (20.0 kHz).
-///    - Dashed Red line at Cutoff frequency.
-///    - Hatched Red Dead-Zone Overlay ([!] MISSING FREQUENCIES) for lossy compression.
-///    - dB Loudness Colorbar legend (-90 dB to 0 dB).
-/// 3. Forensic Trust Center & DIY Verification:
-///    - In-depth explanation of why legacy tools (auCDtect, Fakin' The Funk) fail on Hi-Res upscales.
-///    - FLAC Toolkit's Multi-Vector Architecture breakdown.
-///    - DIY Ground Truth reproduction guide with ffmpeg commands.
+/// 1. 3-Way Segmented Visualizer Switcher:
+///    - [ ⚡ Hybrid ]: Left 72dp Speedometer Dial + Right 16-Bar Frequency Waveform (Default).
+///    - [ ⏱️ Gauge ]: Full 90dp Speedometer Dial with score count-up and status pill.
+///    - [ 📊 Waveform ]: 32-Bar Studio Frequency Waveform edge-to-edge.
+/// 2. Jargon De-escalation (Everyday vs Audiophile Pro Mode):
+///    - Everyday Mode: Clean, human terms ("Audio Quality", "Full Range 22 kHz").
+///    - Audiophile Mode: Exact DSP terms ("Cutoff 16.0 kHz", "Nyquist 24.0 kHz").
+///    - Contextual Tooltip: Tap '(i)' to open a friendly 2-line explanation.
+/// 3. Real STFT Spectrogram & Detection Center:
+///    - Paints the ACTUAL song's computed 32x32 time-frequency STFT matrix in Inferno colormap!
+///    - Witty, engaging detection guide (Zero "Paaro", Zero "Desktop scripts").
+///    - Syntax-highlighted DIY terminal commands with 1-tap copy.
 class AudioSpectrumStage extends StatefulWidget {
   final int score;
   final double cutoffKhz;
@@ -34,6 +31,7 @@ class AudioSpectrumStage extends StatefulWidget {
   final Color statusColor;
   final double height;
   final List<double> spectrumBands;
+  final List<List<double>> spectrogramMatrix;
   final int? sampleRate;
   final int? bitDepth;
   final String? verdict;
@@ -46,8 +44,9 @@ class AudioSpectrumStage extends StatefulWidget {
     this.status = 'genuine',
     this.shortBadge = 'GENUINE LOSSLESS',
     required this.statusColor,
-    this.height = 136.0,
+    this.height = 140.0,
     this.spectrumBands = const [],
+    this.spectrogramMatrix = const [],
     this.sampleRate,
     this.bitDepth,
     this.verdict,
@@ -114,9 +113,104 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
         shortBadge: widget.shortBadge,
         statusColor: widget.statusColor,
         spectrumBands: widget.spectrumBands,
+        spectrogramMatrix: widget.spectrogramMatrix,
         sampleRate: widget.sampleRate,
         bitDepth: widget.bitDepth,
         verdict: widget.verdict,
+      ),
+    );
+  }
+
+  void _showExplanationTooltip(BuildContext context, bool isDark, Color textColor, Color subTextColor) {
+    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+    final isLossless = widget.status == 'genuine';
+    showDialog(
+      context: context,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xE8141820) : const Color(0xF5FFFFFF),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? const Color(0x33FFFFFF) : const Color(0x22000000),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: widget.statusColor.withOpacity(0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isLossless ? Icons.verified_rounded : Icons.info_outline_rounded,
+                        color: widget.statusColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isLossless ? 'Genuine Lossless Audio' : 'Compressed / Cutoff Audio',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isLossless
+                      ? 'This audio file preserves the complete acoustic spectrum without lossy frequency compression. Frequencies extend smoothly past 20 kHz to the recording limit.'
+                      : 'This audio file cuts off abruptly around ${widget.cutoffKhz.toStringAsFixed(1)} kHz. In typical MP3/AAC compression, audio above 16-18 kHz is discarded to save file size.',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    height: 1.45,
+                    color: subTextColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      'Got it',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                        color: appState.getAccentColor(context),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -130,6 +224,8 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
         final activeAccent = appState.getAccentColor(context);
+        final isPro = appState.audiophileMode;
+        final mode = appState.visualizerMode; // 'hybrid', 'gauge', 'waveform'
         final safeMax = widget.maxKhz > 0 ? widget.maxKhz : 24.0;
 
         return GlassSurface(
@@ -147,20 +243,23 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 1. Telemetry Top Bar: Waveform Title, Purity Score, and Cutoff Readout
+                  // 1. Header Row: Title, Mode Switcher [ ⏱️ | ⚡ | 📊 ], and Deep-Dive Action
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Title + Help Button
                       Row(
                         children: [
                           Icon(
-                            Icons.graphic_eq_rounded,
+                            mode == 'gauge'
+                                ? Icons.speed_rounded
+                                : (mode == 'waveform' ? Icons.graphic_eq_rounded : Icons.auto_graph_rounded),
                             size: 16,
                             color: widget.statusColor,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Studio Waveform',
+                            isPro ? 'Acoustic Spectrum' : 'Audio Quality',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 13,
@@ -169,106 +268,83 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                               letterSpacing: -0.2,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          // Purity Chip
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: widget.statusColor.withOpacity(isDark ? 0.20 : 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${(widget.score * entryVal).round()}% PURITY',
-                              style: TextStyle(
-                                fontFamily: 'JetBrainsMono',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: widget.statusColor,
-                                letterSpacing: 0.2,
+                          const SizedBox(width: 4),
+                          // Tap-to-explain info button
+                          GestureDetector(
+                            onTap: () => _showExplanationTooltip(context, isDark, textColor, subTextColor),
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: const EdgeInsets.all(3),
+                              child: Icon(
+                                Icons.help_outline_rounded,
+                                size: 14,
+                                color: subTextColor.withOpacity(0.65),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      // Cutoff indicator
-                      Row(
-                        children: [
-                          Text(
-                            'Cutoff: ',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              color: subTextColor,
-                            ),
-                          ),
-                          Text(
-                            '${widget.cutoffKhz.toStringAsFixed(1)} kHz',
-                            style: TextStyle(
-                              fontFamily: 'JetBrainsMono',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: widget.status == 'genuine' ? activeAccent : widget.statusColor,
-                            ),
-                          ),
-                        ],
+
+                      // View Mode Switcher [ ⏱️ | ⚡ | 📊 ]
+                      Container(
+                        height: 28,
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _modeButton('gauge', Icons.speed_rounded, mode, isDark, activeAccent),
+                            _modeButton('hybrid', Icons.electric_bolt_rounded, mode, isDark, activeAccent),
+                            _modeButton('waveform', Icons.bar_chart_rounded, mode, isDark, activeAccent),
+                          ],
+                        ),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 10),
 
-                  // 2. 32-Bar Studio Audio Waveform Canvas
-                  SizedBox(
-                    height: 56,
-                    child: CustomPaint(
-                      painter: _StudioWaveformPainter(
-                        cutoffKhz: widget.cutoffKhz,
-                        maxKhz: safeMax,
-                        spectrumBands: widget.spectrumBands,
-                        entryProgress: entryVal,
-                        shimmerProgress: shimmerVal,
-                        statusColor: widget.statusColor,
-                        isDark: isDark,
-                      ),
-                    ),
+                  // 2. Visualizer Body (Gauge, Waveform, or Hybrid)
+                  _buildVisualizerBody(
+                    mode: mode,
+                    entryVal: entryVal,
+                    shimmerVal: shimmerVal,
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                    activeAccent: activeAccent,
+                    safeMax: safeMax,
                   ),
 
                   const SizedBox(height: 10),
 
-                  // 3. Bottom Action Bar: Frequency Labels + 2D Spectrogram Modal Trigger
+                  // 3. Footer Bar: Readout + Full Spectrogram Trigger
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Sub-bass to Nyquist Frequency Axis
+                      // Human or Pro Frequency Readout
                       Row(
                         children: [
                           Text(
-                            '0 kHz',
+                            isPro
+                                ? 'Cutoff: ${widget.cutoffKhz.toStringAsFixed(1)}k / ${safeMax.toStringAsFixed(0)}k'
+                                : (widget.status == 'genuine'
+                                    ? 'Full Spectrum (${widget.cutoffKhz.toStringAsFixed(1)} kHz)'
+                                    : 'Cut off at ${widget.cutoffKhz.toStringAsFixed(1)} kHz'),
                             style: TextStyle(
-                              fontFamily: 'JetBrainsMono',
-                              fontSize: 10,
-                              color: subTextColor.withOpacity(0.7),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 32,
-                            height: 1,
-                            color: subTextColor.withOpacity(0.2),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Nyquist: ${safeMax.toStringAsFixed(1)}k',
-                            style: TextStyle(
-                              fontFamily: 'JetBrainsMono',
-                              fontSize: 10,
-                              color: subTextColor.withOpacity(0.7),
+                              fontFamily: isPro ? 'JetBrainsMono' : 'Inter',
+                              fontSize: 11,
+                              fontWeight: isPro ? FontWeight.w700 : FontWeight.w600,
+                              color: widget.status == 'genuine' ? activeAccent : widget.statusColor,
                             ),
                           ),
                         ],
                       ),
 
-                      // Interactive "View 2D Spectrogram & Forensics" Button
+                      // "Sound Spectrogram & Detection" Action Button
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
@@ -294,7 +370,7 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
-                                  '2D Spectrogram & Forensics',
+                                  'Sound Spectrogram',
                                   style: TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 11,
@@ -324,9 +400,327 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
       },
     );
   }
+
+  Widget _modeButton(String targetMode, IconData icon, String currentMode, bool isDark, Color activeAccent) {
+    final isSelected = currentMode == targetMode;
+    return GestureDetector(
+      onTap: () {
+        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+        appState.setVisualizerMode(targetMode);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected ? (isDark ? const Color(0x50FFFFFF) : Colors.white) : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Icon(
+          icon,
+          size: 13,
+          color: isSelected ? activeAccent : (isDark ? const Color(0x88FFFFFF) : const Color(0x88000000)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisualizerBody({
+    required String mode,
+    required double entryVal,
+    required double shimmerVal,
+    required bool isDark,
+    required Color textColor,
+    required Color subTextColor,
+    required Color activeAccent,
+    required double safeMax,
+  }) {
+    if (mode == 'gauge') {
+      // Full Speedometer Gauge View
+      return SizedBox(
+        height: 76,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 76,
+              height: 76,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    size: const Size(76, 76),
+                    painter: _SpeedometerDialPainter(
+                      score: widget.score,
+                      entryProgress: entryVal,
+                      shimmerProgress: shimmerVal,
+                      statusColor: widget.statusColor,
+                      isDark: isDark,
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${(widget.score * entryVal).round()}%',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: textColor,
+                          height: 1.05,
+                        ),
+                      ),
+                      Text(
+                        'PURITY',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 7.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: widget.statusColor.withOpacity(isDark ? 0.20 : 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    widget.shortBadge,
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: widget.statusColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.status == 'genuine'
+                      ? 'Lossless Acoustic Fidelity'
+                      : 'Compression Signature Detected',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: subTextColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    } else if (mode == 'waveform') {
+      // Full 32-Bar Studio Waveform View
+      return SizedBox(
+        height: 60,
+        child: CustomPaint(
+          painter: _StudioWaveformPainter(
+            cutoffKhz: widget.cutoffKhz,
+            maxKhz: safeMax,
+            spectrumBands: widget.spectrumBands,
+            entryProgress: entryVal,
+            shimmerProgress: shimmerVal,
+            statusColor: widget.statusColor,
+            isDark: isDark,
+            barCount: 32,
+          ),
+        ),
+      );
+    } else {
+      // Default: Hybrid View (72dp Dial on Left + 16-Bar Waveform on Right)
+      return SizedBox(
+        height: 68,
+        child: Row(
+          children: [
+            // Left: Dial (~72dp)
+            SizedBox(
+              width: 70,
+              height: 68,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    size: const Size(66, 66),
+                    painter: _SpeedometerDialPainter(
+                      score: widget.score,
+                      entryProgress: entryVal,
+                      shimmerProgress: shimmerVal,
+                      statusColor: widget.statusColor,
+                      isDark: isDark,
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${(widget.score * entryVal).round()}%',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                          color: textColor,
+                          height: 1.05,
+                        ),
+                      ),
+                      Text(
+                        'PURITY',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 7.0,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Separator
+            Container(
+              width: 1,
+              height: 52,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              color: isDark ? const Color(0x18FFFFFF) : const Color(0x12000000),
+            ),
+
+            // Right: 16-Bar Waveform
+            Expanded(
+              child: CustomPaint(
+                painter: _StudioWaveformPainter(
+                  cutoffKhz: widget.cutoffKhz,
+                  maxKhz: safeMax,
+                  spectrumBands: widget.spectrumBands,
+                  entryProgress: entryVal,
+                  shimmerProgress: shimmerVal,
+                  statusColor: widget.statusColor,
+                  isDark: isDark,
+                  barCount: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 }
 
-/// 32-Bar Studio Waveform Painter
+/// Speedometer Gauge Painter: Radial Track with Animated Arc
+class _SpeedometerDialPainter extends CustomPainter {
+  final int score;
+  final double entryProgress;
+  final double shimmerProgress;
+  final Color statusColor;
+  final bool isDark;
+
+  _SpeedometerDialPainter({
+    required this.score,
+    required this.entryProgress,
+    required this.shimmerProgress,
+    required this.statusColor,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final strokeWidth = size.width * 0.08;
+    final radius = (size.width - strokeWidth) / 2;
+
+    const startAngle = 0.75 * math.pi; // 135 deg
+    const sweepTotal = 1.5 * math.pi; // 270 deg
+
+    // 1. Inactive Track
+    final trackPaint = Paint()
+      ..color = isDark ? const Color(0x22FFFFFF) : const Color(0x18000000)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepTotal,
+      false,
+      trackPaint,
+    );
+
+    // 2. Active Animated Purity Arc
+    final sweepProgress = (score / 100.0) * entryProgress * sweepTotal;
+    if (sweepProgress > 0) {
+      final activePaint = Paint()
+        ..shader = SweepGradient(
+          startAngle: startAngle,
+          endAngle: startAngle + sweepTotal,
+          colors: [
+            statusColor.withOpacity(0.5),
+            statusColor,
+          ],
+        ).createShader(Rect.fromCircle(center: center, radius: radius))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepProgress,
+        false,
+        activePaint,
+      );
+
+      // 3. Glowing Bead at tip
+      final tipAngle = startAngle + sweepProgress;
+      final tipX = center.dx + radius * math.cos(tipAngle);
+      final tipY = center.dy + radius * math.sin(tipAngle);
+
+      final beadGlow = Paint()
+        ..color = statusColor.withOpacity(0.5 + 0.3 * math.sin(shimmerProgress * 2 * math.pi))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+      canvas.drawCircle(Offset(tipX, tipY), strokeWidth * 0.75, beadGlow);
+
+      final beadCore = Paint()..color = Colors.white;
+      canvas.drawCircle(Offset(tipX, tipY), strokeWidth * 0.35, beadCore);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpeedometerDialPainter oldDelegate) {
+    return oldDelegate.entryProgress != entryProgress ||
+        oldDelegate.shimmerProgress != shimmerProgress ||
+        oldDelegate.score != score;
+  }
+}
+
+/// Studio Waveform Painter (Supports 16 or 32 bars)
 class _StudioWaveformPainter extends CustomPainter {
   final double cutoffKhz;
   final double maxKhz;
@@ -335,8 +729,7 @@ class _StudioWaveformPainter extends CustomPainter {
   final double shimmerProgress;
   final Color statusColor;
   final bool isDark;
-
-  static const int _kBarCount = 32;
+  final int barCount;
 
   _StudioWaveformPainter({
     required this.cutoffKhz,
@@ -346,25 +739,24 @@ class _StudioWaveformPainter extends CustomPainter {
     required this.shimmerProgress,
     required this.statusColor,
     required this.isDark,
+    this.barCount = 32,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
 
-    final double barSpacing = 3.5;
-    final double totalSpacing = barSpacing * (_kBarCount - 1);
-    final double barWidth = ((size.width - totalSpacing) / _kBarCount).clamp(2.0, 14.0);
+    final double barSpacing = barCount == 16 ? 4.5 : 3.0;
+    final double totalSpacing = barSpacing * (barCount - 1);
+    final double barWidth = ((size.width - totalSpacing) / barCount).clamp(2.0, 16.0);
 
-    // Compute cutoff index among 32 bars
     final double cutoffRatio = (cutoffKhz / maxKhz).clamp(0.0, 1.0);
-    final int cutoffBarIndex = (cutoffRatio * _kBarCount).round().clamp(0, _kBarCount - 1);
+    final int cutoffBarIndex = (cutoffRatio * barCount).round().clamp(0, barCount - 1);
 
-    // Resample 128 bands down to 32
-    List<double> heights = List.filled(_kBarCount, 0.15);
+    List<double> heights = List.filled(barCount, 0.15);
     if (spectrumBands.isNotEmpty) {
-      final int step = math.max(1, spectrumBands.length ~/ _kBarCount);
-      for (int i = 0; i < _kBarCount; i++) {
+      final int step = math.max(1, spectrumBands.length ~/ barCount);
+      for (int i = 0; i < barCount; i++) {
         double sum = 0.0;
         int count = 0;
         for (int k = 0; k < step && (i * step + k) < spectrumBands.length; k++) {
@@ -374,14 +766,12 @@ class _StudioWaveformPainter extends CustomPainter {
         heights[i] = count > 0 ? (sum / count) : 0.2;
       }
     } else {
-      // Deterministic synthetic profile based on cutoff
-      for (int i = 0; i < _kBarCount; i++) {
-        final r = i / _kBarCount;
+      for (int i = 0; i < barCount; i++) {
+        final r = i / barCount;
         if (r <= cutoffRatio) {
           final naturalCurve = math.cos(r * math.pi * 0.45);
           heights[i] = (naturalCurve * 0.85).clamp(0.15, 0.95);
         } else {
-          // Sharp brickwall cutoff drop to void
           heights[i] = 0.04;
         }
       }
@@ -391,11 +781,10 @@ class _StudioWaveformPainter extends CustomPainter {
     final Paint cutoffPaint = Paint()..isAntiAlias = true;
     final Paint voidPaint = Paint()..isAntiAlias = true;
 
-    for (int i = 0; i < _kBarCount; i++) {
+    for (int i = 0; i < barCount; i++) {
       final double x = i * (barWidth + barSpacing);
       final bool isPastCutoff = i > cutoffBarIndex;
 
-      // Acoustic micro-shimmer along active spectrum
       final double wave = math.sin((i * 0.4) + (shimmerProgress * 2 * math.pi)) * 0.08;
       double h = (heights[i] + (isPastCutoff ? 0.0 : wave)).clamp(0.06, 1.0);
       h *= entryProgress;
@@ -408,31 +797,19 @@ class _StudioWaveformPainter extends CustomPainter {
       );
 
       if (isPastCutoff) {
-        // Cutoff Void / Compression Silence
-        voidPaint.color = isDark
-            ? const Color(0x20FFFFFF)
-            : const Color(0x18000000);
+        voidPaint.color = isDark ? const Color(0x20FFFFFF) : const Color(0x18000000);
         canvas.drawRRect(rrect, voidPaint);
       } else if (i == cutoffBarIndex && cutoffRatio < 0.92) {
-        // Cutoff Laser Marker
         cutoffPaint.shader = LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [
-            statusColor.withOpacity(0.5),
-            statusColor,
-          ],
+          colors: [statusColor.withOpacity(0.5), statusColor],
         ).createShader(Rect.fromLTWH(x, y, barWidth, barHeight));
         canvas.drawRRect(rrect, cutoffPaint);
       } else {
-        // Active Lossless Frequency Energy
-        final double gradientRatio = i / _kBarCount;
-        final Color startColor = isDark
-            ? const Color(0xFF00D2FF)
-            : const Color(0xFF0077CC);
-        final Color midColor = isDark
-            ? const Color(0xFF00E5FF)
-            : const Color(0xFF00A389);
+        final double gradientRatio = i / barCount;
+        final Color startColor = isDark ? const Color(0xFF00D2FF) : const Color(0xFF0077CC);
+        final Color midColor = isDark ? const Color(0xFF00E5FF) : const Color(0xFF00A389);
         final Color endColor = statusColor;
 
         Color barColor;
@@ -445,16 +822,12 @@ class _StudioWaveformPainter extends CustomPainter {
         activePaint.shader = LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [
-            barColor.withOpacity(0.40),
-            barColor,
-          ],
+          colors: [barColor.withOpacity(0.40), barColor],
         ).createShader(Rect.fromLTWH(x, y, barWidth, barHeight));
         canvas.drawRRect(rrect, activePaint);
       }
     }
 
-    // Cutoff frequency dotted laser indicator line if audio cuts off prematurely
     if (cutoffRatio < 0.92) {
       final double laserX = (cutoffBarIndex * (barWidth + barSpacing)) + (barWidth / 2);
       final Paint laserPaint = Paint()
@@ -462,7 +835,6 @@ class _StudioWaveformPainter extends CustomPainter {
         ..strokeWidth = 1.2
         ..style = PaintingStyle.stroke;
 
-      // Draw dashed laser line
       const double dashHeight = 3.0;
       const double dashSpace = 2.5;
       double startY = 0;
@@ -481,11 +853,12 @@ class _StudioWaveformPainter extends CustomPainter {
   bool shouldRepaint(covariant _StudioWaveformPainter oldDelegate) {
     return oldDelegate.entryProgress != entryProgress ||
         oldDelegate.shimmerProgress != shimmerProgress ||
-        oldDelegate.cutoffKhz != cutoffKhz;
+        oldDelegate.cutoffKhz != cutoffKhz ||
+        oldDelegate.barCount != barCount;
   }
 }
 
-/// Modal Sheet: 2D STFT Heatmap Spectrogram & Forensic Trust Center
+/// Modal Sheet: Sound Spectrogram (Real PCM Heatmap) & How Detection Works
 class _ForensicSpectrogramModal extends StatefulWidget {
   final int score;
   final double cutoffKhz;
@@ -494,6 +867,7 @@ class _ForensicSpectrogramModal extends StatefulWidget {
   final String shortBadge;
   final Color statusColor;
   final List<double> spectrumBands;
+  final List<List<double>> spectrogramMatrix;
   final int? sampleRate;
   final int? bitDepth;
   final String? verdict;
@@ -506,6 +880,7 @@ class _ForensicSpectrogramModal extends StatefulWidget {
     required this.shortBadge,
     required this.statusColor,
     required this.spectrumBands,
+    required this.spectrogramMatrix,
     this.sampleRate,
     this.bitDepth,
     this.verdict,
@@ -592,7 +967,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Forensic Audio Analysis',
+                            'Audio Deep-Dive',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 16,
@@ -624,7 +999,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
 
               const SizedBox(height: 12),
 
-              // Segmented Tab Selector
+              // Segmented Tab Selector (Rounded Glass Pill)
               Container(
                 height: 38,
                 padding: const EdgeInsets.all(3),
@@ -653,8 +1028,8 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                     fontWeight: FontWeight.w700,
                   ),
                   tabs: const [
-                    Tab(text: '2D STFT Heatmap'),
-                    Tab(text: 'Forensic Trust Center'),
+                    Tab(text: 'Sound Spectrogram'),
+                    Tab(text: 'How Detection Works'),
                   ],
                 ),
               ),
@@ -666,11 +1041,11 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    // Tab 1: 2D STFT Heatmap Spectrogram
-                    _build2dSpectrogramTab(isDark, textColor, subTextColor, activeAccent),
+                    // Tab 1: Real STFT Spectrogram Heatmap
+                    _buildSpectrogramTab(isDark, textColor, subTextColor, activeAccent),
 
-                    // Tab 2: Forensic Trust Center
-                    _buildTrustCenterTab(isDark, textColor, subTextColor, activeAccent),
+                    // Tab 2: Engaging How Detection Works
+                    _buildDetectionGuideTab(isDark, textColor, subTextColor, activeAccent),
                   ],
                 ),
               ),
@@ -681,8 +1056,8 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     );
   }
 
-  /// Tab 1: 2D STFT Heatmap Spectrogram
-  Widget _build2dSpectrogramTab(
+  /// Tab 1: Sound Spectrogram (Real PCM Heatmap)
+  Widget _buildSpectrogramTab(
     bool isDark,
     Color textColor,
     Color subTextColor,
@@ -697,7 +1072,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
           Container(
             height: 230,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F1117), // Desktop Python Dark Stage #0f1117
+              color: const Color(0xFF0F1117),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDark ? const Color(0x22FFFFFF) : const Color(0x1A000000),
@@ -710,6 +1085,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 cutoffKhz: widget.cutoffKhz,
                 maxKhz: widget.maxKhz,
                 spectrumBands: widget.spectrumBands,
+                spectrogramMatrix: widget.spectrogramMatrix,
                 statusColor: widget.statusColor,
                 status: widget.status,
               ),
@@ -730,7 +1106,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   color: subTextColor,
                 ),
               ),
-              // Gradient Strip
               Container(
                 width: 110,
                 height: 8,
@@ -738,12 +1113,12 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   borderRadius: BorderRadius.circular(4),
                   gradient: const LinearGradient(
                     colors: [
-                      Color(0xFF000004), // Inferno Dark
-                      Color(0xFF420A68), // Indigo
-                      Color(0xFF932667), // Magenta
-                      Color(0xFFDD513A), // Orange
-                      Color(0xFFFCA50A), // Gold
-                      Color(0xFFFCFFA4), // White Yellow
+                      Color(0xFF000004),
+                      Color(0xFF420A68),
+                      Color(0xFF932667),
+                      Color(0xFFDD513A),
+                      Color(0xFFFCA50A),
+                      Color(0xFFFCFFA4),
                     ],
                   ),
                 ),
@@ -767,13 +1142,13 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
             runSpacing: 8,
             children: [
               _metricPill(
-                label: 'Cutoff Frequency',
+                label: 'Acoustic Reach',
                 value: '${widget.cutoffKhz.toStringAsFixed(1)} kHz',
                 color: widget.statusColor,
                 isDark: isDark,
               ),
               _metricPill(
-                label: 'Audio Nyquist Limit',
+                label: 'Frequency Limit',
                 value: '${widget.maxKhz.toStringAsFixed(1)} kHz',
                 color: activeAccent,
                 isDark: isDark,
@@ -812,7 +1187,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  Icons.info_outline_rounded,
+                  widget.status == 'genuine' ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
                   size: 16,
                   color: widget.statusColor,
                 ),
@@ -821,8 +1196,8 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   child: Text(
                     widget.verdict ??
                         (widget.status == 'genuine'
-                            ? 'Full acoustic energy extends naturally across dynamic spectrum without artificial lossy frequency truncation.'
-                            : 'Acoustic energy drops abruptly at ${widget.cutoffKhz} kHz, indicating lossy MP3/AAC compression upscale.'),
+                            ? 'Full audio bandwidth is preserved. No compression cutoff detected.'
+                            : 'Audio frequencies drop sharply at ${widget.cutoffKhz} kHz, characteristic of lossy MP3/AAC compression.'),
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
@@ -840,8 +1215,8 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     );
   }
 
-  /// Tab 2: Forensic Trust Center & Verification Guide
-  Widget _buildTrustCenterTab(
+  /// Tab 2: How Detection Works (No jargon, conversational, DIY instructions)
+  Widget _buildDetectionGuideTab(
     bool isDark,
     Color textColor,
     Color subTextColor,
@@ -852,50 +1227,127 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _trustCard(
-            title: 'Why Legacy Tools Fail on Modern FLACs',
-            subtitle: 'auCDtect & Fakin\' The Funk Benchmark Breakdown',
-            icon: Icons.history_toggle_off_rounded,
+          _infoCard(
+            title: 'The Great "Hi-Res" Scam',
+            icon: Icons.search_rounded,
             accent: const Color(0xFFFF9500),
             isDark: isDark,
             textColor: textColor,
             subTextColor: subTextColor,
-            content: [
-              '• Fakin\' The Funk (FTF): Relies solely on peak frequency detection. When a lossy MP3 is upsampled to 96 kHz, interpolation produces ultrasonic aliasing noise >24 kHz. FTF detects this noise and erroneously reports "Lossless 35 kHz" (as seen on "Paaro").',
-              '• auCDtect / Trader\'s Little Helper: Engineered in 2004 strictly for 16-bit 44.1 kHz Red Book CD audio. It crashes or generates invalid readings on 24-bit 96/192 kHz Hi-Res containers.',
-            ],
+            content: 'Ever downloaded a 24-bit / 96 kHz FLAC song that secretly sounded like YouTube from 2008? Someone probably took an ordinary 128 kbps MP3, converted it into a FLAC container, and called it a "Studio Master". We expose what is really inside.',
           ),
           const SizedBox(height: 10),
-          _trustCard(
-            title: 'FLAC Toolkit Multi-Vector Parity Engine',
-            subtitle: '1:1 Parity between Desktop and Android',
-            icon: Icons.security_rounded,
+          _infoCard(
+            title: 'Why Legacy Audio Tools Fail',
+            icon: Icons.shield_outlined,
             accent: const Color(0xFF00D2FF),
             isDark: isDark,
             textColor: textColor,
             subTextColor: subTextColor,
-            content: [
-              '1. Dynamic RMS Peak-Weighted Windowing: Analyzes top-3 loudest 10-second segments to eliminate quiet intro false alarms.',
-              '2. 2D STFT Psychoacoustic Subband Analysis: Scans for quantization empty holes between 15 kHz and 21 kHz characteristic of MP3/AAC encoders.',
-              '3. Shannon Bit-Depth Entropy: Inspects lowest 8 bits of 24-bit streams to expose 16-bit padded containers.',
-              '4. Ultrasonic Aliasing Rejection: Requires energy continuity between 18-24 kHz before validating ultrasonic bandwidth.',
-            ],
+            content: 'Old tools look only at the highest frequency spike. When a lossy MP3 is upsampled to 96 kHz, digital interpolation creates ultrasonic noise above 24 kHz. Old tools mistake this noise for lossless music! Our engine checks the middle frequencies (16-22 kHz) to ensure real musical overtones exist before trusting ultrasonic numbers.',
           ),
           const SizedBox(height: 10),
-          _trustCard(
-            title: 'DIY Ground Truth Verification Guide',
-            subtitle: 'Independently verify any FLAC with ffmpeg',
-            icon: Icons.science_rounded,
+          _infoCard(
+            title: 'Our 4-Point Audio Check',
+            icon: Icons.verified_user_outlined,
             accent: const Color(0xFF34C759),
             isDark: isDark,
             textColor: textColor,
             subTextColor: subTextColor,
-            content: [
-              'Want to verify this yourself? Create a controlled synthetic fake:',
-              '1. Transcode a genuine FLAC to 128 kbps MP3:\n   ffmpeg -i genuine.flac -b:a 128k fake.mp3',
-              '2. Upscale that MP3 back to 24-bit/96kHz FLAC:\n   ffmpeg -i fake.mp3 -sample_fmt s32 -ar 96000 fake_hires.flac',
-              '3. Run in FTF vs FLAC Toolkit: FTF falsely marks it Lossless 35 kHz; FLAC Toolkit exposes the 16.0 kHz dead-zone and 30% score!',
-            ],
+            content: '1. Frequency Reach: Identifies sharp brickwall dropoffs.\n2. Quantization Holes: Finds empty frequency pockets left by MP3/AAC encoders.\n3. True Bit-Depth: Exposes 16-bit audio padded with zero bytes into a fake 24-bit container.\n4. Acoustic Continuity: Validates harmonic balance across all bands.',
+          ),
+          const SizedBox(height: 10),
+          // DIY Test Box with Copy Terminal Commands
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0x14FFFFFF) : const Color(0x0A000000),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000),
+                width: 0.8,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.terminal_rounded, size: 16, color: Color(0xFF38BDF8)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Test It Yourself (DIY Challenge)',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        const cmd = 'ffmpeg -i song.flac -b:a 128k fake.mp3 && ffmpeg -i fake.mp3 -sample_fmt s32 -ar 96000 fake_hires.flac';
+                        Clipboard.setData(const ClipboardData(text: cmd));
+                        if (appState.hapticsEnabled) HapticFeedback.lightImpact();
+                        showThemedSnackBar(
+                          context,
+                          'Terminal commands copied to clipboard!',
+                          icon: Icons.copy_rounded,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: activeAccent.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Copy',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: activeAccent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Convert any real song into a fake Hi-Res file and test both in other tools vs this app:',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    color: subTextColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F1117),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '# 1. Compress to MP3:\nffmpeg -i song.flac -b:a 128k fake.mp3\n\n# 2. Upscale to 24-bit/96kHz FLAC:\nffmpeg -i fake.mp3 -sample_fmt s32 -ar 96000 fake_hires.flac',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 10.5,
+                      color: Color(0xFF7DD3FC),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
         ],
@@ -947,15 +1399,14 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     );
   }
 
-  Widget _trustCard({
+  Widget _infoCard({
     required String title,
-    required String subtitle,
     required IconData icon,
     required Color accent,
     required bool isDark,
     required Color textColor,
     required Color subTextColor,
-    required List<String> content,
+    required String content,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -987,29 +1438,14 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               ),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           Text(
-            subtitle,
+            content,
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 10.5,
-              fontWeight: FontWeight.w500,
-              color: subTextColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...content.map(
-            (c) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                c,
-                style: TextStyle(
-                  fontFamily: c.startsWith('   ') ? 'JetBrainsMono' : 'Inter',
-                  fontSize: 11,
-                  height: 1.35,
-                  color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
-                ),
-              ),
+              fontSize: 11.5,
+              height: 1.4,
+              color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
             ),
           ),
         ],
@@ -1018,11 +1454,12 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
   }
 }
 
-/// 2D STFT Heatmap Spectrogram CustomPainter (Inferno Colormap)
+/// 2D STFT Heatmap Spectrogram CustomPainter (Uses REAL PCM computed matrix when available)
 class _Spectrogram2dPainter extends CustomPainter {
   final double cutoffKhz;
   final double maxKhz;
   final List<double> spectrumBands;
+  final List<List<double>> spectrogramMatrix;
   final Color statusColor;
   final String status;
 
@@ -1030,49 +1467,28 @@ class _Spectrogram2dPainter extends CustomPainter {
     required this.cutoffKhz,
     required this.maxKhz,
     required this.spectrumBands,
+    required this.spectrogramMatrix,
     required this.statusColor,
     required this.status,
   });
 
-  /// Authentic Inferno Colormap RGB interpolation
   Color _infernoColor(double v) {
     final t = v.clamp(0.0, 1.0);
-    // 5 anchor points from matplotlib inferno
     if (t < 0.25) {
       final f = t / 0.25;
-      return Color.lerp(
-        const Color(0xFF000004),
-        const Color(0xFF420A68),
-        f,
-      )!;
+      return Color.lerp(const Color(0xFF000004), const Color(0xFF420A68), f)!;
     } else if (t < 0.50) {
       final f = (t - 0.25) / 0.25;
-      return Color.lerp(
-        const Color(0xFF420A68),
-        const Color(0xFF932667),
-        f,
-      )!;
+      return Color.lerp(const Color(0xFF420A68), const Color(0xFF932667), f)!;
     } else if (t < 0.75) {
       final f = (t - 0.50) / 0.25;
-      return Color.lerp(
-        const Color(0xFF932667),
-        const Color(0xFFDD513A),
-        f,
-      )!;
+      return Color.lerp(const Color(0xFF932667), const Color(0xFFDD513A), f)!;
     } else if (t < 0.90) {
       final f = (t - 0.75) / 0.15;
-      return Color.lerp(
-        const Color(0xFFDD513A),
-        const Color(0xFFFCA50A),
-        f,
-      )!;
+      return Color.lerp(const Color(0xFFDD513A), const Color(0xFFFCA50A), f)!;
     } else {
       final f = (t - 0.90) / 0.10;
-      return Color.lerp(
-        const Color(0xFFFCA50A),
-        const Color(0xFFFCFFA4),
-        f,
-      )!;
+      return Color.lerp(const Color(0xFFFCA50A), const Color(0xFFFCFFA4), f)!;
     }
   }
 
@@ -1085,33 +1501,35 @@ class _Spectrogram2dPainter extends CustomPainter {
     final double plotWidth = size.width - axisLeft - 8.0;
     final double plotHeight = size.height - axisBottom - 8.0;
 
-    // 1. Draw 2D Time x Frequency Grid (40 time slices x 32 frequency bins)
-    const int timeSlices = 40;
+    const int timeSlices = 32;
     const int freqBins = 32;
 
     final double cellW = plotWidth / timeSlices;
     final double cellH = plotHeight / freqBins;
-
     final double cutoffRatio = (cutoffKhz / maxKhz).clamp(0.0, 1.0);
 
     final Paint cellPaint = Paint();
+    final bool hasRealMatrix = spectrogramMatrix.length >= timeSlices;
 
     for (int t = 0; t < timeSlices; t++) {
-      final double timeWeight = 0.85 + (math.sin(t * 0.35) * 0.15);
-
       for (int f = 0; f < freqBins; f++) {
-        // f = 0 is highest frequency, f = freqBins-1 is lowest (0 kHz)
+        // f = 0 is highest frequency, f = freqBins-1 is 0 kHz
         final double freqRatio = 1.0 - (f / freqBins);
         double energy;
 
-        if (freqRatio > cutoffRatio) {
-          // Beyond cutoff: lossy void / quiet quantization floor
-          energy = 0.02 + (math.Random((t * 31 + f)).nextDouble() * 0.03);
+        if (hasRealMatrix) {
+          // Authentic PCM FFT magnitude
+          final int binIdx = (freqBins - 1 - f).clamp(0, spectrogramMatrix[t].length - 1);
+          energy = spectrogramMatrix[t][binIdx];
         } else {
-          // Acoustic energy profile
-          final double baseBand = (1.0 - (freqRatio * 0.65)).clamp(0.15, 0.95);
-          final double dynamicVar = math.sin((t * 0.5) + (f * 0.8)) * 0.12;
-          energy = (baseBand * timeWeight + dynamicVar).clamp(0.05, 0.98);
+          // Synthetic fallback
+          if (freqRatio > cutoffRatio) {
+            energy = 0.02 + (math.Random((t * 31 + f)).nextDouble() * 0.03);
+          } else {
+            final double baseBand = (1.0 - (freqRatio * 0.65)).clamp(0.15, 0.95);
+            final double timeWeight = 0.85 + (math.sin(t * 0.35) * 0.15);
+            energy = (baseBand * timeWeight).clamp(0.05, 0.98);
+          }
         }
 
         cellPaint.color = _infernoColor(energy);
@@ -1125,14 +1543,11 @@ class _Spectrogram2dPainter extends CustomPainter {
       }
     }
 
-    // 2. Frequency Cutoff line & Dead-Zone Highlighting
     final double cutoffY = 8.0 + (plotHeight * (1.0 - cutoffRatio));
-
-    // Studio CD standard line (20.0 kHz)
     final double cdRatio = (20.0 / maxKhz).clamp(0.0, 1.0);
     final double cdY = 8.0 + (plotHeight * (1.0 - cdRatio));
 
-    // Draw CD Standard Reference Line (Dotted Cyan #00e5ff)
+    // Studio CD Reference Line (20 kHz Dotted Cyan)
     final Paint cdPaint = Paint()
       ..color = const Color(0xFF00E5FF).withOpacity(0.85)
       ..strokeWidth = 1.2
@@ -1147,20 +1562,11 @@ class _Spectrogram2dPainter extends CustomPainter {
       startX += 7;
     }
 
-    // Highlight Missing Frequency Dead Zone if cutoff is premature
+    // Dead Zone Hatched Overlay if cutoff is below Nyquist
     if (cutoffRatio < 0.92) {
-      // Hatched Translucent Red Box above cutoff
-      final deadZoneRect = Rect.fromLTWH(
-        axisLeft,
-        8.0,
-        plotWidth,
-        cutoffY - 8.0,
-      );
-      final Paint deadZoneFill = Paint()
-        ..color = const Color(0x33FF3B30);
-      canvas.drawRect(deadZoneRect, deadZoneFill);
+      final deadZoneRect = Rect.fromLTWH(axisLeft, 8.0, plotWidth, cutoffY - 8.0);
+      canvas.drawRect(deadZoneRect, Paint()..color = const Color(0x33FF3B30));
 
-      // Hatched Lines (//)
       final Paint hatchPaint = Paint()
         ..color = const Color(0x44FF3B30)
         ..strokeWidth = 1.0;
@@ -1172,17 +1578,11 @@ class _Spectrogram2dPainter extends CustomPainter {
         );
       }
 
-      // Cutoff Red Laser Line
       final Paint cutoffLinePaint = Paint()
         ..color = const Color(0xFFFF3B30)
         ..strokeWidth = 1.6;
-      canvas.drawLine(
-        Offset(axisLeft, cutoffY),
-        Offset(axisLeft + plotWidth, cutoffY),
-        cutoffLinePaint,
-      );
+      canvas.drawLine(Offset(axisLeft, cutoffY), Offset(axisLeft + plotWidth, cutoffY), cutoffLinePaint);
 
-      // Dead Zone Tag Label
       final tp = TextPainter(
         text: const TextSpan(
           text: '[!] MISSING FREQUENCIES (DEAD ZONE)',
@@ -1205,30 +1605,19 @@ class _Spectrogram2dPainter extends CustomPainter {
       tp.paint(canvas, Offset(tagX, tagY));
     }
 
-    // 3. Frequency Axis Labels (Left)
     final labelStyle = const TextStyle(
       fontFamily: 'JetBrainsMono',
       fontSize: 8.5,
       color: Color(0xAAFFFFFF),
     );
 
-    // Max / Nyquist
     _drawText(canvas, '${maxKhz.toStringAsFixed(0)}k', Offset(2, 6), labelStyle);
-    // 20k / CD
     if (maxKhz > 22) {
       _drawText(canvas, '20k', Offset(2, cdY - 5), labelStyle);
     }
-    // Cutoff
-    _drawText(
-      canvas,
-      '${cutoffKhz.toStringAsFixed(0)}k',
-      Offset(2, cutoffY - 5),
-      labelStyle.copyWith(color: statusColor, fontWeight: FontWeight.w700),
-    );
-    // 0k
+    _drawText(canvas, '${cutoffKhz.toStringAsFixed(0)}k', Offset(2, cutoffY - 5), labelStyle.copyWith(color: statusColor, fontWeight: FontWeight.w700));
     _drawText(canvas, '0k', Offset(6, 8.0 + plotHeight - 10), labelStyle);
 
-    // 4. Time Axis Labels (Bottom)
     final timeStyle = const TextStyle(
       fontFamily: 'JetBrainsMono',
       fontSize: 8.5,
@@ -1251,6 +1640,7 @@ class _Spectrogram2dPainter extends CustomPainter {
   bool shouldRepaint(covariant _Spectrogram2dPainter oldDelegate) {
     return oldDelegate.cutoffKhz != cutoffKhz ||
         oldDelegate.maxKhz != maxKhz ||
-        oldDelegate.status != status;
+        oldDelegate.status != status ||
+        oldDelegate.spectrogramMatrix != spectrogramMatrix;
   }
 }
