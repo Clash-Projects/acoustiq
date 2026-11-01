@@ -10,6 +10,7 @@ import '../widgets/glass_surface.dart';
 import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
+import 'settings_screen.dart';
 
 /// 1:1 Port of LastWave Native's Borderless AMOLED Track List Stage for FLAC Audio Auditing
 ///
@@ -455,19 +456,50 @@ class _AuditScreenState extends State<AuditScreen> {
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // 1. Top Header
+                // 1. Top Header with Settings Gear Button (Phase 2.4)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 4),
-                    child: Text(
-                      'Audit Library',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6,
-                        color: textColor,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Audit Library',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.6,
+                            color: textColor,
+                          ),
+                        ),
+                        LuminousFeedback(
+                          onTap: () {
+                            if (appState.hapticsEnabled) HapticFeedback.lightImpact();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x22FFFFFF) : const Color(0x14000000),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark ? const Color(0x24FFFFFF) : const Color(0x18000000),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.settings_outlined,
+                              size: 19,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -929,7 +961,8 @@ class _AuditScreenState extends State<AuditScreen> {
                           color: textColor,
                           height: 1.25,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
+                        softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
@@ -942,7 +975,8 @@ class _AuditScreenState extends State<AuditScreen> {
                           fontSize: 12.0,
                           color: subTextColor,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
+                        softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

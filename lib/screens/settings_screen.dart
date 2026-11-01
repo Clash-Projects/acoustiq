@@ -164,10 +164,10 @@ class SettingsScreen extends StatelessWidget {
                             icon: Icons.blur_on_rounded,
                             iconColor: activeAccent,
                             iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                            title: 'Liquid Glass',
+                            title: 'Liquid Glass Blur',
                             subtitle: appState.isLiquidGlass
-                                ? 'Apple WWDC25 Gaussian blur & optical caustics'
-                                : 'Opaque Material 3 Expressive surfaces active',
+                                ? 'Frosted optical blur & ambient glass styling'
+                                : 'Solid opaque surfaces (Battery saver)',
                             position: position,
                             trailing: Switch.adaptive(
                               value: appState.isLiquidGlass,
@@ -910,37 +910,16 @@ class SettingsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Custom Wallpaper',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
-                              ),
-                              if (isCustom) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: activeAccent.withOpacity(0.20),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'ACTIVE',
-                                    style: TextStyle(
-                                      fontFamily: 'JetBrainsMono',
-                                      fontSize: 9.0,
-                                      fontWeight: FontWeight.w800,
-                                      color: activeAccent,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
+                          Text(
+                            'Custom Wallpaper',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -952,7 +931,8 @@ class SettingsScreen extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 11.0,
-                              color: subTextColor,
+                              color: isCustom ? activeAccent : subTextColor,
+                              fontWeight: isCustom ? FontWeight.w600 : FontWeight.w400,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -963,33 +943,59 @@ class SettingsScreen extends StatelessWidget {
 
                     const SizedBox(width: 8),
 
-                    // Action controls: Edit + Reset when active, Apply when saved, Add when empty
-                    if (isCustom && hasValidCustomFile) ...[
-                      IconButton(
-                        icon: const Icon(Icons.edit_rounded, size: 18),
-                        color: activeAccent,
-                        tooltip: 'Change photo',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        onPressed: () => _pickCustomWallpaper(context),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                        color: subTextColor,
-                        tooltip: 'Revert to preset',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        onPressed: () {
-                          if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                          appState.clearCustomWallpaper();
-                        },
-                      ),
-                    ] else if (hasValidCustomFile) ...[
+                    // Trailing Controls: Segmented Glass Capsule [ ✏️ Edit | ✕ Remove ]
+                    if (isCustom && hasValidCustomFile)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        height: 32,
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x22FFFFFF) : const Color(0x12000000),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark ? const Color(0x24FFFFFF) : const Color(0x18000000),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            LuminousFeedback(
+                              onTap: () => _pickCustomWallpaper(context),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                child: Icon(Icons.edit_rounded, size: 15, color: activeAccent),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 16,
+                              color: isDark ? const Color(0x22FFFFFF) : const Color(0x18000000),
+                            ),
+                            LuminousFeedback(
+                              onTap: () {
+                                if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                                appState.clearCustomWallpaper();
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                child: Icon(Icons.close_rounded, size: 15, color: subTextColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (hasValidCustomFile)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: activeAccent.withOpacity(0.18),
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: activeAccent.withOpacity(0.35),
+                            width: 0.8,
+                          ),
                         ),
                         child: Text(
                           'Apply',
@@ -1000,14 +1006,20 @@ class SettingsScreen extends StatelessWidget {
                             color: activeAccent,
                           ),
                         ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.add_photo_alternate_outlined,
+                          size: 18,
+                          color: subTextColor,
+                        ),
                       ),
-                    ] else ...[
-                      Icon(
-                        Icons.add_photo_alternate_outlined,
-                        size: 20,
-                        color: subTextColor,
-                      ),
-                    ],
                   ],
                 ),
               ),

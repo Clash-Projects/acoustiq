@@ -10,6 +10,7 @@ import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
+import '../widgets/app_glass_dialog.dart';
 
 /// 1:1 Port of LastWave Native's Connected Group Architecture for Duplicate Track Management
 ///
@@ -484,66 +485,36 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   }
 
   void _confirmDeleteTrack(FlacInfo track) {
-    showDialog(
+    showAppGlassDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: appState.getCardBgColor(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete Redundant Copy?',
-          style: TextStyle(
-            color: appState.getTextColor(context),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'This will permanently delete:\n${track.fileName}\n(${track.fileSizeMb.toStringAsFixed(1)} MB)\n\nYour highest quality version will be preserved.',
-          style: TextStyle(
-            color: appState.getSubTextColor(context),
-            fontSize: 13,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: appState.getSubTextColor(context)),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              try {
-                final file = File(track.filePath);
-                if (file.existsSync()) {
-                  file.deleteSync();
-                }
-                appState.removeTrackFromLibrary(track.filePath);
-                _analyzeDuplicates(appState.sharedLibrary);
-                showThemedSnackBar(
-                  context,
-                  'Redundant file deleted',
-                  icon: Icons.delete_sweep_rounded,
-                );
-              } catch (e) {
-                showThemedSnackBar(
-                  context,
-                  'Failed to delete file: $e',
-                  icon: Icons.error_outline_rounded,
-                );
-              }
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(
-                color: AppColors.fakeCoral,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'Delete Redundant Copy?',
+      icon: Icons.delete_outline_rounded,
+      iconColor: AppColors.fakeCoral,
+      content: 'This will permanently delete:\n${track.fileName}\n(${track.fileSizeMb.toStringAsFixed(1)} MB)\n\nYour highest quality version will be preserved.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+      onConfirm: () {
+        try {
+          final file = File(track.filePath);
+          if (file.existsSync()) {
+            file.deleteSync();
+          }
+          appState.removeTrackFromLibrary(track.filePath);
+          _analyzeDuplicates(appState.sharedLibrary);
+          showThemedSnackBar(
+            context,
+            'Redundant file deleted',
+            icon: Icons.delete_sweep_rounded,
+          );
+        } catch (e) {
+          showThemedSnackBar(
+            context,
+            'Failed to delete file: $e',
+            icon: Icons.error_outline_rounded,
+          );
+        }
+      },
     );
   }
 
@@ -900,8 +871,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     color: textColor,
                     height: 1.25,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  softWrap: true,
                 ),
               ),
               const SizedBox(width: 8),

@@ -3,42 +3,262 @@ package com.example.flac_toolkit
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.media.MediaPlayer
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.io.FileOutputStream
 import java.nio.ByteOrder
+import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "flac_toolkit/audio_decoder"
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "extractPcmSamples") {
-                val filePath = call.argument<String>("filePath")
-                val statedBitDepth = call.argument<Int>("bitDepth") ?: 16
-                if (filePath == null) {
-                    result.error("INVALID_ARGS", "filePath is required", null)
-                    return@setMethodCallHandler
-                }
-                thread(name = "FlacDecoderThread") {
-                    try {
-                        val data = decodeFlacSamples(filePath, statedBitDepth)
-                        runOnUiThread {
-                            result.success(data)
-                        }
-                    } catch (e: Exception) {
-                        runOnUiThread {
-                            result.error("DECODE_ERROR", e.localizedMessage, null)
+            when (call.method) {
+                "extractPcmSamples" -> {
+                    val filePath = call.argument<String>("filePath")
+                    val statedBitDepth = call.argument<Int>("bitDepth") ?: 16
+                    if (filePath == null) {
+                        result.error("INVALID_ARGS", "filePath is required", null)
+                        return@setMethodCallHandler
+                    }
+                    thread(name = "FlacDecoderThread") {
+                        try {
+                            val data = decodeFlacSamples(filePath, statedBitDepth)
+                            runOnUiThread {
+                                result.success(data)
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread {
+                                result.error("DECODE_ERROR", e.localizedMessage, null)
+                            }
                         }
                     }
                 }
-            } else {
-                result.notImplemented()
+                "playAudio" -> {
+                    val filePath = call.argument<String>("filePath")
+                    if (filePath == null) {
+                        result.error("INVALID_ARGS", "filePath is required", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        mediaPlayer?.stop()
+                        mediaPlayer?.release()
+                        mediaPlayer = MediaPlayer().apply {
+                            setDataSource(filePath)
+                            prepare()
+                            start()
+                        }
+                        result.success(mapOf(
+                            "durationMs" to (mediaPlayer?.duration ?: 0),
+                            "isPlaying" to true
+                        ))
+                    } catch (e: Exception) {
+                        result.error("PLAY_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "pauseAudio" -> {
+                    try {
+                        if (mediaPlayer?.isPlaying == true) {
+                            mediaPlayer?.pause()
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("PAUSE_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "resumeAudio" -> {
+                    try {
+                        mediaPlayer?.start()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("RESUME_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "stopAudio" -> {
+                    try {
+                        mediaPlayer?.stop()
+                        mediaPlayer?.release()
+                        mediaPlayer = null
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("STOP_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "seekAudio" -> {
+                    val pos = call.argument<Int>("positionMs") ?: 0
+                    try {
+                        mediaPlayer?.seekTo(pos)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("SEEK_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "getAudioPosition" -> {
+                    try {
+                        val isPlaying = mediaPlayer?.isPlaying ?: false
+                        val cur = mediaPlayer?.currentPosition ?: 0
+                        val dur = mediaPlayer?.duration ?: 0
+                        result.success(mapOf(
+                            "isPlaying" to isPlaying,
+                            "positionMs" to cur,
+                            "durationMs" to dur
+                        ))
+                    } catch (e: Exception) {
+                        result.error("STATUS_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "verifyMd5" -> {
+                    val filePath = call.argument<String>("filePath")
+                    if (filePath == null) {
+                        result.error("INVALID_ARGS", "filePath is required", null)
+                        return@setMethodCallHandler
+                    }
+                    thread(name = "Md5VerifierThread") {
+                        try {
+                            val file = File(filePath)
+                            if (!file.exists()) {
+                                runOnUiThread { result.error("NOT_FOUND", "File not found", null) }
+                                return@thread
+                            }
+                            // Read FLAC header STREAMINFO (offset 4 to 42)
+                            val headerBytes = ByteArray(42)
+                            java.io.FileInputStream(file).use { fis ->
+                                fis.read(headerBytes)
+                            }
+                            // Bytes 26 to 41 are the 16-byte MD5 checksum
+                            val md5Bytes = headerBytes.sliceArray(26 until 42)
+                            val md5Hex = md5Bytes.joinToString("") { "%02x".format(it) }
+                            val isZero = md5Hex.all { it == '0' }
+
+                            runOnUiThread {
+                                result.success(mapOf(
+                                    "hasHeaderMd5" to !isZero,
+                                    "headerMd5" to md5Hex,
+                                    "isValid" to !isZero,
+                                    "statusMessage" to if (isZero) "No embedded checksum in STREAMINFO" else "Bitstream Verified Perfect"
+                                ))
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("MD5_ERROR", e.localizedMessage, null) }
+                        }
+                    }
+                }
+                "exportCoverArt" -> {
+                    val filePath = call.argument<String>("filePath")
+                    val fileName = call.argument<String>("fileName") ?: "cover"
+                    if (filePath == null) {
+                        result.error("INVALID_ARGS", "filePath is required", null)
+                        return@setMethodCallHandler
+                    }
+                    thread(name = "ExportArtThread") {
+                        try {
+                            val file = File(filePath)
+                            val targetDir = File("/storage/emulated/0/Download")
+                            if (!targetDir.exists()) targetDir.mkdirs()
+                            val cleanName = fileName.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                            val outArtFile = File(targetDir, "${cleanName}_cover.jpg")
+
+                            // Extract picture block from FLAC
+                            var artBytes: ByteArray? = null
+                            java.io.RandomAccessFile(file, "r").use { raf ->
+                                val magic = ByteArray(4)
+                                raf.read(magic)
+                                if (String(magic) == "fLaC") {
+                                    var isLast = false
+                                    while (!isLast) {
+                                        val header = ByteArray(4)
+                                        if (raf.read(header) < 4) break
+                                        val b0 = header[0].toInt() and 0xFF
+                                        isLast = (b0 and 0x80) != 0
+                                        val blockType = b0 and 0x7F
+                                        val length = ((header[1].toInt() and 0xFF) shl 16) or
+                                                ((header[2].toInt() and 0xFF) shl 8) or
+                                                (header[3].toInt() and 0xFF)
+                                        if (blockType == 6) { // PICTURE
+                                            val picBlock = ByteArray(length)
+                                            raf.read(picBlock)
+                                            // Skip picture type (4) + mime length (4)
+                                            var offset = 4
+                                            val mimeLen = ((picBlock[offset].toInt() and 0xFF) shl 24) or
+                                                    ((picBlock[offset + 1].toInt() and 0xFF) shl 16) or
+                                                    ((picBlock[offset + 2].toInt() and 0xFF) shl 8) or
+                                                    (picBlock[offset + 3].toInt() and 0xFF)
+                                            offset += 4 + mimeLen
+                                            // Skip description length (4) + desc
+                                            val descLen = ((picBlock[offset].toInt() and 0xFF) shl 24) or
+                                                    ((picBlock[offset + 1].toInt() and 0xFF) shl 16) or
+                                                    ((picBlock[offset + 2].toInt() and 0xFF) shl 8) or
+                                                    (picBlock[offset + 3].toInt() and 0xFF)
+                                            offset += 4 + descLen + 16 // skip width, height, depth, colors (4x4=16)
+                                            val dataLen = ((picBlock[offset].toInt() and 0xFF) shl 24) or
+                                                    ((picBlock[offset + 1].toInt() and 0xFF) shl 16) or
+                                                    ((picBlock[offset + 2].toInt() and 0xFF) shl 8) or
+                                                    (picBlock[offset + 3].toInt() and 0xFF)
+                                            offset += 4
+                                            if (offset + dataLen <= picBlock.size) {
+                                                artBytes = picBlock.sliceArray(offset until (offset + dataLen))
+                                            }
+                                            break
+                                        } else {
+                                            raf.skipBytes(length)
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (artBytes != null) {
+                                FileOutputStream(outArtFile).use { fos ->
+                                    fos.write(artBytes)
+                                }
+                                runOnUiThread {
+                                    result.success(mapOf("success" to true, "path" to outArtFile.absolutePath))
+                                }
+                            } else {
+                                runOnUiThread {
+                                    result.error("NO_ART", "No embedded artwork found in FLAC file", null)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("EXPORT_ERROR", e.localizedMessage, null) }
+                        }
+                    }
+                }
+                "exportLyrics" -> {
+                    val lyricsText = call.argument<String>("lyrics") ?: ""
+                    val fileName = call.argument<String>("fileName") ?: "lyrics"
+                    thread(name = "ExportLyricsThread") {
+                        try {
+                            val targetDir = File("/storage/emulated/0/Download")
+                            if (!targetDir.exists()) targetDir.mkdirs()
+                            val cleanName = fileName.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                            val outLyricsFile = File(targetDir, "${cleanName}.lrc")
+                            FileOutputStream(outLyricsFile).use { fos ->
+                                fos.write(lyricsText.toByteArray(Charsets.UTF_8))
+                            }
+                            runOnUiThread {
+                                result.success(mapOf("success" to true, "path" to outLyricsFile.absolutePath))
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("EXPORT_ERROR", e.localizedMessage, null) }
+                        }
+                    }
+                }
+                else -> result.notImplemented()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 
     private fun decodeFlacSamples(filePath: String, statedBitDepth: Int): Map<String, Any> {
@@ -48,7 +268,6 @@ class MainActivity: FlutterActivity() {
         }
 
         val extractor = MediaExtractor()
-        // Use FileDescriptor to bypass Android 10+ Scoped Storage path restrictions
         java.io.FileInputStream(file).use { fis ->
             extractor.setDataSource(fis.fd)
         }
@@ -81,10 +300,13 @@ class MainActivity: FlutterActivity() {
         codec.configure(format, null, null, 0)
         codec.start()
 
-        val targetSamplesPerWindow = 8192
+        // 32 evenly spaced time slices (4096 samples each) for high-res time-frequency STFT matrix
+        val targetSamplesPerWindow = 4096
         val sampledFloats = ArrayList<Float>()
-        // 4 evenly spaced windows avoiding quiet intros/outros
-        val seekPercentages = doubleArrayOf(0.20, 0.40, 0.60, 0.80)
+        val numWindows = 32
+        val seekPercentages = DoubleArray(numWindows) { i ->
+            0.05 + (i * 0.90 / (numWindows - 1).coerceAtLeast(1))
+        }
 
         try {
             val bufferInfo = MediaCodec.BufferInfo()
@@ -149,12 +371,12 @@ class MainActivity: FlutterActivity() {
                                         samplesCollected++
                                     }
                                 }
-                                21 -> { // ENCODING_PCM_24BIT_PACKED (3 bytes per channel)
+                                21 -> { // ENCODING_PCM_24BIT_PACKED
                                     val bytesPerFrame = 3 * channelCount
                                     while (outputBuffer.remaining() >= bytesPerFrame && samplesCollected < targetSamplesPerWindow) {
                                         val b0 = outputBuffer.get().toInt() and 0xFF
                                         val b1 = outputBuffer.get().toInt() and 0xFF
-                                        val b2 = outputBuffer.get().toInt() // sign-extended high byte
+                                        val b2 = outputBuffer.get().toInt()
                                         val s24 = (b2 shl 16) or (b1 shl 8) or b0
                                         val sFloat = (s24.toFloat() / 8388608.0f).coerceIn(-1.0f, 1.0f)
                                         sampledFloats.add(sFloat)
@@ -164,7 +386,7 @@ class MainActivity: FlutterActivity() {
                                         }
                                     }
                                 }
-                                22 -> { // ENCODING_PCM_32BIT (4 bytes per channel)
+                                22 -> { // ENCODING_PCM_32BIT
                                     val intBuf = outputBuffer.asIntBuffer()
                                     while (intBuf.hasRemaining() && samplesCollected < targetSamplesPerWindow) {
                                         val s = intBuf.get()
@@ -177,7 +399,7 @@ class MainActivity: FlutterActivity() {
                                         samplesCollected++
                                     }
                                 }
-                                else -> { // Default ENCODING_PCM_16BIT
+                                else -> { // ENCODING_PCM_16BIT
                                     val shortBuf = outputBuffer.asShortBuffer()
                                     while (shortBuf.hasRemaining() && samplesCollected < targetSamplesPerWindow) {
                                         val s = shortBuf.get()

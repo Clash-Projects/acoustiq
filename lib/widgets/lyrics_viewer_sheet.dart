@@ -7,6 +7,7 @@ import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
 import 'app_snack_bar.dart';
+import 'audio_preview_bar.dart';
 
 /// Shows an Apple WWDC25 Frosted Glass modal bottom sheet displaying
 /// embedded Vorbis FLAC lyrics (synced LRC timestamps or plain text).
@@ -142,7 +143,8 @@ class LyricsViewerSheet extends StatelessWidget {
                             letterSpacing: -0.3,
                             color: textColor,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
+                          softWrap: true,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
@@ -204,8 +206,47 @@ class LyricsViewerSheet extends StatelessWidget {
                     ),
                   ),
 
-                  // Copy All Lyrics Button
-                  if (rawLyrics.isNotEmpty)
+                  // Actions: Export & Copy
+                  if (rawLyrics.isNotEmpty) ...[
+                    // Export .LRC Button
+                    LuminousFeedback(
+                      onTap: () async {
+                        try {
+                          const channel = MethodChannel('flac_toolkit/audio_decoder');
+                          final res = await channel.invokeMethod<Map>('exportLyrics', {
+                            'lyrics': rawLyrics,
+                            'fileName': track.title.isNotEmpty ? track.title : track.fileName,
+                          });
+                          final path = res?['path'] as String? ?? '';
+                          if (context.mounted) {
+                            showThemedSnackBar(
+                              context,
+                              'Saved to Downloads: ${path.split('/').last}',
+                              icon: Icons.download_done_rounded,
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            showThemedSnackBar(context, 'Export failed: $e', icon: Icons.error_outline_rounded);
+                          }
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? const Color(0x20FFFFFF) : const Color(0x18000000),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Icon(Icons.download_rounded, size: 18, color: textColor),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Copy All Lyrics Button
                     LuminousFeedback(
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: rawLyrics));
@@ -232,7 +273,16 @@ class LyricsViewerSheet extends StatelessWidget {
                         child: Icon(Icons.copy_rounded, size: 18, color: textColor),
                       ),
                     ),
+                  ],
                 ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Lossless Audio Preview Bar (Phase 2.5)
+              AudioPreviewBar(
+                filePath: track.filePath,
+                title: track.title.isNotEmpty ? track.title : track.fileName,
               ),
 
               const SizedBox(height: 14),
