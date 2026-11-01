@@ -860,157 +860,139 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // 2. Custom Wallpaper Loader Card (Apple Photos / Gallery Style)
+          // 2. Custom Wallpaper Loader Card (Direct Override & Cache-Buster)
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: GestureDetector(
               onTap: () => _pickCustomWallpaper(context),
               behavior: HitTestBehavior.opaque,
               child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isCustom
-                      ? activeAccent.withOpacity(0.6)
-                      : (isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000)),
-                  width: isCustom ? 1.5 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Thumbnail preview or Gallery Icon
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE2E8F0),
-                      border: Border.all(
-                        color: isDark ? const Color(0x22FFFFFF) : const Color(0x22000000),
-                        width: 1,
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: hasValidCustomFile
-                        ? Image.file(
-                            File(customPath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.broken_image_rounded,
-                              size: 20,
-                              color: Color(0x88FFFFFF),
-                            ),
-                          )
-                        : Icon(
-                            Icons.wallpaper_rounded,
-                            size: 22,
-                            color: isCustom ? activeAccent : subTextColor,
-                          ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isCustom
+                        ? activeAccent.withOpacity(0.6)
+                        : (isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000)),
+                    width: isCustom ? 1.5 : 1,
                   ),
-
-                  const SizedBox(width: 12),
-
-                  // Text Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Custom Gallery Image',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
+                ),
+                child: Row(
+                  children: [
+                    // Thumbnail preview or Gallery Icon
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE2E8F0),
+                        border: Border.all(
+                          color: isDark ? const Color(0x22FFFFFF) : const Color(0x22000000),
+                          width: 1,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: hasValidCustomFile
+                          ? Image.file(
+                              File(customPath),
+                              key: ValueKey(customPath),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.broken_image_rounded,
+                                size: 20,
+                                color: Color(0x88FFFFFF),
                               ),
+                            )
+                          : Icon(
+                              Icons.wallpaper_rounded,
+                              size: 22,
+                              color: isCustom ? activeAccent : subTextColor,
                             ),
-                            if (isCustom) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: activeAccent.withOpacity(0.20),
-                                  borderRadius: BorderRadius.circular(6),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Text Info (Uncluttered, responsive on mobile)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Custom Wallpaper',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
                                 ),
-                                child: Text(
-                                  'ACTIVE',
-                                  style: TextStyle(
-                                    fontFamily: 'JetBrainsMono',
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: activeAccent,
+                              ),
+                              if (isCustom) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: activeAccent.withOpacity(0.20),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'ACTIVE',
+                                    style: TextStyle(
+                                      fontFamily: 'JetBrainsMono',
+                                      fontSize: 9.0,
+                                      fontWeight: FontWeight.w800,
+                                      color: activeAccent,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isCustom && hasValidCustomFile
-                              ? customPath.split('/').last
-                              : 'Set personal photo to illuminate glass blur',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11.5,
-                            color: subTextColor,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                          const SizedBox(height: 2),
+                          Text(
+                            isCustom && hasValidCustomFile
+                                ? 'Tap to replace image'
+                                : 'Set personal photo to illuminate glass',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11.0,
+                              color: subTextColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 8),
 
-                  // Browse / Reset Buttons
-                  if (isCustom && hasValidCustomFile) ...[
-                    // Clear button
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 18),
-                      color: subTextColor,
-                      tooltip: 'Reset to preset',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      onPressed: () {
-                        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                        appState.clearCustomWallpaper();
-                      },
-                    ),
-                    const SizedBox(width: 4),
+                    // Single Action: Reset when active, or Chevron when inactive
+                    if (isCustom && hasValidCustomFile)
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        color: subTextColor,
+                        tooltip: 'Revert to preset',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        onPressed: () {
+                          if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                          appState.clearCustomWallpaper();
+                        },
+                      )
+                    else
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: subTextColor,
+                      ),
                   ],
-
-                  // Browse Pill Button
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: activeAccent.withOpacity(0.35),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      isCustom ? 'Change' : 'Browse',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: activeAccent,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
         ],
       ),
     );
@@ -1115,16 +1097,37 @@ class SettingsScreen extends StatelessWidget {
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         final appDir = await getApplicationDocumentsDirectory();
-        final targetFile = File('${appDir.path}/custom_ambient_wallpaper.jpg');
+        final oldPath = appState.customWallpaperPath;
+
+        // 1. Evict old image from cache and clean up previous file
+        if (oldPath != null) {
+          try {
+            await FileImage(File(oldPath)).evict();
+            final oldFile = File(oldPath);
+            if (await oldFile.exists()) {
+              await oldFile.delete();
+            }
+          } catch (_) {}
+        }
+
+        // 2. Generate timestamped file path to bust cache 100%
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final targetFile = File('${appDir.path}/custom_ambient_$timestamp.jpg');
         final bytes = await image.readAsBytes();
         await targetFile.writeAsBytes(bytes, flush: true);
+
+        // 3. Clear Flutter ImageCache completely & evict new file
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
+        await FileImage(targetFile).evict();
+
         appState.setCustomWallpaperPath(targetFile.path);
         if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text(
-                'Custom wallpaper sandboxed and applied to ambient environment',
+                'Custom wallpaper applied to ambient environment',
                 style: TextStyle(fontFamily: 'Inter'),
               ),
               behavior: SnackBarBehavior.floating,
@@ -1188,11 +1191,13 @@ class SettingsScreen extends StatelessWidget {
 
             return BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: Container(
-                padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 28),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xE012161A) : const Color(0xF5FFFFFF),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              child: SafeArea(
+                top: false,
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xE012161A) : const Color(0xF5FFFFFF),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                   border: Border(
                     top: BorderSide(
                       color: isDark ? const Color(0x33FFFFFF) : const Color(0x20000000),
@@ -1436,7 +1441,8 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            );
+            ),
+          );
           },
         );
       },

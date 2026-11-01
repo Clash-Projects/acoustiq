@@ -122,13 +122,13 @@ class _AuditScreenState extends State<AuditScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: GlassSurface(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            style: GlassStyle.frosted,
-            borderless: false,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        return GlassSurface(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          style: GlassStyle.frosted,
+          borderless: false,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: SafeArea(
+            top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1109,7 +1109,7 @@ class _TrackDetailModal extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // 2. Hybrid Forensic Audio Engine (Speedometer Dial + Scientific Nyquist Shelf Graph)
+          // 2. Hybrid Forensic Audio Engine (32-Bar Waveform + 2D STFT Spectrogram)
           AudioSpectrumStage(
             score: track.score,
             cutoffKhz: track.cutoffKhz,
@@ -1118,6 +1118,9 @@ class _TrackDetailModal extends StatelessWidget {
             status: track.status,
             shortBadge: track.shortBadge,
             statusColor: statusColor,
+            sampleRate: track.sampleRate,
+            bitDepth: track.bitDepth,
+            verdict: track.verdict,
             height: 136,
           ),
 

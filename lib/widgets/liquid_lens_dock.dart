@@ -8,14 +8,16 @@ import '../ui/theme/colors.dart';
 ///
 /// Features:
 /// 1. Cohesive Integrated Capsule: Active tab pill expands and slides inside the dock's
-///    deterministic track using fluid spring physics (Curves.easeOutCubic).
-/// 2. Deep Obsidian Translucent Substrate (Apple HIG Calibrated):
-///    - 69% Opacity Deep Scrim (Color(0xB00D1117)) ensures white icons remain 100% WCAG AAA legible.
-///    - Real-time 24dp Gaussian blur lets scrolling album art and titles bleed through softly.
+///    deterministic track using fluid spring physics (Curves.easeOutBack).
+/// 2. Deep Obsidian Translucent Substrate (Apple HIG Calibrated & 1:1 LastWave 48dp Spec):
+///    - 48dp exact dock height matching LastWave Native.
+///    - Compact 40dp inactive tabs with 20dp centered icons.
+///    - Horizontally expanding 120dp active pill with spring dynamics.
+///    - Real-time 24dp Gaussian blur lets scrolling album art bleed through softly.
 /// 3. True Water-Clear Droplet Optics:
 ///    - 100% Achromatic body (NO cyan dye).
 ///    - Top specular highlight arc (simulates ambient overhead light reflecting off water meniscus).
-///    - Inner caustic lens gradient & optical icon magnification (1.16x).
+///    - Inner caustic lens gradient & optical icon magnification (1.12x).
 ///    - Soft diffuse ambient contact shadow.
 /// 4. Seamless Glide Gesture Tracking: Dragging smoothly hit-tests tabs and transitions
 ///    active selection with tactile haptic clicks, never detaching or sticking.
@@ -34,11 +36,11 @@ class LiquidLensNavBar extends StatefulWidget {
 }
 
 class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
-  static const double _kPaddingH = 8.0;
-  static const double _kDockHeight = 56.0;
-  static const double _kInactiveWidth = 48.0;
-  static const double _kActiveWidth = 136.0;
-  static const double _kTotalWidth = (2 * _kPaddingH) + (3 * _kInactiveWidth) + _kActiveWidth; // 296.0
+  static const double _kPaddingH = 6.0;
+  static const double _kDockHeight = 48.0;
+  static const double _kInactiveWidth = 40.0;
+  static const double _kActiveWidth = 120.0;
+  static const double _kTotalWidth = (2 * _kPaddingH) + (3 * _kInactiveWidth) + _kActiveWidth; // 252.0
 
   int _lastHapticIndex = -1;
 
@@ -112,58 +114,58 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
               onTapDown: (details) => _handleTouchPosition(details.localPosition),
               onHorizontalDragUpdate: (details) => _handleTouchPosition(details.localPosition),
               child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-              child: BackdropFilter(
-                filter: useGlass
-                    ? ImageFilter.blur(sigmaX: 24, sigmaY: 24)
-                    : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-                child: Container(
-                  width: _kTotalWidth,
-                  height: _kDockHeight,
-                  padding: const EdgeInsets.symmetric(horizontal: _kPaddingH, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: dockBg,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(color: specularBorder, width: 0.6),
-                    boxShadow: isDark
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.45),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: const Color(0x14000000),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(_tabs.length, (index) {
-                      final tab = _tabs[index];
-                      final isSelected = widget.currentIndex == index;
+                borderRadius: BorderRadius.circular(26),
+                child: BackdropFilter(
+                  filter: useGlass
+                      ? ImageFilter.blur(sigmaX: 24, sigmaY: 24)
+                      : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                  child: Container(
+                    width: _kTotalWidth,
+                    height: _kDockHeight,
+                    padding: const EdgeInsets.symmetric(horizontal: _kPaddingH, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: dockBg,
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(color: specularBorder, width: 0.6),
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.40),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: const Color(0x14000000),
+                                blurRadius: 16,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(_tabs.length, (index) {
+                        final tab = _tabs[index];
+                        final isSelected = widget.currentIndex == index;
 
-                      return _IntegratedDockTab(
-                        icon: tab.icon,
-                        label: tab.label,
-                        isSelected: isSelected,
-                        isDark: isDark,
-                        useGlass: useGlass,
-                        activeAccent: activeAccent,
-                        onTap: () => _selectTab(index),
-                      );
-                    }),
+                        return _IntegratedDockTab(
+                          icon: tab.icon,
+                          label: tab.label,
+                          isSelected: isSelected,
+                          isDark: isDark,
+                          useGlass: useGlass,
+                          activeAccent: activeAccent,
+                          onTap: () => _selectTab(index),
+                        );
+                      }),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
       },
     );
   }
@@ -191,23 +193,23 @@ class _IntegratedDockTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const activeWidth = 136.0;
-    const inactiveWidth = 48.0;
+    const activeWidth = 120.0;
+    const inactiveWidth = 40.0;
 
     final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
     final inactiveColor = isDark ? Colors.white.withOpacity(0.60) : AppColors.lightTextMuted;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutBack,
       width: isSelected ? activeWidth : inactiveWidth,
-      height: 46,
+      height: 38,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           mouseCursor: SystemMouseCursors.click,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           child: isSelected
@@ -218,30 +220,30 @@ class _IntegratedDockTab extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Water-magnified icon (1.16x)
+                      // Water-magnified icon (1.12x)
                       TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 1.0, end: 1.16),
-                        duration: const Duration(milliseconds: 240),
+                        tween: Tween(begin: 1.0, end: 1.12),
+                        duration: const Duration(milliseconds: 220),
                         curve: Curves.easeOutBack,
                         builder: (context, scale, child) {
                           return Transform.scale(
                             scale: scale,
                             child: Icon(
                               icon,
-                              size: 20,
+                              size: 18,
                               color: activeColor,
                             ),
                           );
                         },
                       ),
-                      const SizedBox(width: 8),
-                      // Smoothly expanding label - No truncation!
+                      const SizedBox(width: 6),
+                      // Smoothly expanding label
                       Flexible(
                         child: Text(
                           label,
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 12.5,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
                             color: activeColor,
@@ -256,7 +258,7 @@ class _IntegratedDockTab extends StatelessWidget {
               : Center(
                   child: Icon(
                     icon,
-                    size: 22,
+                    size: 20,
                     color: inactiveColor,
                   ),
                 ),
@@ -266,13 +268,7 @@ class _IntegratedDockTab extends StatelessWidget {
   }
 }
 
-/// Achromatic Water Lens Pill Container
-///
-/// Implements true physical water droplet optics:
-/// - Pure water-clear body with subtle activeAccent optical illumination.
-/// - Top specular highlight arc catching ambient overhead illumination.
-/// - Meniscus depth refraction.
-/// - Soft contact drop shadow.
+/// Achromatic Water Lens Pill Substrate with Specular Arc & Refraction Rim
 class _AchromaticWaterLensPill extends StatelessWidget {
   final bool isDark;
   final bool useGlass;
@@ -288,35 +284,34 @@ class _AchromaticWaterLensPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!useGlass) {
-      final solidBg = isDark ? const Color(0xFF222B34) : const Color(0xFFE2E8F0);
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: solidBg,
-          borderRadius: BorderRadius.circular(23),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(19),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: const Color(0x18000000),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(19),
+        child: CustomPaint(
+          painter: _WaterDropletLensPainter(
+            isDark: isDark,
+            activeAccent: activeAccent,
+          ),
+          child: Center(child: child),
         ),
-        alignment: Alignment.center,
-        child: child,
-      );
-    }
-
-    return CustomPaint(
-      painter: _WaterDropletLensPainter(isDark: isDark, activeAccent: activeAccent),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(23),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.32 : 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: child,
       ),
     );
   }
@@ -333,7 +328,7 @@ class _WaterDropletLensPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
-      const Radius.circular(23),
+      const Radius.circular(19),
     );
 
     // 1. Water-Clear Translucent Refraction Body (LastWave 28% Alpha, Never Opaque)
@@ -363,7 +358,7 @@ class _WaterDropletLensPainter extends CustomPainter {
 
     final topArcPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
+      ..strokeWidth = 1.0
       ..shader = LinearGradient(
         colors: [
           Colors.transparent,

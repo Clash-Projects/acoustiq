@@ -111,8 +111,10 @@ class _InspectScreenState extends State<InspectScreen> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             style: GlassStyle.frosted,
             borderless: false,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: SafeArea(
+              top: false,
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -341,7 +343,8 @@ class _InspectScreenState extends State<InspectScreen> {
               ],
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
@@ -566,7 +569,7 @@ class _InspectScreenState extends State<InspectScreen> {
             if (_info != null) ...[
               const SizedBox(height: 20),
 
-              // 2. Hybrid Forensic Audio Engine (Speedometer Dial + Scientific Nyquist Shelf Graph)
+              // 2. Hybrid Forensic Audio Engine (32-Bar Waveform + 2D STFT Spectrogram)
               AudioSpectrumStage(
                 score: _info!.score,
                 cutoffKhz: _info!.cutoffKhz,
@@ -575,6 +578,9 @@ class _InspectScreenState extends State<InspectScreen> {
                 status: _info!.status,
                 shortBadge: _info!.shortBadge,
                 statusColor: statusColor,
+                sampleRate: _info!.sampleRate,
+                bitDepth: _info!.bitDepth,
+                verdict: _info!.verdict,
                 height: 136,
               ),
 

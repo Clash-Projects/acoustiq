@@ -157,13 +157,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: GlassSurface(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            style: GlassStyle.frosted,
-            borderless: false,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        return GlassSurface(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          style: GlassStyle.frosted,
+          borderless: false,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: SafeArea(
+            top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
