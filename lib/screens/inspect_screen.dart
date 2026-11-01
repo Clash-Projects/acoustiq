@@ -1312,7 +1312,7 @@ class _InspectScreenState extends State<InspectScreen> {
     if (_info == null || !_info!.hasLyrics) return;
     if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
 
-    final rawLyrics = _info!.lyricsText.trim();
+    final rawLyrics = (_info!.lyricsText ?? '').trim();
     final lines = rawLyrics.split(RegExp(r'\r?\n'));
     final isSynced = RegExp(r'\[\d{2}:\d{2}[\.:]\d{2,3}\]').hasMatch(rawLyrics);
 
