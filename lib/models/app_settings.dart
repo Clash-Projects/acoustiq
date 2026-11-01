@@ -146,6 +146,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setHapticsEnabled(bool value) => setHaptics(value);
+
   void setAmoledMode(bool value) {
     _amoledMode = value;
     _prefs?.setBool('amoled_mode', value);
