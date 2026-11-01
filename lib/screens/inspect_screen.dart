@@ -953,7 +953,7 @@ class _InspectScreenState extends State<InspectScreen> {
             ? 'Extract original full-resolution cover image to Downloads'
             : 'No embedded artwork found in file',
         trailing: Icon(Icons.download_rounded, size: 20, color: _info!.hasCover ? activeAccent : subTextColor.withOpacity(0.4)),
-        onTap: _info!.hasCover ? _exportArtwork : null,
+        onTap: _info!.hasCover ? _openArtworkLightbox : null,
       ),
       (
         icon: Icons.lyrics_rounded,
@@ -964,7 +964,7 @@ class _InspectScreenState extends State<InspectScreen> {
             ? 'Extract synchronized lyrics timestamps to Downloads'
             : 'No embedded lyrics found in file',
         trailing: Icon(Icons.download_rounded, size: 20, color: _info!.hasLyrics ? activeAccent : subTextColor.withOpacity(0.4)),
-        onTap: _info!.hasLyrics ? _exportLyricsFile : null,
+        onTap: _info!.hasLyrics ? _openLyricsExportPreview : null,
       ),
     ];
 
@@ -1010,6 +1010,601 @@ class _InspectScreenState extends State<InspectScreen> {
         showThemedSnackBar(context, 'Verification error: $e', icon: Icons.error_outline_rounded);
       }
     }
+  }
+
+  void _openArtworkLightbox() {
+    if (_info == null || !_info!.hasCover || _info!.coverBytes == null) return;
+    if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = appState.isCurrentDark(ctx);
+        final textColor = appState.getTextColor(ctx);
+        final subTextColor = appState.getSubTextColor(ctx);
+        final activeAccent = appState.getAccentColor(ctx);
+        final onAccentColor = AppColors.getOnAccentColor(activeAccent, isDark: isDark);
+        final kbSize = (_info!.coverBytes!.length / 1024).toStringAsFixed(1);
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+          ),
+          child: GlassSurface(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            style: GlassStyle.frosted,
+            borderless: false,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB300).withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.image_rounded, size: 20, color: Color(0xFFFFB300)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Artwork Pre-Export Lightbox',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
+                            Text(
+                              'Original Lossless Embedded Front Cover',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11.5,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Artwork Hero Canvas
+                  Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 250, maxWidth: 250),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(isDark ? 0.50 : 0.18),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.memory(
+                        _info!.coverBytes!,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Technical Meta Spec Pills
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(12),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                'FILE SIZE',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 9.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: subTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$kbSize KB',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(12),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                'FORMAT',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 9.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: subTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'PICTURE BLOCK',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFFFB300),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(12),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                'TYPE',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 9.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: subTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Front Cover',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Actions: Cancel & Save to Downloads
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LuminousFeedback(
+                          onTap: () => Navigator.pop(ctx),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            height: 44,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isDark ? const Color(0x22FFFFFF) : const Color(0x18000000),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: LuminousFeedback(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _exportArtwork();
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            height: 44,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: activeAccent,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: activeAccent.withOpacity(0.35),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.download_rounded, size: 18, color: onAccentColor),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Save to Downloads',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: onAccentColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openLyricsExportPreview() {
+    if (_info == null || !_info!.hasLyrics) return;
+    if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+
+    final rawLyrics = _info!.lyricsText.trim();
+    final lines = rawLyrics.split(RegExp(r'\r?\n'));
+    final isSynced = RegExp(r'\[\d{2}:\d{2}[\.:]\d{2,3}\]').hasMatch(rawLyrics);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = appState.isCurrentDark(ctx);
+        final textColor = appState.getTextColor(ctx);
+        final subTextColor = appState.getSubTextColor(ctx);
+        final activeAccent = appState.getAccentColor(ctx);
+        final onAccentColor = AppColors.getOnAccentColor(activeAccent, isDark: isDark);
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+          ),
+          child: GlassSurface(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            style: GlassStyle.frosted,
+            borderless: false,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFA78BFA).withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.lyrics_rounded, size: 20, color: Color(0xFFA78BFA)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Lyrics Pre-Export Preview',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
+                            Text(
+                              isSynced ? 'Vorbis Synced LRC Timestamps' : 'Plain Text Lyrics Block',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11.5,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Metadata Specs
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(12),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                'TOTAL LINES',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 9.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: subTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${lines.length}',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(12),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                'TYPE',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 9.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: subTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isSynced ? 'SYNCED LRC' : 'PLAIN TEXT',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSynced ? AppColors.genuineEmerald : activeAccent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(12),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                'ENCODING',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 9.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: subTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'UTF-8',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 12.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Scrollable Lyrics Preview Box
+                  Expanded(
+                    child: GlassSurface(
+                      borderRadius: BorderRadius.circular(16),
+                      style: GlassStyle.clear,
+                      borderless: false,
+                      padding: const EdgeInsets.all(14),
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: SelectableText(
+                          rawLyrics,
+                          style: TextStyle(
+                            fontFamily: 'JetBrainsMono',
+                            fontSize: 12.0,
+                            height: 1.6,
+                            color: textColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Actions: Cancel & Export .LRC
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LuminousFeedback(
+                          onTap: () => Navigator.pop(ctx),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            height: 44,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isDark ? const Color(0x22FFFFFF) : const Color(0x18000000),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: LuminousFeedback(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _exportLyricsFile();
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            height: 44,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: activeAccent,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: activeAccent.withOpacity(0.35),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.download_rounded, size: 18, color: onAccentColor),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Export .LRC File',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: onAccentColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _exportArtwork() async {

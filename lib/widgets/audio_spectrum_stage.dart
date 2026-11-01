@@ -1276,6 +1276,63 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
             ),
           ),
           const SizedBox(height: 10),
+
+          // Try It Yourself Human Explanatory Guide
+          _markdownCard(
+            title: 'Try It Yourself: The Forensic Recipe',
+            icon: Icons.science_outlined,
+            accent: const Color(0xFF38BDF8),
+            isDark: isDark,
+            textColor: textColor,
+            subTextColor: subTextColor,
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Want to test our DSP engine with a known fake? You can create an upsampled FLAC on your computer using FFmpeg in two simple commands, then inspect it in AcoustiQ:',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: subTextColor,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _pointRow(
+                  '1',
+                  'Lossy Compression',
+                  'Encode a real FLAC to 128 kbps MP3. This permanently discards all harmonics above 16 kHz.',
+                  const Color(0xFFFBBF24),
+                  isDark,
+                  textColor,
+                  subTextColor,
+                ),
+                const SizedBox(height: 6),
+                _pointRow(
+                  '2',
+                  'Container Upsampling',
+                  'Transcode that MP3 into a 24-bit / 96 kHz FLAC container. File size swells, but acoustic cutoff stays locked at 16 kHz.',
+                  const Color(0xFFF472B6),
+                  isDark,
+                  textColor,
+                  subTextColor,
+                ),
+                const SizedBox(height: 6),
+                _pointRow(
+                  '3',
+                  'Live Detection',
+                  'Drop the file into AcoustiQ — watch our engine instantly identify the 16 kHz brickwall cutoff with 0% purity!',
+                  const Color(0xFF34D399),
+                  isDark,
+                  textColor,
+                  subTextColor,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
           // Liquid Glass macOS Terminal Box
           Container(
             decoration: BoxDecoration(
@@ -1420,6 +1477,29 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               ],
             ),
           ),
+          const SizedBox(height: 10),
+
+          // Card: How to Read Inferno Colormap
+          _markdownCard(
+            title: 'Reading the Inferno Spectrogram',
+            icon: Icons.palette_outlined,
+            accent: const Color(0xFFFCA50A),
+            isDark: isDark,
+            textColor: textColor,
+            subTextColor: subTextColor,
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _pointRow('•', 'White & Gold', 'Maximum acoustic loudness (0 dB to -12 dB).', const Color(0xFFFCFFA4), isDark, textColor, subTextColor),
+                const SizedBox(height: 6),
+                _pointRow('•', 'Coral & Red', 'Core musical instruments & lead vocals (-12 dB to -45 dB).', const Color(0xFFDD513A), isDark, textColor, subTextColor),
+                const SizedBox(height: 6),
+                _pointRow('•', 'Deep Purple', 'Delicate natural harmonics & air decay (-45 dB to -75 dB).', const Color(0xFF932667), isDark, textColor, subTextColor),
+                const SizedBox(height: 6),
+                _pointRow('•', 'Obsidian Black', 'Absence of acoustic energy / digital silence (-90 dB).', const Color(0xFF420A68), isDark, textColor, subTextColor),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
         ],
       ),
@@ -1530,7 +1610,8 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
         borderRadius: BorderRadius.circular(12),
@@ -1540,31 +1621,40 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 18, color: color),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withOpacity(isDark ? 0.20 : 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 17, color: color),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   label,
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 10.0,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w500,
                     color: isDark ? const Color(0x99FFFFFF) : const Color(0x88000000),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   value,
                   style: TextStyle(
                     fontFamily: 'JetBrainsMono',
-                    fontSize: 13.0,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: color,
                   ),
@@ -1634,7 +1724,14 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
   }
 }
 
-/// 2D STFT Heatmap Spectrogram CustomPainter (Uses REAL PCM computed matrix when available)
+/// Continuous Bilinear Studio STFT Spectrogram CustomPainter
+///
+/// Features:
+/// 1. GPU-accelerated Bilinear Time-Frequency Mesh (ui.Vertices) eliminating pixelated blockiness.
+/// 2. Inferno Colormap gradient (-90 dB to 0 dB) matching Audacity, SoX, and Spek.
+/// 3. Collision-free frequency axis: Left axis retains 24k/20k/0k ticks; cutoffKhz rendered as
+///    a dedicated floating badge pill on the cutoff line, permanently eliminating overlapping text.
+/// 4. Forensic Dead Zone highlight for lossy upsamples (MP3/AAC cliff).
 class _Spectrogram2dPainter extends CustomPainter {
   final double cutoffKhz;
   final double maxKhz;
@@ -1681,56 +1778,84 @@ class _Spectrogram2dPainter extends CustomPainter {
     final double plotWidth = size.width - axisLeft - 8.0;
     final double plotHeight = size.height - axisBottom - 8.0;
 
-    const int timeSlices = 32;
-    const int freqBins = 32;
+    const int cols = 32;
+    const int rows = 32;
 
-    final double cellW = plotWidth / timeSlices;
-    final double cellH = plotHeight / freqBins;
     final double cutoffRatio = (cutoffKhz / maxKhz).clamp(0.0, 1.0);
+    final bool hasRealMatrix = spectrogramMatrix.isNotEmpty && spectrogramMatrix.length >= 16;
 
-    final Paint ribbonPaint = Paint()..isAntiAlias = true;
-    final bool hasRealMatrix = spectrogramMatrix.length >= timeSlices;
+    // Bilinear sampler across time and frequency
+    double sampleEnergy(double tNorm, double fNorm) {
+      if (hasRealMatrix) {
+        final double tIdx = (tNorm * (spectrogramMatrix.length - 1)).clamp(0.0, (spectrogramMatrix.length - 1).toDouble());
+        final int t0 = tIdx.floor();
+        final int t1 = math.min(t0 + 1, spectrogramMatrix.length - 1);
+        final double tFrac = tIdx - t0;
 
-    for (int t = 0; t < timeSlices; t++) {
-      final double xLeft = axisLeft + (t * cellW);
-      final double xRight = xLeft + cellW + 0.6;
+        final int maxBins = spectrogramMatrix[0].length;
+        final double fIdx = (fNorm * (maxBins - 1)).clamp(0.0, (maxBins - 1).toDouble());
+        final int f0 = fIdx.floor();
+        final int f1 = math.min(f0 + 1, maxBins - 1);
+        final double fFrac = fIdx - f0;
 
-      for (int f = 0; f < freqBins; f++) {
-        final double freqRatio = 1.0 - (f / freqBins);
-        double energyTop;
-        double energyBottom;
+        final double e00 = spectrogramMatrix[t0][f0];
+        final double e01 = spectrogramMatrix[t0][f1];
+        final double e10 = spectrogramMatrix[t1][f0];
+        final double e11 = spectrogramMatrix[t1][f1];
 
-        if (hasRealMatrix) {
-          final int binIdxTop = (freqBins - 1 - f).clamp(0, spectrogramMatrix[t].length - 1);
-          final int binIdxBottom = (binIdxTop - 1).clamp(0, spectrogramMatrix[t].length - 1);
-          energyTop = spectrogramMatrix[t][binIdxTop];
-          energyBottom = spectrogramMatrix[t][binIdxBottom];
-        } else {
-          if (freqRatio > cutoffRatio) {
-            energyTop = 0.02 + (math.Random(t * 31 + f).nextDouble() * 0.03);
-            energyBottom = energyTop;
-          } else {
-            final double baseBand = (1.0 - (freqRatio * 0.65)).clamp(0.15, 0.95);
-            final double timeWeight = 0.85 + (math.sin(t * 0.35) * 0.15);
-            energyTop = (baseBand * timeWeight).clamp(0.05, 0.98);
-            energyBottom = ((1.0 - ((freqRatio - (1.0 / freqBins)) * 0.65)).clamp(0.15, 0.95) * timeWeight).clamp(0.05, 0.98);
-          }
+        final double top = e00 + (e10 - e00) * tFrac;
+        final double btm = e01 + (e11 - e01) * tFrac;
+        return (top + (btm - top) * fFrac).clamp(0.0, 1.0);
+      } else {
+        if (fNorm > cutoffRatio) {
+          return 0.012 + 0.008 * math.sin(tNorm * 32.0 + fNorm * 18.0);
         }
-
-        final double topY = 8.0 + (f * cellH);
-        final double bottomY = topY + cellH;
-        final Color topColor = _infernoColor(energyTop);
-        final Color bottomColor = _infernoColor(energyBottom);
-
-        ribbonPaint.shader = ui.Gradient.linear(
-          Offset(xLeft, topY),
-          Offset(xLeft, bottomY),
-          [topColor, bottomColor],
-        );
-        canvas.drawRect(Rect.fromLTRB(xLeft, topY, xRight, bottomY), ribbonPaint);
+        final double harmonicFalloff = math.pow((1.0 - (fNorm / cutoffRatio)).clamp(0.0, 1.0), 0.72).toDouble();
+        final double overtones = 0.52 + 0.38 * math.sin(tNorm * 10.0 + 0.5) * math.cos(fNorm * 14.0);
+        return (harmonicFalloff * overtones).clamp(0.04, 0.98);
       }
     }
 
+    // Build Continuous Bilinear Mesh (cols + 1) x (rows + 1)
+    final List<Offset> positions = [];
+    final List<Color> colors = [];
+    final List<int> indices = [];
+
+    for (int j = 0; j <= rows; j++) {
+      final double fNorm = 1.0 - (j / rows);
+      final double y = 8.0 + (j / rows) * plotHeight;
+
+      for (int i = 0; i <= cols; i++) {
+        final double tNorm = i / cols;
+        final double x = axisLeft + tNorm * plotWidth;
+
+        positions.add(Offset(x, y));
+        final double e = sampleEnergy(tNorm, fNorm);
+        colors.add(_infernoColor(e));
+      }
+    }
+
+    for (int j = 0; j < rows; j++) {
+      for (int i = 0; i < cols; i++) {
+        final int tl = j * (cols + 1) + i;
+        final int tr = tl + 1;
+        final int bl = (j + 1) * (cols + 1) + i;
+        final int br = bl + 1;
+
+        indices.addAll([tl, tr, bl]);
+        indices.addAll([tr, br, bl]);
+      }
+    }
+
+    final ui.Vertices vertices = ui.Vertices(
+      ui.VertexMode.triangles,
+      positions,
+      colors: colors,
+      indices: indices,
+    );
+    canvas.drawVertices(vertices, BlendMode.srcOver, Paint()..isAntiAlias = true);
+
+    // Reference Lines & Dead Zone
     final double cutoffY = 8.0 + (plotHeight * (1.0 - cutoffRatio));
     final double cdRatio = (20.0 / maxKhz).clamp(0.0, 1.0);
     final double cdY = 8.0 + (plotHeight * (1.0 - cdRatio));
@@ -1751,14 +1876,14 @@ class _Spectrogram2dPainter extends CustomPainter {
     }
 
     // Dead Zone Hatched Overlay if cutoff is below Nyquist
-    if (cutoffRatio < 0.92) {
+    if (cutoffRatio < 0.95) {
       final deadZoneRect = Rect.fromLTWH(axisLeft, 8.0, plotWidth, cutoffY - 8.0);
-      canvas.drawRect(deadZoneRect, Paint()..color = const Color(0x33FF3B30));
+      canvas.drawRect(deadZoneRect, Paint()..color = const Color(0x35FF3B30));
 
       final Paint hatchPaint = Paint()
         ..color = const Color(0x44FF3B30)
         ..strokeWidth = 1.0;
-      for (double d = -deadZoneRect.height; d < deadZoneRect.width; d += 14) {
+      for (double d = -deadZoneRect.height; d < deadZoneRect.width; d += 16) {
         canvas.drawLine(
           Offset(axisLeft + math.max(0.0, d), 8.0),
           Offset(axisLeft + math.min(plotWidth, d + deadZoneRect.height), cutoffY),
@@ -1767,45 +1892,86 @@ class _Spectrogram2dPainter extends CustomPainter {
       }
 
       final Paint cutoffLinePaint = Paint()
-        ..color = const Color(0xFFFF3B30)
+        ..color = statusColor
         ..strokeWidth = 1.6;
       canvas.drawLine(Offset(axisLeft, cutoffY), Offset(axisLeft + plotWidth, cutoffY), cutoffLinePaint);
 
       final tp = TextPainter(
-        text: const TextSpan(
-          text: '[!] MISSING FREQUENCIES (DEAD ZONE)',
-          style: TextStyle(
+        text: TextSpan(
+          text: status == 'fake'
+              ? '[!] FAKE MP3 UPSAMPLE (DEAD ZONE)'
+              : '[!] SHELF CUTOFF (${cutoffKhz.toStringAsFixed(1)} kHz)',
+          style: const TextStyle(
             fontFamily: 'JetBrainsMono',
             fontSize: 9.0,
             fontWeight: FontWeight.w800,
-            color: Color(0xFFFF9999),
+            color: Color(0xFFFFCCCC),
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
       final tagX = axisLeft + (plotWidth - tp.width) / 2;
-      final tagY = math.max(12.0, (8.0 + cutoffY) / 2 - 7);
+      final tagY = math.max(12.0, (8.0 + cutoffY) / 2 - 8);
       final bgRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(tagX - 5, tagY - 2, tp.width + 10, tp.height + 4),
+        Rect.fromLTWH(tagX - 6, tagY - 2, tp.width + 12, tp.height + 4),
         const Radius.circular(5),
       );
-      canvas.drawRRect(bgRect, Paint()..color = const Color(0xE6260000));
+      canvas.drawRRect(bgRect, Paint()..color = const Color(0xEA1F0000));
       tp.paint(canvas, Offset(tagX, tagY));
     }
 
+    // Frequency Axis Labels (Left Ticks Only - Zero Collisions)
     final labelStyle = const TextStyle(
       fontFamily: 'JetBrainsMono',
       fontSize: 8.5,
       color: Color(0xAAFFFFFF),
     );
 
-    _drawText(canvas, '${maxKhz.toStringAsFixed(0)}k', Offset(2, 6), labelStyle);
-    if (maxKhz > 22) {
-      _drawText(canvas, '20k', Offset(2, cdY - 5), labelStyle);
+    // 1. Max / Nyquist
+    _drawText(canvas, '${maxKhz.toStringAsFixed(0)}k', const Offset(2, 6), labelStyle);
+
+    // 2. 20k CD Reference tick (only if not colliding with top tick)
+    if ((cdY - 14.0) > 12.0) {
+      _drawText(
+        canvas,
+        '20k',
+        Offset(2, cdY - 5),
+        labelStyle.copyWith(color: const Color(0xFF00E5FF).withOpacity(0.9)),
+      );
     }
-    _drawText(canvas, '${cutoffKhz.toStringAsFixed(0)}k', Offset(2, cutoffY - 5), labelStyle.copyWith(color: statusColor, fontWeight: FontWeight.w700));
+
+    // 3. 0k Baseline tick
     _drawText(canvas, '0k', Offset(6, 8.0 + plotHeight - 10), labelStyle);
 
+    // 4. Cutoff Frequency Floating Badge Pill (Rendered ON Cutoff Line at Right - No collision!)
+    final badgeWidth = 46.0;
+    final badgeX = axisLeft + plotWidth - badgeWidth - 4.0;
+    final badgeY = (cutoffY - 8.0).clamp(10.0, 8.0 + plotHeight - 20.0);
+
+    final cutoffBg = RRect.fromRectAndRadius(
+      Rect.fromLTWH(badgeX, badgeY, badgeWidth, 16.0),
+      const Radius.circular(5.0),
+    );
+    canvas.drawRRect(cutoffBg, Paint()..color = statusColor.withOpacity(0.92));
+
+    final cutoffTp = TextPainter(
+      text: TextSpan(
+        text: '${cutoffKhz.toStringAsFixed(1)}k',
+        style: const TextStyle(
+          fontFamily: 'JetBrainsMono',
+          fontSize: 9.0,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    cutoffTp.paint(
+      canvas,
+      Offset(badgeX + (badgeWidth - cutoffTp.width) / 2, badgeY + (16.0 - cutoffTp.height) / 2),
+    );
+
+    // Time Axis Labels (Bottom)
     final timeStyle = const TextStyle(
       fontFamily: 'JetBrainsMono',
       fontSize: 8.5,
