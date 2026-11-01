@@ -36,7 +36,7 @@ class DspAnalysisResult {
 class AudioDspEngine {
   static const MethodChannel _channel = MethodChannel('flac_toolkit/audio_decoder');
 
-  static const int _fftSize = 4096;
+  static const int _fftSize = 2048;
 
   /// Analyze a FLAC file via Android MediaCodec or calibrated DSP fallback
   static Future<DspAnalysisResult> analyze({
@@ -83,16 +83,18 @@ class AudioDspEngine {
       );
     }
 
-    // 2. Compute Welch Power Spectral Density & Real 32x32 STFT Matrix
+    // 2. High-Density STFT Time-Frequency Matrix (96 cols x 96 rows) & Welch PSD
     final numSlices = rawSamples.length ~/ _fftSize;
     final int halfSize = _fftSize ~/ 2;
     List<double> maxPsdDb = List.filled(halfSize, -120.0);
 
-    const int targetCols = 32;
-    const int targetRows = 32;
-    final int colStep = math.max(1, numSlices ~/ targetCols);
+    const int targetCols = 96;
+    const int targetRows = 96;
+    final int colStep = math.max(1, (numSlices - 1) ~/ targetCols);
     final int binStep = math.max(1, halfSize ~/ targetRows);
-    List<List<double>> realSpectrogramMatrix = [];
+
+    List<List<double>> rawMatrix = [];
+    List<double> allDb = [];
 
     for (int s = 0; s < numSlices; s++) {
       final slice = rawSamples.sublist(s * _fftSize, (s + 1) * _fftSize);
@@ -103,20 +105,36 @@ class AudioDspEngine {
         }
       }
 
-      if (s % colStep == 0 && realSpectrogramMatrix.length < targetCols) {
-        List<double> rowEnergies = List<double>.filled(targetRows, 0.0);
+      if (s % colStep == 0 && rawMatrix.length < targetCols) {
+        List<double> rowEnergies = List<double>.filled(targetRows, -120.0);
         for (int r = 0; r < targetRows; r++) {
           double sumDb = 0.0;
           final startB = r * binStep;
+          int count = 0;
           for (int k = 0; k < binStep && (startB + k) < halfSize; k++) {
             sumDb += psdSlice[startB + k];
+            count++;
           }
-          final avgDb = sumDb / binStep;
-          // Normalize -90 dB (silence) to -10 dB (loud) into 0.02 to 1.0
-          rowEnergies[r] = ((avgDb + 90.0) / 80.0).clamp(0.02, 1.0);
+          final avgDb = count > 0 ? sumDb / count : -120.0;
+          rowEnergies[r] = avgDb;
+          allDb.add(avgDb);
         }
-        realSpectrogramMatrix.add(rowEnergies);
+        rawMatrix.add(rowEnergies);
       }
+    }
+
+    // Adaptive Dynamic Range Scaling (1:1 with Desktop scipy np.percentile 15% and max)
+    allDb.sort();
+    final double vmin = allDb.isNotEmpty ? allDb[(allDb.length * 0.15).floor()] : -100.0;
+    final double vmax = allDb.isNotEmpty ? allDb.last : -20.0;
+    final double dynamicRange = math.max(30.0, vmax - vmin);
+
+    List<List<double>> realSpectrogramMatrix = [];
+    for (final col in rawMatrix) {
+      final scaledCol = col.map((db) {
+        return ((db - vmin) / dynamicRange).clamp(0.02, 1.0);
+      }).toList();
+      realSpectrogramMatrix.add(scaledCol);
     }
 
     while (realSpectrogramMatrix.length < targetCols) {
@@ -143,11 +161,11 @@ class AudioDspEngine {
         ? midBand[midBand.length ~/ 2]
         : -40.0;
 
-    // 5. Measure Cutoff Frequency at (midEnergy - 38 dB)
+    // 5. Measure Cutoff Frequency with 3-consecutive-bin validation (eliminates isolated dither/Nyquist spikes)
     final double thresholdDb = midEnergy - 38.0;
     int cutoffIdx = halfSize - 1;
-    for (int i = halfSize - 1; i >= 0; i--) {
-      if (maxPsdDb[i] >= thresholdDb) {
+    for (int i = halfSize - 3; i >= 0; i--) {
+      if (maxPsdDb[i] >= thresholdDb && maxPsdDb[i - 1] >= thresholdDb && maxPsdDb[i - 2] >= thresholdDb) {
         cutoffIdx = i;
         break;
       }
@@ -246,17 +264,18 @@ class AudioDspEngine {
     // 8. Downsample to 128 Frequency Bands for Real Canvas Spectrogram
     const int numBands = 128;
     List<double> bands = List.filled(numBands, 0.0);
-    final int step = halfSize ~/ numBands;
+    final int step = math.max(1, halfSize ~/ numBands);
 
     for (int b = 0; b < numBands; b++) {
       double sum = 0.0;
       final start = b * step;
-      for (int k = 0; k < step; k++) {
+      int count = 0;
+      for (int k = 0; k < step && (start + k) < halfSize; k++) {
         sum += maxPsdDb[start + k];
+        count++;
       }
-      final avgDb = sum / step;
-      // Normalize -100 dB to -10 dB into 0.0 to 1.0 range
-      bands[b] = ((avgDb + 100.0) / 90.0).clamp(0.04, 1.0);
+      final avgDb = count > 0 ? sum / count : -120.0;
+      bands[b] = ((avgDb - vmin) / dynamicRange).clamp(0.04, 1.0);
     }
 
     return DspAnalysisResult(
@@ -271,7 +290,7 @@ class AudioDspEngine {
     );
   }
 
-  /// Compute PSD for a single 4096-sample window using Hann window and FFT
+  /// Compute PSD for a single 2048-sample window using Hann window and FFT
   static List<double> _computePsdSlice(List<double> samples, int sampleRate) {
     final int n = _fftSize;
     final int half = n ~/ 2;
@@ -281,7 +300,7 @@ class AudioDspEngine {
     final imag = Float64List(n);
     for (int i = 0; i < n; i++) {
       final double window = 0.5 * (1.0 - math.cos((2.0 * math.pi * i) / (n - 1)));
-      real[i] = samples[i] * window;
+      real[i] = (i < samples.length ? samples[i] : 0.0) * window;
       imag[i] = 0.0;
     }
 

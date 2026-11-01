@@ -26,10 +26,14 @@ Future<T?> showAppGlassDialog<T>({
   bool isDestructive = false,
   Widget? customBody,
 }) {
-  return showDialog<T>(
+  final hasGlass = appState.liquidGlassEnabled;
+  return showGeneralDialog<T>(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.25),
-    builder: (ctx) {
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: hasGlass ? Colors.black.withOpacity(0.42) : Colors.black.withOpacity(0.65),
+    transitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (ctx, anim1, anim2) {
       final isDark = appState.isCurrentDark(ctx);
       final textColor = appState.getTextColor(ctx);
       final subTextColor = appState.getSubTextColor(ctx);
@@ -38,20 +42,21 @@ Future<T?> showAppGlassDialog<T>({
           ? Colors.white
           : AppColors.getOnAccentColor(activeAccent, isDark: isDark);
 
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        elevation: 0,
-        child: GlassSurface(
-          borderRadius: BorderRadius.circular(24),
-          style: GlassStyle.frosted,
-          borderless: false,
-          constraints: const BoxConstraints(maxWidth: 380),
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      return Center(
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          elevation: 0,
+          child: GlassSurface(
+            borderRadius: BorderRadius.circular(24),
+            style: GlassStyle.frosted,
+            borderless: false,
+            constraints: const BoxConstraints(maxWidth: 380),
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 // Header: Icon + Title
                 Row(
                   children: [
@@ -219,8 +224,31 @@ Future<T?> showAppGlassDialog<T>({
               ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+    transitionBuilder: (ctx, anim1, anim2, child) {
+      final curved = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+      final content = FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.94, end: 1.0).animate(curved),
+          child: child,
+        ),
+      );
+
+      if (!hasGlass) {
+        return content;
+      }
+
+      return BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: 10.0 * curved.value,
+          sigmaY: 10.0 * curved.value,
+        ),
+        child: content,
+      );
+    },
+  );
+}
 

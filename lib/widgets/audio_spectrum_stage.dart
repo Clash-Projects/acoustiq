@@ -1778,8 +1778,10 @@ class _Spectrogram2dPainter extends CustomPainter {
     final double plotWidth = size.width - axisLeft - 8.0;
     final double plotHeight = size.height - axisBottom - 8.0;
 
-    const int cols = 32;
-    const int rows = 32;
+    final int cols = spectrogramMatrix.isNotEmpty ? math.min(spectrogramMatrix.length, 96) : 64;
+    final int rows = (spectrogramMatrix.isNotEmpty && spectrogramMatrix[0].isNotEmpty)
+        ? math.min(spectrogramMatrix[0].length, 96)
+        : 64;
 
     final double cutoffRatio = (cutoffKhz / maxKhz).clamp(0.0, 1.0);
     final bool hasRealMatrix = spectrogramMatrix.isNotEmpty && spectrogramMatrix.length >= 16;

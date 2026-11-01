@@ -17,8 +17,8 @@ class MockFlacFactory {
     required double maxKhz,
     required bool isGenuine,
   }) {
-    const int timeSlices = 32;
-    const int freqBins = 32;
+    const int timeSlices = 96;
+    const int freqBins = 96;
     final double cutoffRatio = (cutoffKhz / maxKhz).clamp(0.0, 1.0);
     final random = math.Random(42);
 
@@ -32,7 +32,7 @@ class MockFlacFactory {
           column[f] = 0.02 + (random.nextDouble() * 0.03);
         } else {
           final double base = (1.0 - (freqRatio * 0.70)).clamp(0.15, 0.95);
-          final double wave = 0.85 + (math.sin(t * 0.4 + f * 0.2) * 0.15);
+          final double wave = 0.85 + (math.sin(t * 0.25 + f * 0.15) * 0.15);
           column[f] = (base * wave).clamp(0.04, 0.98);
         }
       }
