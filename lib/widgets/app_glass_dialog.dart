@@ -26,7 +26,7 @@ Future<T?> showAppGlassDialog<T>({
   bool isDestructive = false,
   Widget? customBody,
 }) {
-  final hasGlass = appState.liquidGlassEnabled;
+  final hasGlass = appState.isLiquidGlass;
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: true,

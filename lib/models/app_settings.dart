@@ -28,6 +28,7 @@ class AppState extends ChangeNotifier {
   List<String> _recentFilePaths = [];
 
   bool get isLiquidGlass => _isLiquidGlass;
+  bool get liquidGlassEnabled => _isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get amoledMode => _amoledMode;
   bool get audiophileMode => _audiophileMode;
