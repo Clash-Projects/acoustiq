@@ -127,10 +127,10 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
         // LastWave & Apple Music centering follow with smooth cubic-bezier easing
         const double itemEstHeight = 52.0;
         final viewportHeight = _scrollController.position.viewportDimension;
-        final targetOffset = math.max(
-          0.0,
-          (active * itemEstHeight) - (viewportHeight / 3.0),
-        );
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        // Center the active line vertically within the viewport, clamped to list bounds
+        final targetOffset = ((active * itemEstHeight) - (viewportHeight - itemEstHeight) / 2.0)
+            .clamp(0.0, maxScroll);
         _scrollController.animateTo(
           targetOffset,
           duration: const Duration(milliseconds: 560),
@@ -525,31 +525,56 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                 ],
               ),
 
-              // In-Sheet Floating Glass Toast Pill
+              // Bottom Ambient Wavy Acoustic Lightfield Pulse (Zero hard edge, organic decay)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 80,
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _glowController,
+                    builder: (context, _) {
+                      if (_glowController.value == 0.0 || _glowController.value == 1.0) {
+                        return const SizedBox.shrink();
+                      }
+                      return CustomPaint(
+                        size: const Size(double.infinity, 80),
+                        painter: _AcousticAmbientGlowPainter(
+                          accentColor: activeAccent,
+                          progress: _glowController.value,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // In-Sheet Floating Glass Toast Pill (Positioned cleanly at bottom above controls)
               if (_inSheetToast != null)
                 Positioned(
-                  top: 50,
-                  left: 20,
-                  right: 20,
+                  bottom: 24,
+                  left: 24,
+                  right: 24,
                   child: Center(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0x8010141E) : const Color(0xC5FFFFFF),
-                            borderRadius: BorderRadius.circular(16),
+                            color: isDark ? const Color(0x780B0C0E) : const Color(0xC8FFFFFF),
+                            borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: activeAccent.withOpacity(0.4),
+                              color: isDark ? const Color(0x38FFFFFF) : const Color(0x20000000),
                               width: 0.8,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
+                                color: Colors.black.withOpacity(isDark ? 0.40 : 0.12),
+                                blurRadius: 22,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
@@ -579,40 +604,93 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                     ),
                   ),
                 ),
-
-              // Bottom Rim Ambient Glow Pulse
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 12,
-                child: AnimatedBuilder(
-                  animation: _glowController,
-                  builder: (context, _) {
-                    if (_glowController.value == 0.0 || _glowController.value == 1.0) {
-                      return const SizedBox.shrink();
-                    }
-                    final opacity = (1.0 - _glowController.value).clamp(0.0, 1.0);
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            activeAccent.withOpacity(0.50 * opacity),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+/// Organic Acoustic Wavy Ambient Lightfield
+///
+/// Features:
+/// 1. Sinusoidal acoustic wavefront with Gaussian bell curve center peak.
+/// 2. Non-linear cubic photon decay (opacity dissolves to 0.000 before reaching the top).
+/// 3. Zero hard boundaries or bounding box edge lines.
+class _AcousticAmbientGlowPainter extends CustomPainter {
+  final Color accentColor;
+  final double progress;
+
+  _AcousticAmbientGlowPainter({
+    required this.accentColor,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0.0 || progress >= 1.0) return;
+
+    final animValue = (1.0 - progress);
+    final intensity = math.pow(animValue, 1.8).toDouble();
+    if (intensity <= 0.001) return;
+
+    final width = size.width;
+    final height = size.height;
+
+    final path = Path();
+    path.moveTo(0, height);
+
+    final waveHeight = height * 0.88;
+    const int points = 32;
+    for (int i = 0; i <= points; i++) {
+      final x = (i / points) * width;
+      final normX = (x / width) * 2.0 - 1.0;
+      final bell = math.exp(-normX * normX * 1.5);
+      final wave = math.sin((x / width) * math.pi * 2.0 + 0.3) * 0.15 + 0.85;
+      final y = height - (waveHeight * bell * wave * intensity);
+      path.lineTo(x, y);
+    }
+
+    path.lineTo(width, height);
+    path.close();
+
+    final Rect bounds = Rect.fromLTWH(0, 0, width, height);
+    final glowPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = RadialGradient(
+        center: const Alignment(0.0, 1.0),
+        radius: 1.15,
+        colors: [
+          accentColor.withOpacity((0.42 * intensity).clamp(0.0, 1.0)),
+          accentColor.withOpacity((0.20 * intensity).clamp(0.0, 1.0)),
+          accentColor.withOpacity((0.05 * intensity).clamp(0.0, 1.0)),
+          accentColor.withOpacity(0.0),
+        ],
+        stops: const [0.0, 0.40, 0.75, 1.0],
+      ).createShader(bounds);
+
+    canvas.drawPath(path, glowPaint);
+
+    // Atmospheric diffuse floor catch
+    final basePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          accentColor.withOpacity((0.25 * intensity).clamp(0.0, 1.0)),
+          accentColor.withOpacity(0.0),
+        ],
+        stops: const [0.0, 0.55],
+      ).createShader(bounds);
+
+    canvas.drawRect(Rect.fromLTWH(0, height * 0.35, width, height * 0.65), basePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AcousticAmbientGlowPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.accentColor != accentColor;
   }
 }
 

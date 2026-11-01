@@ -28,7 +28,7 @@ Future<T?> showAppGlassDialog<T>({
 }) {
   return showDialog<T>(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.55),
+    barrierColor: Colors.black.withOpacity(0.25),
     builder: (ctx) {
       final isDark = appState.isCurrentDark(ctx);
       final textColor = appState.getTextColor(ctx);
@@ -42,32 +42,16 @@ Future<T?> showAppGlassDialog<T>({
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         elevation: 0,
-        child: ClipRRect(
+        child: GlassSurface(
           borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 380),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0x75121620) : const Color(0xAAFFFFFF),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isDark ? const Color(0x35FFFFFF) : const Color(0x20000000),
-                  width: 0.8,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.45 : 0.15),
-                    blurRadius: 32,
-                    offset: const Offset(0, 14),
-                  ),
-                ],
-              ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          style: GlassStyle.frosted,
+          borderless: false,
+          constraints: const BoxConstraints(maxWidth: 380),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                 // Header: Icon + Title
                 Row(
                   children: [
@@ -236,9 +220,8 @@ Future<T?> showAppGlassDialog<T>({
             ),
           ),
         ),
-      ),
-    );
-  },
-);
+      );
+    },
+  );
 }
 

@@ -38,11 +38,13 @@ class InspectScreen extends StatefulWidget {
 
 class _InspectScreenState extends State<InspectScreen> {
   FlacInfo? _info;
+  FlacInfo? _lastInjectedMock;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _lastInjectedMock = appState.injectedMockTrack;
     _info = appState.injectedMockTrack ?? widget.initialTrack;
     appState.addListener(_onAppStateChanged);
     if (_info == null && appState.recentFilePaths.isNotEmpty) {
@@ -51,7 +53,10 @@ class _InspectScreenState extends State<InspectScreen> {
   }
 
   void _onAppStateChanged() {
-    if (appState.injectedMockTrack != _info) {
+    // Only update _info when an actual mock injection state change occurs in Dev Lab.
+    // Prevents clearing or wiping real tracks when appState notifies for other preferences.
+    if (appState.injectedMockTrack != _lastInjectedMock) {
+      _lastInjectedMock = appState.injectedMockTrack;
       if (mounted) {
         setState(() {
           _info = appState.injectedMockTrack;
@@ -290,8 +295,10 @@ class _InspectScreenState extends State<InspectScreen> {
                             child: LuminousFeedback(
                               onTap: () {
                                 Navigator.pop(ctx);
-                                setState(() => _info = t);
+                                appState.injectMockTrack(null);
+                                _lastInjectedMock = null;
                                 appState.addRecentFilePath(t.filePath);
+                                setState(() => _info = t);
                               },
                               borderRadius: BorderRadius.circular(14),
                               child: GlassSurface(

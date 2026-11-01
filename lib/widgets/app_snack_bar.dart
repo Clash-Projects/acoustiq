@@ -31,16 +31,16 @@ void showThemedSnackBar(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0x60121620) : const Color(0xB5FFFFFF),
+              color: isDark ? const Color(0x780B0C0E) : const Color(0xC8FFFFFF),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isDark ? const Color(0x35FFFFFF) : const Color(0x18000000),
+                color: isDark ? const Color(0x38FFFFFF) : const Color(0x20000000),
                 width: 0.8,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.10),
-                  blurRadius: 20,
+                  color: Colors.black.withOpacity(isDark ? 0.40 : 0.12),
+                  blurRadius: 22,
                   offset: const Offset(0, 6),
                 ),
               ],
