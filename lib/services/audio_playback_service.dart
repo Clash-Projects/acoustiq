@@ -13,6 +13,9 @@ class AudioPlaybackService {
   int positionMs = 0;
   int durationMs = 0;
 
+  int get currentPositionMs => positionMs;
+  bool get isPlayingNow => isPlaying;
+
   Timer? _positionTimer;
   final List<void Function()> _listeners = [];
 

@@ -54,7 +54,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
     );
 
     _parseLyrics();
-    _player.positionNotifier.addListener(_onPositionChanged);
+    _player.addListener(_onPositionChanged);
   }
 
   @override
@@ -67,7 +67,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
 
   @override
   void dispose() {
-    _player.positionNotifier.removeListener(_onPositionChanged);
+    _player.removeListener(_onPositionChanged);
     _scrollController.dispose();
     _glowController.dispose();
     super.dispose();
@@ -111,7 +111,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
   void _onPositionChanged() {
     if (!_isSynced || _parsedLines.isEmpty || !mounted) return;
 
-    final currentMs = _player.currentPositionMs;
+    final currentMs = _player.positionMs;
     int active = -1;
     for (int i = 0; i < _parsedLines.length; i++) {
       if (_parsedLines[i].timestampMs <= currentMs) {
@@ -428,7 +428,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                                         if (line.timestampMs >= 0) {
                                           if (appState.hapticsEnabled) HapticFeedback.selectionClick();
                                           _player.seek(line.timestampMs);
-                                          if (!_player.isPlayingNotifier.value) {
+                                          if (!_player.isPlaying) {
                                             _player.play(widget.track.filePath);
                                           }
                                         }
