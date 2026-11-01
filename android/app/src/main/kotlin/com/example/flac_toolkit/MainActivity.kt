@@ -48,7 +48,10 @@ class MainActivity: FlutterActivity() {
         }
 
         val extractor = MediaExtractor()
-        extractor.setDataSource(filePath)
+        // Use FileDescriptor to bypass Android 10+ Scoped Storage path restrictions
+        java.io.FileInputStream(file).use { fis ->
+            extractor.setDataSource(fis.fd)
+        }
 
         var audioTrackIndex = -1
         var format: MediaFormat? = null
@@ -80,7 +83,8 @@ class MainActivity: FlutterActivity() {
 
         val targetSamplesPerWindow = 8192
         val sampledFloats = ArrayList<Float>()
-        val seekPercentages = doubleArrayOf(0.25, 0.50, 0.75)
+        // 4 evenly spaced windows avoiding quiet intros/outros
+        val seekPercentages = doubleArrayOf(0.20, 0.40, 0.60, 0.80)
 
         try {
             val bufferInfo = MediaCodec.BufferInfo()
@@ -97,7 +101,7 @@ class MainActivity: FlutterActivity() {
                 var isEOS = false
                 var loopCount = 0
 
-                while (samplesCollected < targetSamplesPerWindow && !isEOS && loopCount < 150) {
+                while (samplesCollected < targetSamplesPerWindow && !isEOS && loopCount < 160) {
                     loopCount++
                     val inIndex = codec.dequeueInputBuffer(TIMEOUT_US)
                     if (inIndex >= 0) {
@@ -119,24 +123,73 @@ class MainActivity: FlutterActivity() {
                     var outIndex = codec.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
                     while (outIndex >= 0) {
                         val outputBuffer = codec.getOutputBuffer(outIndex)
+                        val outFormat = codec.outputFormat
+                        val pcmEncoding = if (outFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
+                            outFormat.getInteger(MediaFormat.KEY_PCM_ENCODING)
+                        } else {
+                            android.media.AudioFormat.ENCODING_PCM_16BIT
+                        }
+
                         if (outputBuffer != null && bufferInfo.size > 0) {
                             outputBuffer.position(bufferInfo.offset)
                             outputBuffer.limit(bufferInfo.offset + bufferInfo.size)
                             outputBuffer.order(ByteOrder.LITTLE_ENDIAN)
 
-                            val shortBuf = outputBuffer.asShortBuffer()
-                            while (shortBuf.hasRemaining() && samplesCollected < targetSamplesPerWindow) {
-                                var monoVal = 0.0f
-                                for (ch in 0 until channelCount) {
-                                    if (shortBuf.hasRemaining()) {
-                                        val s = shortBuf.get()
-                                        if (ch == 0) {
-                                            monoVal = s.toFloat() / 32768.0f
+                            when (pcmEncoding) {
+                                android.media.AudioFormat.ENCODING_PCM_FLOAT -> {
+                                    val floatBuf = outputBuffer.asFloatBuffer()
+                                    while (floatBuf.hasRemaining() && samplesCollected < targetSamplesPerWindow) {
+                                        val s = floatBuf.get()
+                                        if (channelCount > 1) {
+                                            for (ch in 1 until channelCount) {
+                                                if (floatBuf.hasRemaining()) floatBuf.get()
+                                            }
+                                        }
+                                        sampledFloats.add(s.coerceIn(-1.0f, 1.0f))
+                                        samplesCollected++
+                                    }
+                                }
+                                21 -> { // ENCODING_PCM_24BIT_PACKED (3 bytes per channel)
+                                    val bytesPerFrame = 3 * channelCount
+                                    while (outputBuffer.remaining() >= bytesPerFrame && samplesCollected < targetSamplesPerWindow) {
+                                        val b0 = outputBuffer.get().toInt() and 0xFF
+                                        val b1 = outputBuffer.get().toInt() and 0xFF
+                                        val b2 = outputBuffer.get().toInt() // sign-extended high byte
+                                        val s24 = (b2 shl 16) or (b1 shl 8) or b0
+                                        val sFloat = (s24.toFloat() / 8388608.0f).coerceIn(-1.0f, 1.0f)
+                                        sampledFloats.add(sFloat)
+                                        samplesCollected++
+                                        if (channelCount > 1) {
+                                            outputBuffer.position(outputBuffer.position() + 3 * (channelCount - 1))
                                         }
                                     }
                                 }
-                                sampledFloats.add(monoVal)
-                                samplesCollected++
+                                22 -> { // ENCODING_PCM_32BIT (4 bytes per channel)
+                                    val intBuf = outputBuffer.asIntBuffer()
+                                    while (intBuf.hasRemaining() && samplesCollected < targetSamplesPerWindow) {
+                                        val s = intBuf.get()
+                                        if (channelCount > 1) {
+                                            for (ch in 1 until channelCount) {
+                                                if (intBuf.hasRemaining()) intBuf.get()
+                                            }
+                                        }
+                                        sampledFloats.add((s.toFloat() / 2147483648.0f).coerceIn(-1.0f, 1.0f))
+                                        samplesCollected++
+                                    }
+                                }
+                                else -> { // Default ENCODING_PCM_16BIT
+                                    val shortBuf = outputBuffer.asShortBuffer()
+                                    while (shortBuf.hasRemaining() && samplesCollected < targetSamplesPerWindow) {
+                                        val s = shortBuf.get()
+                                        if (channelCount > 1) {
+                                            for (ch in 1 until channelCount) {
+                                                if (shortBuf.hasRemaining()) shortBuf.get()
+                                            }
+                                        }
+                                        sampledFloats.add(s.toFloat() / 32768.0f)
+                                        samplesCollected++
+                                    }
+                                }
                             }
                         }
                         codec.releaseOutputBuffer(outIndex, false)
@@ -154,26 +207,35 @@ class MainActivity: FlutterActivity() {
             try { extractor.release() } catch (_: Exception) {}
         }
 
-        // Check for fake 24-bit (zero padded lower 8 bits)
+        // Shannon Entropy check for lowest 8 bits in 24-bit audio (Fake Hi-Res detection)
         var isFake24 = false
         if (statedBitDepth >= 24) {
-            // Read 20KB from middle of file to check byte distribution
             try {
                 java.io.RandomAccessFile(file, "r").use { raf ->
-                    if (raf.length() > 40960) {
-                        raf.seek(raf.length() / 2)
-                        val testBytes = ByteArray(16384)
+                    if (raf.length() > 65536) {
+                        raf.seek(raf.length() / 3)
+                        val testBytes = ByteArray(32768)
                         val readLen = raf.read(testBytes)
-                        if (readLen > 1000) {
-                            var zeroCount = 0
-                            var totalCheck = 0
+                        if (readLen > 2000) {
+                            val byteCounts = IntArray(256)
+                            var total = 0
                             for (b in 0 until (readLen - 3) step 3) {
                                 val lowByte = testBytes[b].toInt() and 0xFF
-                                if (lowByte == 0) zeroCount++
-                                totalCheck++
+                                byteCounts[lowByte]++
+                                total++
                             }
-                            if (totalCheck > 100 && (zeroCount.toDouble() / totalCheck) > 0.96) {
-                                isFake24 = true
+                            if (total > 200) {
+                                var entropy = 0.0
+                                for (count in byteCounts) {
+                                    if (count > 0) {
+                                        val p = count.toDouble() / total
+                                        entropy -= p * (Math.log(p) / Math.log(2.0))
+                                    }
+                                }
+                                val zeroRatio = byteCounts[0].toDouble() / total
+                                if (zeroRatio > 0.95 || entropy < 1.0) {
+                                    isFake24 = true
+                                }
                             }
                         }
                     }

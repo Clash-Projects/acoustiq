@@ -68,14 +68,16 @@ class AudioDspEngine {
       // Fallback if not on Android or MediaCodec fails
     }
 
-    // Fallback: If no samples decoded, generate acoustically calibrated sample curve
+    // Fallback: If no samples decoded, do not fabricate fake score based on bitrate
     if (rawSamples.length < _fftSize) {
-      return _generateCalibratedAnalysis(
-        sampleRate: sampleRate,
-        durationSec: durationSec,
-        bitrateKbps: bitrateKbps,
-        statedBitDepth: statedBitDepth,
-        nyquistKhz: nyquistKhz,
+      return DspAnalysisResult(
+        cutoffKhz: 0.0,
+        slopeDropDb: 0.0,
+        score: 0,
+        verdict: 'Audio stream decode error (File unreadable or corrupt)',
+        status: 'unverified',
+        isFake24: false,
+        spectrumBands: List.filled(128, 0.05),
       );
     }
 
@@ -133,43 +135,75 @@ class AudioDspEngine {
       (energyAtCutoff - energyAfter).clamp(0.0, 60.0).toStringAsFixed(1),
     );
 
-    // 7. Lossless Scoring Matrix (1:1 with Desktop flac_analyzer.py)
+    // 7. Psychoacoustic spectral hole detection: scan for empty quantization subbands
+    final idx15k = (15.0 / binWidthKhz).round().clamp(0, halfSize - 1);
+    final idx21k = (math.min(21.0, nyquistKhz) / binWidthKhz).round().clamp(0, halfSize - 1);
+    int emptyBins = 0;
+    int totalHiBins = 0;
+    final double holeThreshold = midEnergy - 48.0;
+    for (int i = idx15k; i <= idx21k; i++) {
+      totalHiBins++;
+      if (maxPsdDb[i] < holeThreshold) {
+        emptyBins++;
+      }
+    }
+    final double emptySubbandsRatio = totalHiBins > 0 ? (emptyBins / totalHiBins) : 0.0;
+
+    // 8. Multi-Vector Lossless Scoring Matrix (1:1 with Desktop flac_analyzer.py)
     int score;
     String verdict;
     String status;
 
-    if (cutoffKhz >= 20.5) {
-      score = slopeDropDb < 25.0 ? 98 : 90;
-      verdict = 'Genuine Lossless (Full dynamic spectrum > 20.5 kHz)';
-      status = 'genuine';
-    } else if (cutoffKhz >= 19.5) {
-      if (slopeDropDb >= 25.0) {
-        score = 72;
-        verdict = 'Likely 320 kbps MP3 upscale (Steep brickwall cutoff at ~20 kHz)';
+    if (sampleRate > 48000) {
+      // Hi-Res FLAC Check: genuine 88.2/96/192 kHz must extend into ultrasonic (>22 kHz)
+      if (cutoffKhz < 21.0) {
+        score = 30;
+        verdict = 'Fake Hi-Res FLAC (${sampleRate ~/ 1000} kHz container with ${cutoffKhz.toStringAsFixed(1)} kHz lossy cutoff)';
+        status = 'fake';
+      } else if (cutoffKhz < 24.0 && (slopeDropDb >= 20.0 || emptySubbandsRatio >= 0.15)) {
+        score = 50;
+        verdict = 'Suspicious Hi-Res FLAC (Premature brickwall cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz)';
         status = 'suspicious';
       } else {
-        score = 88;
-        verdict = 'High-Quality Lossless / Studio Master with high-frequency roll-off';
+        score = 98;
+        verdict = 'Genuine Hi-Res Lossless Master (> 24 kHz acoustic bandwidth)';
         status = 'genuine';
       }
-    } else if (cutoffKhz >= 17.5) {
-      if (slopeDropDb >= 20.0) {
-        score = 55;
-        verdict = 'Likely 192-256 kbps lossy upscale (Cutoff at ~18-19 kHz)';
-        status = 'suspicious';
-      } else {
-        score = 70;
-        verdict = 'Acoustic / Vintage recording with warm natural rolloff';
-        status = 'genuine';
-      }
-    } else if (cutoffKhz >= 15.0) {
-      score = 30;
-      verdict = 'Low-quality fake FLAC (Cutoff at ~16 kHz typical of 128 kbps MP3)';
-      status = 'fake';
     } else {
-      score = 15;
-      verdict = 'Severe cutoff / Heavy compression upscale';
-      status = 'fake';
+      // Standard Red Book CD / 44.1 - 48 kHz FLAC Check
+      if (cutoffKhz >= 20.5 && emptySubbandsRatio < 0.08) {
+        score = slopeDropDb < 25.0 ? 98 : 90;
+        verdict = 'Genuine Lossless (Full dynamic spectrum > 20.5 kHz)';
+        status = 'genuine';
+      } else if (cutoffKhz >= 19.5) {
+        if (slopeDropDb >= 22.0 || emptySubbandsRatio >= 0.18) {
+          score = 65;
+          verdict = 'Likely 320 kbps MP3 upscale (Steep brickwall / quantization holes at ~20 kHz)';
+          status = 'suspicious';
+        } else {
+          score = 88;
+          verdict = 'High-Quality Lossless / Studio Master with high-frequency roll-off';
+          status = 'genuine';
+        }
+      } else if (cutoffKhz >= 17.5) {
+        if (slopeDropDb >= 18.0 || emptySubbandsRatio >= 0.20) {
+          score = 50;
+          verdict = 'Likely 192-256 kbps lossy upscale (Cutoff at ~18-19 kHz with quantization holes)';
+          status = 'suspicious';
+        } else {
+          score = 80;
+          verdict = 'Acoustic / Vintage recording with warm natural rolloff';
+          status = 'genuine';
+        }
+      } else if (cutoffKhz >= 15.0) {
+        score = 30;
+        verdict = 'Low-quality fake FLAC (Cutoff at ~16 kHz typical of 128 kbps MP3)';
+        status = 'fake';
+      } else {
+        score = 15;
+        verdict = 'Severe cutoff / Heavy compression upscale';
+        status = 'fake';
+      }
     }
 
     if (isFake24) {
@@ -283,90 +317,5 @@ class AudioDspEngine {
         }
       }
     }
-  }
-
-  /// Calibrated fallback when running outside Android or on synthetic tests
-  static DspAnalysisResult _generateCalibratedAnalysis({
-    required int sampleRate,
-    required double durationSec,
-    required int bitrateKbps,
-    required int statedBitDepth,
-    required double nyquistKhz,
-  }) {
-    double cutoffKhz = 20.8;
-    int score = 98;
-    double slopeDropDb = 12.0;
-    String verdict = 'Genuine Lossless (Full dynamic spectrum > 20.5 kHz)';
-    String status = 'genuine';
-    bool isFake24 = false;
-
-    if (statedBitDepth >= 24 && bitrateKbps < 1200) {
-      isFake24 = true;
-      cutoffKhz = 19.5;
-      slopeDropDb = 26.0;
-      score = 72;
-      verdict = 'Fake 24-bit (Zero-padded 16-bit upsample) • Likely MP3 upscale';
-      status = 'fake';
-    } else if (bitrateKbps >= 780) {
-      cutoffKhz = 20.8;
-      slopeDropDb = 8.5;
-      score = 98;
-      verdict = 'Genuine CD Lossless (Full dynamic spectrum > 20.5 kHz)';
-      status = 'genuine';
-    } else if (bitrateKbps >= 600) {
-      cutoffKhz = 19.8;
-      slopeDropDb = 14.0;
-      score = 88;
-      verdict = 'High-Quality Lossless / Studio Master with natural roll-off';
-      status = 'genuine';
-    } else if (bitrateKbps >= 450) {
-      cutoffKhz = 18.5;
-      slopeDropDb = 24.0;
-      score = 60;
-      verdict = 'Likely 192-256 kbps lossy upscale (Cutoff at ~18.5 kHz)';
-      status = 'suspicious';
-    } else if (bitrateKbps >= 300) {
-      cutoffKhz = 16.0;
-      slopeDropDb = 32.0;
-      score = 30;
-      verdict = 'Low-quality fake FLAC (Cutoff at ~16 kHz typical of 128 kbps MP3)';
-      status = 'fake';
-    } else {
-      cutoffKhz = 14.5;
-      slopeDropDb = 38.0;
-      score = 15;
-      verdict = 'Severe cutoff / Heavy compression upscale';
-      status = 'fake';
-    }
-
-    // Generate 128 realistic acoustic spectrum bands reflecting the cutoff
-    const int numBands = 128;
-    final List<double> bands = List.filled(numBands, 0.0);
-    final double cutoffProgress = (cutoffKhz / nyquistKhz).clamp(0.1, 0.98);
-
-    for (int b = 0; b < numBands; b++) {
-      final double progress = b / numBands;
-      if (progress <= cutoffProgress) {
-        // Natural acoustic roll-off with gentle wave variance
-        final double base = 0.88 - (progress * 0.28);
-        final double wobble = 0.04 * math.sin(progress * 18.0);
-        bands[b] = (base + wobble).clamp(0.15, 1.0);
-      } else {
-        // Sharp brickwall filter plunge into noise floor
-        final double distPastCutoff = progress - cutoffProgress;
-        final double plunge = math.exp(-distPastCutoff * 36.0);
-        bands[b] = (0.05 + 0.50 * plunge).clamp(0.04, 0.6);
-      }
-    }
-
-    return DspAnalysisResult(
-      cutoffKhz: cutoffKhz,
-      slopeDropDb: slopeDropDb,
-      score: score,
-      verdict: verdict,
-      status: status,
-      isFake24: isFake24,
-      spectrumBands: bands,
-    );
   }
 }
