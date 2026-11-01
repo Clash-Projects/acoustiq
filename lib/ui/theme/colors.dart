@@ -79,4 +79,11 @@ class AppColors {
       ),
     ];
   }
+
+  /// Computes high-contrast foreground color (WCAG AAA) for text or icons placed on an accent background.
+  /// Prevents white-on-white invisibility when Monochrome accent (Colors.white) is selected in Dark Mode.
+  static Color getOnAccentColor(Color accent, {bool isDark = true}) {
+    final double luminance = accent.computeLuminance();
+    return luminance > 0.60 ? const Color(0xFF0F141C) : Colors.white;
+  }
 }

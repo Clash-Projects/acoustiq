@@ -1,16 +1,17 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
+import '../services/audio_playback_service.dart';
 import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
-import 'app_snack_bar.dart';
 import 'audio_preview_bar.dart';
 
 /// Shows an Apple WWDC25 Frosted Glass modal bottom sheet displaying
-/// embedded Vorbis FLAC lyrics (synced LRC timestamps or plain text).
+/// embedded Vorbis FLAC lyrics with LastWave-grade dynamic audio auto-scrolling.
 void showLyricsViewerSheet(BuildContext context, FlacInfo track) {
   showModalBottomSheet(
     context: context,
@@ -20,10 +21,139 @@ void showLyricsViewerSheet(BuildContext context, FlacInfo track) {
   );
 }
 
-class LyricsViewerSheet extends StatelessWidget {
+class LyricsViewerSheet extends StatefulWidget {
   final FlacInfo track;
 
   const LyricsViewerSheet({super.key, required this.track});
+
+  @override
+  State<LyricsViewerSheet> createState() => _LyricsViewerSheetState();
+}
+
+class _LyricsViewerSheetState extends State<LyricsViewerSheet>
+    with SingleTickerProviderStateMixin {
+  final ScrollController _scrollController = ScrollController();
+  final AudioPlaybackService _player = AudioPlaybackService.instance;
+
+  List<_LrcLine> _parsedLines = [];
+  bool _isSynced = false;
+  int _activeIndex = -1;
+  bool _isUserScrolling = false;
+
+  // In-Sheet Toast & Ambient Bottom Glow State
+  String? _inSheetToast;
+  IconData? _inSheetIcon;
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _parseLyrics();
+    _player.positionNotifier.addListener(_onPositionChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant LyricsViewerSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.track != widget.track) {
+      _parseLyrics();
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.positionNotifier.removeListener(_onPositionChanged);
+    _scrollController.dispose();
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _parseLyrics() {
+    final rawLyrics = widget.track.lyrics?.trim() ?? '';
+    final hasLrcRegex = RegExp(r'\[\d{2}:\d{2}[\.:]\d{2,3}\]').hasMatch(rawLyrics);
+
+    final List<_LrcLine> lines = [];
+    bool trulySynced = false;
+
+    if (hasLrcRegex) {
+      final rawLines = rawLyrics.split(RegExp(r'\r?\n'));
+      final lrcRegex = RegExp(r'\[(\d{2}):(\d{2})[\.:](\d{2,3})\](.*)');
+      for (final l in rawLines) {
+        final match = lrcRegex.firstMatch(l.trim());
+        if (match != null) {
+          final mm = int.tryParse(match.group(1) ?? '0') ?? 0;
+          final ss = int.tryParse(match.group(2) ?? '0') ?? 0;
+          final msRaw = match.group(3) ?? '0';
+          final ms = int.tryParse(msRaw.padRight(3, '0').substring(0, 3)) ?? 0;
+          final totalMs = (mm * 60 + ss) * 1000 + ms;
+
+          final timeStr = '${match.group(1)}:${match.group(2)}';
+          final text = match.group(4)?.trim() ?? '';
+          if (text.isNotEmpty || timeStr.isNotEmpty) {
+            lines.add(_LrcLine(timestamp: timeStr, timestampMs: totalMs, text: text));
+            if (totalMs > 0) trulySynced = true;
+          }
+        } else if (l.trim().isNotEmpty) {
+          lines.add(_LrcLine(timestamp: null, timestampMs: -1, text: l.trim()));
+        }
+      }
+    }
+
+    _parsedLines = lines;
+    _isSynced = hasLrcRegex && trulySynced;
+  }
+
+  void _onPositionChanged() {
+    if (!_isSynced || _parsedLines.isEmpty || !mounted) return;
+
+    final currentMs = _player.currentPositionMs;
+    int active = -1;
+    for (int i = 0; i < _parsedLines.length; i++) {
+      if (_parsedLines[i].timestampMs <= currentMs) {
+        active = i;
+      } else {
+        break;
+      }
+    }
+
+    if (active != _activeIndex) {
+      setState(() => _activeIndex = active);
+      if (!_isUserScrolling && active >= 0 && _scrollController.hasClients) {
+        // LastWave & Apple Music centering follow with smooth cubic-bezier easing
+        const double itemEstHeight = 52.0;
+        final viewportHeight = _scrollController.position.viewportDimension;
+        final targetOffset = math.max(
+          0.0,
+          (active * itemEstHeight) - (viewportHeight / 3.0),
+        );
+        _scrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 560),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    }
+  }
+
+  void _showInSheetToast(String message, IconData icon) {
+    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+    setState(() {
+      _inSheetToast = message;
+      _inSheetIcon = icon;
+    });
+    _glowController.forward(from: 0.0);
+
+    Future.delayed(const Duration(milliseconds: 2400), () {
+      if (mounted) {
+        setState(() => _inSheetToast = null);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,49 +161,11 @@ class LyricsViewerSheet extends StatelessWidget {
     final textColor = appState.getTextColor(context);
     final subTextColor = appState.getSubTextColor(context);
     final activeAccent = appState.getAccentColor(context);
+    final rawLyrics = widget.track.lyrics?.trim() ?? '';
+    final maxHeight = MediaQuery.of(context).size.height * 0.86;
 
-    final rawLyrics = track.lyrics?.trim() ?? '';
-    final hasLrcRegex = RegExp(r'\[\d{2}:\d{2}[\.:]\d{2,3}\]').hasMatch(rawLyrics);
-
-    final List<_LrcLine> parsedLines = [];
-    bool isTrulySynced = false;
-
-    if (hasLrcRegex) {
-      final lines = rawLyrics.split(RegExp(r'\r?\n'));
-      final lrcRegex = RegExp(r'\[(\d{2}:\d{2}[\.:]\d{2,3})\](.*)');
-      for (final l in lines) {
-        final match = lrcRegex.firstMatch(l.trim());
-        if (match != null) {
-          final time = match.group(1) ?? '';
-          final text = match.group(2)?.trim() ?? '';
-          if (text.isNotEmpty || time.isNotEmpty) {
-            parsedLines.add(_LrcLine(timestamp: time, text: text));
-            // Check if timestamp is non-zero
-            final digitsOnly = time.replaceAll(RegExp(r'[^0-9]'), '');
-            final numericVal = int.tryParse(digitsOnly) ?? 0;
-            if (numericVal > 0) {
-              isTrulySynced = true;
-            }
-          }
-        } else if (l.trim().isNotEmpty) {
-          parsedLines.add(_LrcLine(timestamp: null, text: l.trim()));
-        }
-      }
-    }
-
-    final isSynced = hasLrcRegex && isTrulySynced;
-    final maxHeight = MediaQuery.of(context).size.height * 0.85;
-
-    // Premium multi-lingual font stack (Hindi Devanagari + English typography)
-    final lyricsTextStyle = TextStyle(
-      fontFamily: 'Inter',
-      fontFamilyFallback: const ['Noto Sans Devanagari', 'Kohinoor Devanagari', 'sans-serif'],
-      fontSize: 15.0,
-      fontWeight: FontWeight.w500,
-      height: 1.55,
-      letterSpacing: -0.1,
-      color: textColor,
-    );
+    // Multi-Lingual Font Fallback (Devanagari Hindi + Inter English)
+    const fontFallbacks = ['Noto Sans Devanagari', 'Kohinoor Devanagari', 'sans-serif'];
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -84,298 +176,437 @@ class LyricsViewerSheet extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Stack(
             children: [
-              // Top Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Header Bar
-              Row(
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 50dp Squircle Album Art
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: isDark
-                          ? AppColors.softElevation(elevation: 2.5)
-                          : AppColors.lightSoftElevation(elevation: 2.5),
+                  // Top Drag Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: track.hasCover && track.coverBytes != null
-                        ? Image.memory(track.coverBytes!, fit: BoxFit.cover)
-                        : Center(
-                            child: Icon(
-                              Icons.lyrics_rounded,
-                              size: 26,
-                              color: activeAccent,
-                            ),
-                          ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(height: 12),
 
-                  // Track Info & Badges
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          track.title.isNotEmpty ? track.title : track.fileName,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontFamilyFallback: const ['Noto Sans Devanagari', 'sans-serif'],
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                            color: textColor,
-                          ),
-                          maxLines: 2,
-                          softWrap: true,
-                          overflow: TextOverflow.ellipsis,
+                  // Header Bar
+                  Row(
+                    children: [
+                      // 50dp Squircle Album Art
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: isDark
+                              ? AppColors.softElevation(elevation: 2.5)
+                              : AppColors.lightSoftElevation(elevation: 2.5),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          track.artist.isNotEmpty ? track.artist : 'Unknown Artist',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontFamilyFallback: const ['Noto Sans Devanagari', 'sans-serif'],
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                            color: subTextColor,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 5),
-
-                        // Badges Row
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isSynced
-                                    ? AppColors.genuineEmerald.withOpacity(isDark ? 0.22 : 0.14)
-                                    : (isDark ? const Color(0x22FFFFFF) : const Color(0x18000000)),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: isSynced
-                                      ? AppColors.genuineEmerald.withOpacity(0.4)
-                                      : (isDark ? const Color(0x22FFFFFF) : const Color(0x20000000)),
-                                  width: 0.8,
+                        clipBehavior: Clip.antiAlias,
+                        child: widget.track.hasCover && widget.track.coverBytes != null
+                            ? Image.memory(widget.track.coverBytes!, fit: BoxFit.cover)
+                            : Center(
+                                child: Icon(
+                                  Icons.lyrics_rounded,
+                                  size: 26,
+                                  color: activeAccent,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    isSynced ? Icons.timer_outlined : Icons.notes_rounded,
-                                    size: 11,
-                                    color: isSynced ? AppColors.genuineEmerald : subTextColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    isSynced ? 'SYNCED LRC' : 'UNSYNCED / PLAIN',
-                                    style: TextStyle(
-                                      fontFamily: 'JetBrainsMono',
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: isSynced ? AppColors.genuineEmerald : subTextColor,
-                                    ),
-                                  ),
-                                ],
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Title & Subtitle
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.track.title.isNotEmpty ? widget.track.title : widget.track.fileName,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontFamilyFallback: fontFallbacks,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              widget.track.artist.isNotEmpty ? widget.track.artist : 'Embedded FLAC Lyrics',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontFamilyFallback: fontFallbacks,
+                                fontSize: 12.5,
+                                color: subTextColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Actions: Export .LRC & Copy
+                      if (rawLyrics.isNotEmpty) ...[
+                        // Export .LRC Button
+                        LuminousFeedback(
+                          onTap: () async {
+                            try {
+                              const channel = MethodChannel('flac_toolkit/audio_decoder');
+                              final res = await channel.invokeMethod<Map>('exportLyrics', {
+                                'lyrics': rawLyrics,
+                                'fileName': widget.track.title.isNotEmpty ? widget.track.title : widget.track.fileName,
+                              });
+                              final path = res?['path'] as String? ?? '';
+                              _showInSheetToast(
+                                'Saved to Downloads: ${path.split('/').last}',
+                                Icons.download_done_rounded,
+                              );
+                            } catch (e) {
+                              _showInSheetToast('Export failed: $e', Icons.error_outline_rounded);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark ? const Color(0x20FFFFFF) : const Color(0x18000000),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Icon(Icons.download_rounded, size: 18, color: textColor),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Copy All Lyrics Button
+                        LuminousFeedback(
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: rawLyrics));
+                            _showInSheetToast('Lyrics copied to clipboard', Icons.copy_rounded);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark ? const Color(0x20FFFFFF) : const Color(0x18000000),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Icon(Icons.copy_rounded, size: 18, color: textColor),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Lyrics Format Pill & Live Status Badge
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (_isSynced ? AppColors.genuineEmerald : activeAccent).withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isSynced ? Icons.sync_rounded : Icons.article_outlined,
+                              size: 13,
+                              color: _isSynced ? AppColors.genuineEmerald : activeAccent,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              _isSynced ? 'SYNCED LRC • AUTO-FOLLOW' : 'PLAIN VORBIS LYRICS',
+                              style: TextStyle(
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: _isSynced ? AppColors.genuineEmerald : activeAccent,
+                                letterSpacing: 0.4,
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Text(
+                        _isSynced ? '${_parsedLines.length} timestamped lines' : 'Full Song',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 11,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
                   ),
 
-                  // Actions: Export & Copy
-                  if (rawLyrics.isNotEmpty) ...[
-                    // Export .LRC Button
-                    LuminousFeedback(
-                      onTap: () async {
-                        try {
-                          const channel = MethodChannel('flac_toolkit/audio_decoder');
-                          final res = await channel.invokeMethod<Map>('exportLyrics', {
-                            'lyrics': rawLyrics,
-                            'fileName': track.title.isNotEmpty ? track.title : track.fileName,
-                          });
-                          final path = res?['path'] as String? ?? '';
-                          if (context.mounted) {
-                            showThemedSnackBar(
-                              context,
-                              'Saved to Downloads: ${path.split('/').last}',
-                              icon: Icons.download_done_rounded,
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            showThemedSnackBar(context, 'Export failed: $e', icon: Icons.error_outline_rounded);
-                          }
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isDark ? const Color(0x20FFFFFF) : const Color(0x18000000),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Icon(Icons.download_rounded, size: 18, color: textColor),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Copy All Lyrics Button
-                    LuminousFeedback(
-                      onTap: () {
-                        Clipboard.setData(ClipboardData(text: rawLyrics));
-                        if (appState.hapticsEnabled) {
-                          HapticFeedback.lightImpact();
-                        }
-                        showThemedSnackBar(
-                          context,
-                          'Lyrics copied to clipboard',
-                          icon: Icons.copy_rounded,
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isDark ? const Color(0x20FFFFFF) : const Color(0x18000000),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Icon(Icons.copy_rounded, size: 18, color: textColor),
-                      ),
-                    ),
-                  ],
+                  const SizedBox(height: 10),
+
+                  // Lossless Audio Preview Player Bar
+                  AudioPreviewBar(
+                    filePath: widget.track.filePath,
+                    title: widget.track.title.isNotEmpty ? widget.track.title : widget.track.fileName,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Hairline separator
+                  Container(
+                    height: 1,
+                    color: isDark ? const Color(0x1AFFFFFF) : const Color(0x12000000),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Scrollable Lyrics Body
+                  Expanded(
+                    child: rawLyrics.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.lyrics_outlined,
+                                  size: 48,
+                                  color: subTextColor.withOpacity(0.4),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'No lyrics metadata found in this FLAC file',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 13,
+                                    color: subTextColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _isSynced
+                            ? NotificationListener<ScrollNotification>(
+                                onNotification: (notification) {
+                                  if (notification is ScrollStartNotification && notification.dragDetails != null) {
+                                    _isUserScrolling = true;
+                                  } else if (notification is ScrollEndNotification) {
+                                    Future.delayed(const Duration(seconds: 3), () {
+                                      if (mounted) _isUserScrolling = false;
+                                    });
+                                  }
+                                  return false;
+                                },
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(vertical: 24),
+                                  itemCount: _parsedLines.length,
+                                  itemBuilder: (context, index) {
+                                    final line = _parsedLines[index];
+                                    final isActive = index == _activeIndex;
+
+                                    return GestureDetector(
+                                      onTap: () {
+                                        if (line.timestampMs >= 0) {
+                                          if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                                          _player.seek(line.timestampMs);
+                                          if (!_player.isPlayingNotifier.value) {
+                                            _player.play(widget.track.filePath);
+                                          }
+                                        }
+                                      },
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 320),
+                                        curve: Curves.easeOutCubic,
+                                        margin: const EdgeInsets.symmetric(vertical: 4),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: isActive ? 12 : 4,
+                                          vertical: isActive ? 10 : 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isActive
+                                              ? activeAccent.withOpacity(isDark ? 0.20 : 0.12)
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(
+                                            color: isActive
+                                                ? activeAccent.withOpacity(0.40)
+                                                : Colors.transparent,
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            if (line.timestamp != null)
+                                              AnimatedContainer(
+                                                duration: const Duration(milliseconds: 280),
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                margin: const EdgeInsets.only(right: 12),
+                                                decoration: BoxDecoration(
+                                                  color: isActive
+                                                      ? activeAccent
+                                                      : (isDark ? const Color(0x22FFFFFF) : const Color(0x14000000)),
+                                                  borderRadius: BorderRadius.circular(7),
+                                                ),
+                                                child: Text(
+                                                  line.timestamp!,
+                                                  style: TextStyle(
+                                                    fontFamily: 'JetBrainsMono',
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: isActive
+                                                        ? AppColors.getOnAccentColor(activeAccent, isDark: isDark)
+                                                        : subTextColor,
+                                                  ),
+                                                ),
+                                              ),
+                                            Expanded(
+                                              child: AnimatedDefaultTextStyle(
+                                                duration: const Duration(milliseconds: 320),
+                                                curve: Curves.easeOutCubic,
+                                                style: TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontFamilyFallback: fontFallbacks,
+                                                  fontSize: isActive ? 17.0 : 14.5,
+                                                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                                                  height: 1.45,
+                                                  letterSpacing: isActive ? -0.2 : -0.1,
+                                                  color: isActive
+                                                      ? (isDark ? Colors.white : activeAccent)
+                                                      : (line.text.isEmpty
+                                                          ? subTextColor.withOpacity(0.3)
+                                                          : textColor.withOpacity(0.35)),
+                                                ),
+                                                child: Text(line.text.isEmpty ? '♪' : line.text),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              )
+                            : SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: SelectableText(
+                                  rawLyrics,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontFamilyFallback: fontFallbacks,
+                                    fontSize: 14.5,
+                                    height: 1.6,
+                                    fontWeight: FontWeight.w400,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                  ),
                 ],
               ),
 
-              const SizedBox(height: 12),
-
-              // Lossless Audio Preview Bar (Phase 2.5)
-              AudioPreviewBar(
-                filePath: track.filePath,
-                title: track.title.isNotEmpty ? track.title : track.fileName,
-              ),
-
-              const SizedBox(height: 14),
-
-              // Hairline separator
-              Container(
-                height: 1,
-                color: isDark ? const Color(0x1AFFFFFF) : const Color(0x12000000),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Scrollable Lyrics Body
-              Expanded(
-                child: rawLyrics.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.lyrics_outlined,
-                              size: 48,
-                              color: subTextColor.withOpacity(0.4),
+              // In-Sheet Floating Glass Toast Pill
+              if (_inSheetToast != null)
+                Positioned(
+                  top: 50,
+                  left: 20,
+                  right: 20,
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0x8010141E) : const Color(0xC5FFFFFF),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: activeAccent.withOpacity(0.4),
+                              width: 0.8,
                             ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'No lyrics metadata found in this FLAC file',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 13,
-                                color: subTextColor,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
                               ),
-                            ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_inSheetIcon != null) ...[
+                                Icon(_inSheetIcon, size: 16, color: activeAccent),
+                                const SizedBox(width: 8),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  _inSheetToast!,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Bottom Rim Ambient Glow Pulse
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 12,
+                child: AnimatedBuilder(
+                  animation: _glowController,
+                  builder: (context, _) {
+                    if (_glowController.value == 0.0 || _glowController.value == 1.0) {
+                      return const SizedBox.shrink();
+                    }
+                    final opacity = (1.0 - _glowController.value).clamp(0.0, 1.0);
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            activeAccent.withOpacity(0.50 * opacity),
+                            Colors.transparent,
                           ],
                         ),
-                      )
-                    : isSynced
-                        ? ListView.builder(
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: parsedLines.length,
-                            itemBuilder: (context, index) {
-                              final line = parsedLines[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 5),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (line.timestamp != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        margin: const EdgeInsets.only(right: 10, top: 2),
-                                        decoration: BoxDecoration(
-                                          color: isDark ? const Color(0x25FFFFFF) : const Color(0x18000000),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          line.timestamp!,
-                                          style: TextStyle(
-                                            fontFamily: 'JetBrainsMono',
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w600,
-                                            color: activeAccent,
-                                          ),
-                                        ),
-                                      ),
-                                    Expanded(
-                                      child: Text(
-                                        line.text.isEmpty ? '♪' : line.text,
-                                        style: lyricsTextStyle.copyWith(
-                                          color: line.text.isEmpty
-                                              ? subTextColor.withOpacity(0.5)
-                                              : textColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          )
-                        : SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: SelectableText(
-                                // Strip placeholder 00:00 timestamps if present
-                                hasLrcRegex
-                                    ? parsedLines.map((e) => e.text).join('\n')
-                                    : rawLyrics,
-                                style: lyricsTextStyle,
-                              ),
-                            ),
-                          ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -387,7 +618,12 @@ class LyricsViewerSheet extends StatelessWidget {
 
 class _LrcLine {
   final String? timestamp;
+  final int timestampMs;
   final String text;
 
-  _LrcLine({required this.timestamp, required this.text});
+  _LrcLine({
+    required this.timestamp,
+    required this.timestampMs,
+    required this.text,
+  });
 }

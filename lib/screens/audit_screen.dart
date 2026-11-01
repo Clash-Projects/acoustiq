@@ -474,32 +474,6 @@ class _AuditScreenState extends State<AuditScreen> {
                             color: textColor,
                           ),
                         ),
-                        LuminousFeedback(
-                          onTap: () {
-                            if (appState.hapticsEnabled) HapticFeedback.lightImpact();
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0x22FFFFFF) : const Color(0x14000000),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isDark ? const Color(0x24FFFFFF) : const Color(0x18000000),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.settings_outlined,
-                              size: 19,
-                              color: textColor,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

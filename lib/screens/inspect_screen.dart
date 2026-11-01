@@ -479,73 +479,41 @@ class _InspectScreenState extends State<InspectScreen> {
                             ],
                           ],
                         ),
-                        Row(
-                          children: [
-                            if (appState.devModeEnabled) ...[
-                              LuminousFeedback(
-                                onTap: () => showDevLabSheet(context),
+                        if (appState.devModeEnabled)
+                          LuminousFeedback(
+                            onTap: () => showDevLabSheet(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: activeAccent.withOpacity(isDark ? 0.24 : 0.14),
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    color: activeAccent.withOpacity(isDark ? 0.24 : 0.14),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: activeAccent.withOpacity(0.4),
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.science_rounded, size: 15, color: activeAccent),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Dev Lab',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: activeAccent,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                border: Border.all(
+                                  color: activeAccent.withOpacity(0.4),
+                                  width: 0.8,
                                 ),
                               ),
-                            ],
-                            LuminousFeedback(
-                          onTap: () {
-                            if (appState.hapticsEnabled) HapticFeedback.lightImpact();
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0x22FFFFFF) : const Color(0x14000000),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isDark ? const Color(0x24FFFFFF) : const Color(0x18000000),
-                                width: 0.8,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.science_rounded, size: 15, color: activeAccent),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Dev Lab',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: activeAccent,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Icon(
-                              Icons.settings_outlined,
-                              size: 19,
-                              color: textColor,
-                            ),
                           ),
-                        ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
                   const SizedBox(height: 12),
 

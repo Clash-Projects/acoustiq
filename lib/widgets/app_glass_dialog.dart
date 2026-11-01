@@ -28,37 +28,42 @@ Future<T?> showAppGlassDialog<T>({
 }) {
   return showDialog<T>(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.65),
+    barrierColor: Colors.black.withOpacity(0.55),
     builder: (ctx) {
       final isDark = appState.isCurrentDark(ctx);
       final textColor = appState.getTextColor(ctx);
       final subTextColor = appState.getSubTextColor(ctx);
       final activeAccent = appState.getAccentColor(ctx);
+      final onAccentColor = isDestructive
+          ? Colors.white
+          : AppColors.getOnAccentColor(activeAccent, isDark: isDark);
 
-      return BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          elevation: 0,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 380),
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFA161B22) : const Color(0xF7FFFFFF),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark ? const Color(0x33FFFFFF) : const Color(0x24000000),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.6 : 0.18),
-                  blurRadius: 36,
-                  offset: const Offset(0, 16),
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        elevation: 0,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 380),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0x75121620) : const Color(0xAAFFFFFF),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark ? const Color(0x35FFFFFF) : const Color(0x20000000),
+                  width: 0.8,
                 ),
-              ],
-            ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.45 : 0.15),
+                    blurRadius: 32,
+                    offset: const Offset(0, 14),
+                  ),
+                ],
+              ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -180,11 +185,11 @@ Future<T?> showAppGlassDialog<T>({
                             ),
                             child: Text(
                               confirmLabel,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: onAccentColor,
                               ),
                             ),
                           ),
@@ -217,11 +222,11 @@ Future<T?> showAppGlassDialog<T>({
                       ),
                       child: Text(
                         confirmLabel,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: onAccentColor,
                         ),
                       ),
                     ),
@@ -231,8 +236,9 @@ Future<T?> showAppGlassDialog<T>({
             ),
           ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  },
+);
 }
 

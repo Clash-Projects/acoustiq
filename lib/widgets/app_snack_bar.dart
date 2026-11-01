@@ -23,24 +23,24 @@ void showThemedSnackBar(
       behavior: SnackBarBehavior.floating,
       duration: duration,
       padding: EdgeInsets.zero,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 88),
       content: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xE6141820) : const Color(0xF2FFFFFF),
-              borderRadius: BorderRadius.circular(16),
+              color: isDark ? const Color(0x60121620) : const Color(0xB5FFFFFF),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isDark ? const Color(0x33FFFFFF) : const Color(0x20000000),
+                color: isDark ? const Color(0x35FFFFFF) : const Color(0x18000000),
                 width: 0.8,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.40 : 0.12),
-                  blurRadius: 16,
+                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.10),
+                  blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
               ],
@@ -48,8 +48,16 @@ void showThemedSnackBar(
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18, color: accent),
-                  const SizedBox(width: 10),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(isDark ? 0.22 : 0.14),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(icon, size: 16, color: accent),
+                  ),
+                  const SizedBox(width: 12),
                 ],
                 Expanded(
                   child: Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../services/audio_playback_service.dart';
+import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
 
@@ -56,6 +57,7 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
 
     final isDark = appState.isCurrentDark(context);
     final activeAccent = appState.getAccentColor(context);
+    final onAccentColor = AppColors.getOnAccentColor(activeAccent, isDark: isDark);
     final textColor = appState.getTextColor(context);
     final subTextColor = appState.getSubTextColor(context);
 
@@ -93,7 +95,7 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                   child: Icon(
                     isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     size: 22,
-                    color: Colors.white,
+                    color: onAccentColor,
                   ),
                 ),
               ),
