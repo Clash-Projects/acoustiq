@@ -176,3 +176,4 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
     );
   }
 }
+
