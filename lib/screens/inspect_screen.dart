@@ -405,6 +405,7 @@ class _InspectScreenState extends State<InspectScreen> {
         final isDark = appState.isCurrentDark(context);
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
+        final activeAccent = appState.getAccentColor(context);
 
         return Scaffold(
           backgroundColor: Colors.transparent,
