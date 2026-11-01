@@ -19,6 +19,10 @@ class AppState extends ChangeNotifier {
   bool _audiophileMode = false; // false = Everyday Music Lover, true = Acoustic Engineer / Pro
   String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
 
+  // AcoustiQ Developer Laboratory & QA Mode (Enabled for active QA cycle)
+  bool _devModeEnabled = true;
+  FlacInfo? _injectedMockTrack;
+
   List<FlacInfo> _sharedLibrary = [];
   String? _lastScannedFolder;
   List<String> _recentFilePaths = [];
@@ -28,6 +32,8 @@ class AppState extends ChangeNotifier {
   bool get amoledMode => _amoledMode;
   bool get audiophileMode => _audiophileMode;
   String get visualizerMode => _visualizerMode;
+  bool get devModeEnabled => _devModeEnabled;
+  FlacInfo? get injectedMockTrack => _injectedMockTrack;
   String get themeMode => _themeMode;
   String get accentPreset => _accentPreset;
   Color get customColor => _customColor;
@@ -57,6 +63,7 @@ class AppState extends ChangeNotifier {
 
       _audiophileMode = _prefs?.getBool('audiophile_mode') ?? false;
       _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
+      _devModeEnabled = _prefs?.getBool('dev_mode_enabled') ?? true;
 
       // Verify custom wallpaper file still exists on disk
       if (_customWallpaperPath != null && !File(_customWallpaperPath!).existsSync()) {
@@ -235,6 +242,21 @@ class AppState extends ChangeNotifier {
       _recentFilePaths = _recentFilePaths.sublist(0, 20);
     }
     _prefs?.setStringList('recent_file_paths', _recentFilePaths);
+    notifyListeners();
+  }
+
+  void setDevMode(bool enabled) {
+    _devModeEnabled = enabled;
+    _prefs?.setBool('dev_mode_enabled', enabled);
+    notifyListeners();
+  }
+
+  void toggleDevMode() {
+    setDevMode(!_devModeEnabled);
+  }
+
+  void injectMockTrack(FlacInfo? track) {
+    _injectedMockTrack = track;
     notifyListeners();
   }
 }

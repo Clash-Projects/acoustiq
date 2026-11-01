@@ -15,6 +15,7 @@ import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
+import '../widgets/dev_lab_sheet.dart';
 
 /// 1:1 Port of LastWave Native's Settings Architecture (Appearance & Visuals)
 ///
@@ -28,6 +29,8 @@ import '../widgets/app_snack_bar.dart';
 /// 6. High-contrast Light Mode typography and segment controls.
 /// 7. 96dp bottom padding (content glides behind the floating dock).
 class SettingsScreen extends StatelessWidget {
+  static int _devTapCount = 0;
+
   const SettingsScreen({super.key});
 
   Future<void> _quickScanDeviceMusic(BuildContext context) async {
@@ -361,7 +364,7 @@ class SettingsScreen extends StatelessWidget {
                   // 6. ABOUT & TOOLKIT DIAGNOSTICS
                   buildSectionHeader('About & Toolkit Diagnostics', subTextColor),
                   ExpressiveGroup(
-                    rowCount: 3,
+                    rowCount: appState.devModeEnabled ? 4 : 3,
                     itemBuilder: (context, index, position) {
                       switch (index) {
                         case 0:
@@ -370,8 +373,26 @@ class SettingsScreen extends StatelessWidget {
                             iconColor: const Color(0xFF38BDF8),
                             iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                             title: 'Engine Version',
-                            subtitle: 'FLAC Toolkit Mobile • Build 20 (Release)',
+                            subtitle: 'AcoustiQ Mobile • Build 45 (QA Lab Ready)',
                             position: position,
+                            onTap: () {
+                              _devTapCount++;
+                              if (_devTapCount >= 5) {
+                                _devTapCount = 0;
+                                appState.toggleDevMode();
+                                showThemedSnackBar(
+                                  context,
+                                  appState.devModeEnabled ? '🧪 AcoustiQ Dev Lab Activated!' : '🔒 Dev Lab Deactivated',
+                                  icon: Icons.science_rounded,
+                                );
+                              } else if (_devTapCount >= 2) {
+                                showThemedSnackBar(
+                                  context,
+                                  'Tap ${5 - _devTapCount} more times to toggle Dev Lab',
+                                  duration: const Duration(milliseconds: 700),
+                                );
+                              }
+                            },
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
@@ -379,7 +400,7 @@ class SettingsScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                'v1.1.0+20',
+                                'v1.1.0+45',
                                 style: TextStyle(
                                   fontFamily: 'JetBrainsMono',
                                   fontSize: 11,
@@ -404,7 +425,6 @@ class SettingsScreen extends StatelessWidget {
                             ),
                           );
                         case 2:
-                        default:
                           return ExpressiveGroupRow(
                             icon: Icons.verified_user_rounded,
                             iconColor: AppColors.genuineEmerald,
@@ -425,6 +445,41 @@ class SettingsScreen extends StatelessWidget {
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.genuineEmerald,
+                                ),
+                              ),
+                            ),
+                          );
+                        case 3:
+                        default:
+                          return ExpressiveGroupRow(
+                            icon: Icons.science_rounded,
+                            iconColor: const Color(0xFF38BDF8),
+                            iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
+                            title: 'AcoustiQ Dev Lab & QA',
+                            subtitle: 'Mock audio injection, live theme matrix & modal contrast QA',
+                            position: position,
+                            onTap: () => showDevLabSheet(context),
+                            trailing: LuminousFeedback(
+                              onTap: () => showDevLabSheet(context),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: activeAccent.withOpacity(isDark ? 0.25 : 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: activeAccent.withOpacity(0.4),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Open Lab',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: activeAccent,
+                                  ),
                                 ),
                               ),
                             ),

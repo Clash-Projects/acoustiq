@@ -13,6 +13,7 @@ import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
+import '../widgets/dev_lab_sheet.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/app_glass_dialog.dart';
 import 'settings_screen.dart';
@@ -42,10 +43,27 @@ class _InspectScreenState extends State<InspectScreen> {
   @override
   void initState() {
     super.initState();
-    _info = widget.initialTrack;
+    _info = appState.injectedMockTrack ?? widget.initialTrack;
+    appState.addListener(_onAppStateChanged);
     if (_info == null && appState.recentFilePaths.isNotEmpty) {
       _loadLastRecentTrack();
     }
+  }
+
+  void _onAppStateChanged() {
+    if (appState.injectedMockTrack != _info) {
+      if (mounted) {
+        setState(() {
+          _info = appState.injectedMockTrack;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    appState.removeListener(_onAppStateChanged);
+    super.dispose();
   }
 
   Future<void> _loadLastRecentTrack() async {
@@ -424,17 +442,80 @@ class _InspectScreenState extends State<InspectScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Inspect',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.6,
-                            color: textColor,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'Inspect',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.6,
+                                color: textColor,
+                              ),
+                            ),
+                            if (appState.injectedMockTrack != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.suspiciousAmber.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: AppColors.suspiciousAmber.withOpacity(0.4),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'MOCK',
+                                  style: TextStyle(
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.suspiciousAmber,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        LuminousFeedback(
+                        Row(
+                          children: [
+                            if (appState.devModeEnabled) ...[
+                              LuminousFeedback(
+                                onTap: () => showDevLabSheet(context),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: activeAccent.withOpacity(isDark ? 0.24 : 0.14),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: activeAccent.withOpacity(0.4),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.science_rounded, size: 15, color: activeAccent),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'Dev Lab',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: activeAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            LuminousFeedback(
                           onTap: () {
                             if (appState.hapticsEnabled) HapticFeedback.lightImpact();
                             Navigator.of(context).push(
@@ -462,7 +543,9 @@ class _InspectScreenState extends State<InspectScreen> {
                         ),
                       ],
                     ),
-                  ),
+                  ],
+                ),
+              ),
 
                   const SizedBox(height: 12),
 
