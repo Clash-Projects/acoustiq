@@ -219,9 +219,8 @@ Future<T?> showAppGlassDialog<T>({
               ],
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
