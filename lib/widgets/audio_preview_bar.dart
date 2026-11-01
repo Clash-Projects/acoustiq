@@ -31,6 +31,14 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
   }
 
   @override
+  void didUpdateWidget(covariant AudioPreviewBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filePath != widget.filePath && _player.isPlaying) {
+      _player.stop();
+    }
+  }
+
+  @override
   void dispose() {
     _player.removeListener(_onPlayerStateChanged);
     super.dispose();

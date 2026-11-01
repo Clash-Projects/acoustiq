@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
+import '../services/audio_playback_service.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
 import '../widgets/audio_spectrum_stage.dart';
@@ -58,6 +59,10 @@ class _InspectScreenState extends State<InspectScreen> {
     if (appState.injectedMockTrack != _lastInjectedMock) {
       _lastInjectedMock = appState.injectedMockTrack;
       if (mounted) {
+        if (AudioPlaybackService.instance.isPlaying &&
+            appState.injectedMockTrack?.filePath != AudioPlaybackService.instance.currentFilePath) {
+          AudioPlaybackService.instance.stop();
+        }
         setState(() {
           _info = appState.injectedMockTrack;
         });
@@ -90,6 +95,10 @@ class _InspectScreenState extends State<InspectScreen> {
       final analyzed = await FlacParser.analyzeFile(path);
       if (analyzed.error == null) {
         appState.addRecentFilePath(path);
+      }
+      if (AudioPlaybackService.instance.isPlaying &&
+          AudioPlaybackService.instance.currentFilePath != path) {
+        AudioPlaybackService.instance.stop();
       }
       if (mounted) {
         setState(() {
@@ -295,6 +304,10 @@ class _InspectScreenState extends State<InspectScreen> {
                             child: LuminousFeedback(
                               onTap: () {
                                 Navigator.pop(ctx);
+                                if (AudioPlaybackService.instance.isPlaying &&
+                                    AudioPlaybackService.instance.currentFilePath != t.filePath) {
+                                  AudioPlaybackService.instance.stop();
+                                }
                                 appState.injectMockTrack(null);
                                 _lastInjectedMock = null;
                                 appState.addRecentFilePath(t.filePath);
@@ -391,6 +404,10 @@ class _InspectScreenState extends State<InspectScreen> {
         final analyzed = await FlacParser.analyzeFile(path);
         if (analyzed.error == null) {
           appState.addRecentFilePath(path);
+        }
+        if (AudioPlaybackService.instance.isPlaying &&
+            AudioPlaybackService.instance.currentFilePath != path) {
+          AudioPlaybackService.instance.stop();
         }
         setState(() {
           _info = analyzed;

@@ -50,7 +50,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
     super.initState();
     _glowController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1400),
     );
 
     _parseLyrics();
@@ -173,15 +173,42 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         style: GlassStyle.frosted,
         borderless: false,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-        child: SafeArea(
-          top: false,
-          child: Stack(
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+        child: Stack(
+          children: [
+            // 1. Bottom Ambient Wavy Acoustic Lightfield Pulse (Index 0: BEHIND content, flush with sheet bottom)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 100,
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _glowController,
+                  builder: (context, _) {
+                    if (_glowController.value == 0.0 || _glowController.value == 1.0) {
+                      return const SizedBox.shrink();
+                    }
+                    return CustomPaint(
+                      size: const Size(double.infinity, 100),
+                      painter: _AcousticAmbientGlowPainter(
+                        accentColor: activeAccent,
+                        progress: _glowController.value,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // 2. Primary Foreground Content
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   // Top Drag Handle
                   Center(
                     child: Container(
@@ -524,91 +551,49 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                   ),
                 ],
               ),
+            ),
+          ),
 
-              // Bottom Ambient Wavy Acoustic Lightfield Pulse (Zero hard edge, organic decay)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 80,
-                child: IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _glowController,
-                    builder: (context, _) {
-                      if (_glowController.value == 0.0 || _glowController.value == 1.0) {
-                        return const SizedBox.shrink();
-                      }
-                      return CustomPaint(
-                        size: const Size(double.infinity, 80),
-                        painter: _AcousticAmbientGlowPainter(
-                          accentColor: activeAccent,
-                          progress: _glowController.value,
+          // 3. In-Sheet Floating Frosted Glass Toast Pill (Authentic GlassSurface with specular rim)
+          if (_inSheetToast != null)
+            Positioned(
+              bottom: 24,
+              left: 24,
+              right: 24,
+              child: Center(
+                child: GlassSurface(
+                  borderRadius: BorderRadius.circular(18),
+                  style: GlassStyle.frosted,
+                  borderless: false,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_inSheetIcon != null) ...[
+                        Icon(_inSheetIcon, size: 16, color: activeAccent),
+                        const SizedBox(width: 8),
+                      ],
+                      Flexible(
+                        child: Text(
+                          _inSheetToast!,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
               ),
-
-              // In-Sheet Floating Glass Toast Pill (Positioned cleanly at bottom above controls)
-              if (_inSheetToast != null)
-                Positioned(
-                  bottom: 24,
-                  left: 24,
-                  right: 24,
-                  child: Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0x780B0C0E) : const Color(0xC8FFFFFF),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: isDark ? const Color(0x38FFFFFF) : const Color(0x20000000),
-                              width: 0.8,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(isDark ? 0.40 : 0.12),
-                                blurRadius: 22,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_inSheetIcon != null) ...[
-                                Icon(_inSheetIcon, size: 16, color: activeAccent),
-                                const SizedBox(width: 8),
-                              ],
-                              Flexible(
-                                child: Text(
-                                  _inSheetToast!,
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: textColor,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -632,7 +617,8 @@ class _AcousticAmbientGlowPainter extends CustomPainter {
     if (progress <= 0.0 || progress >= 1.0) return;
 
     final animValue = (1.0 - progress);
-    final intensity = math.pow(animValue, 1.8).toDouble();
+    // Smooth sinusoidal breathing pulse: peaks softly, then dissolves like aurora mist
+    final intensity = (math.sin(animValue * math.pi * 0.5) * animValue).clamp(0.0, 1.0);
     if (intensity <= 0.001) return;
 
     final width = size.width;
