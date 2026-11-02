@@ -1017,6 +1017,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
             clipBehavior: Clip.antiAlias,
             child: CustomPaint(
               painter: _Spectrogram2dPainter(
+                score: widget.score,
                 cutoffKhz: widget.cutoffKhz,
                 maxKhz: widget.maxKhz,
                 spectrumBands: widget.spectrumBands,
@@ -1770,6 +1771,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
 ///    a dedicated floating badge pill on the cutoff line, permanently eliminating overlapping text.
 /// 4. Forensic Dead Zone highlight for lossy upsamples (MP3/AAC cliff).
 class _Spectrogram2dPainter extends CustomPainter {
+  final int score;
   final double cutoffKhz;
   final double maxKhz;
   final List<double> spectrumBands;
@@ -1778,6 +1780,7 @@ class _Spectrogram2dPainter extends CustomPainter {
   final String status;
 
   _Spectrogram2dPainter({
+    required this.score,
     required this.cutoffKhz,
     required this.maxKhz,
     required this.spectrumBands,
@@ -1914,8 +1917,16 @@ class _Spectrogram2dPainter extends CustomPainter {
       startX += 7;
     }
 
-    // Dead Zone Hatched Overlay if cutoff is below Nyquist
-    if (cutoffRatio < 0.95) {
+    // Horizontal Cutoff Line (Always drawn across the spectrogram)
+    final Paint cutoffLinePaint = Paint()
+      ..color = statusColor
+      ..strokeWidth = 1.6;
+    canvas.drawLine(Offset(axisLeft, cutoffY), Offset(axisLeft + plotWidth, cutoffY), cutoffLinePaint);
+
+    // Forensic Dead Zone Hatched Overlay: Only for lossy/suspicious tracks where cutoff is below ceiling
+    // Genuine Lossless tracks (score >= 80) never show false compression dead zones
+    final bool hasDeadZone = (score < 80 || status != 'genuine') && cutoffKhz < (maxKhz - 0.7);
+    if (hasDeadZone) {
       final deadZoneRect = Rect.fromLTWH(axisLeft, 8.0, plotWidth, cutoffY - 8.0);
       canvas.drawRect(deadZoneRect, Paint()..color = const Color(0x35FF3B30));
 
@@ -1929,11 +1940,6 @@ class _Spectrogram2dPainter extends CustomPainter {
           hatchPaint,
         );
       }
-
-      final Paint cutoffLinePaint = Paint()
-        ..color = statusColor
-        ..strokeWidth = 1.6;
-      canvas.drawLine(Offset(axisLeft, cutoffY), Offset(axisLeft + plotWidth, cutoffY), cutoffLinePaint);
 
       final tp = TextPainter(
         text: TextSpan(
@@ -2031,7 +2037,8 @@ class _Spectrogram2dPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _Spectrogram2dPainter oldDelegate) {
-    return oldDelegate.cutoffKhz != cutoffKhz ||
+    return oldDelegate.score != score ||
+        oldDelegate.cutoffKhz != cutoffKhz ||
         oldDelegate.maxKhz != maxKhz ||
         oldDelegate.status != status ||
         oldDelegate.spectrogramMatrix != spectrogramMatrix;
