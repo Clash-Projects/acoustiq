@@ -237,12 +237,12 @@ class AudioDspEngine {
     String status;
 
     if (sampleRate > 48000) {
-      // Hi-Res FLAC Check: genuine 88.2/96/192 kHz must extend into ultrasonic (>22 kHz)
-      if (cutoffKhz < 21.0) {
+      // Hi-Res FLAC Check: genuine 88.2/96/192 kHz must extend into ultrasonic (>24 kHz)
+      if (cutoffKhz < 22.5) {
         score = 30;
         verdict = 'Fake Hi-Res FLAC (${sampleRate ~/ 1000} kHz container with ${cutoffKhz.toStringAsFixed(1)} kHz lossy cutoff)';
         status = 'fake';
-      } else if (cutoffKhz < 24.0 && (slopeDropDb >= 20.0 || emptySubbandsRatio >= 0.15)) {
+      } else if (cutoffKhz < 24.0) {
         score = 50;
         verdict = 'Suspicious Hi-Res FLAC (Premature brickwall cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz)';
         status = 'suspicious';
