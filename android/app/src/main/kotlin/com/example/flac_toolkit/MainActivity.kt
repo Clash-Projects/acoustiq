@@ -300,116 +300,124 @@ class MainActivity: FlutterActivity() {
         codec.configure(format, null, null, 0)
         codec.start()
 
-        // Continuous studio-grade decode window in the middle of the track (matching Desktop flac_analyzer.py)
-        val targetTotalSamples = 262144 // 128 slices of 2048 samples (~6.0s at 44.1k, ~2.7s at 96k)
+        // Multi-section studio decode: 3 representative sections (25% verse, 50% chorus, 75% climax)
+        // 64 slices of 2048 samples per section = 192 slices total (~9.0s at 44.1k, ~4.1s at 96k)
+        val targetPerSection = 131072
+        val targetTotalSamples = targetPerSection * 3
         val sampledFloats = ArrayList<Float>(targetTotalSamples)
+        val sectionPercentages = if (durationUs > 0) listOf(0.25, 0.50, 0.75) else listOf(0.0)
 
         try {
             val bufferInfo = MediaCodec.BufferInfo()
             val TIMEOUT_US = 8000L
 
-            // Seek to 30% into the track (stable musical chorus, skipping silent intro)
-            if (durationUs > 0) {
-                val targetUs = (durationUs * 0.30).toLong()
-                extractor.seekTo(targetUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
-            }
-
-            var isEOS = false
-            var loopCount = 0
-
-            while (sampledFloats.size < targetTotalSamples && !isEOS && loopCount < 800) {
-                loopCount++
-                val inIndex = codec.dequeueInputBuffer(TIMEOUT_US)
-                if (inIndex >= 0) {
-                    val inputBuffer = codec.getInputBuffer(inIndex)
-                    if (inputBuffer != null) {
-                        inputBuffer.clear()
-                        val sampleSize = extractor.readSampleData(inputBuffer, 0)
-                        if (sampleSize < 0) {
-                            codec.queueInputBuffer(inIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                            isEOS = true
-                        } else {
-                            val sampleTime = extractor.sampleTime
-                            codec.queueInputBuffer(inIndex, 0, sampleSize, sampleTime, 0)
-                            extractor.advance()
-                        }
-                    }
+            for (pct in sectionPercentages) {
+                if (durationUs > 0) {
+                    try {
+                        val targetUs = (durationUs * pct).toLong()
+                        extractor.seekTo(targetUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+                        codec.flush()
+                    } catch (_: Exception) {}
                 }
 
-                var outIndex = codec.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
-                while (outIndex >= 0) {
-                    val outputBuffer = codec.getOutputBuffer(outIndex)
-                    val outFormat = codec.outputFormat
-                    val pcmEncoding = if (outFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
-                        outFormat.getInteger(MediaFormat.KEY_PCM_ENCODING)
-                    } else {
-                        android.media.AudioFormat.ENCODING_PCM_16BIT
-                    }
+                val sectionTarget = sampledFloats.size + targetPerSection
+                var isSectionEOS = false
+                var loopCount = 0
 
-                    if (outputBuffer != null && bufferInfo.size > 0) {
-                        outputBuffer.position(bufferInfo.offset)
-                        outputBuffer.limit(bufferInfo.offset + bufferInfo.size)
-                        outputBuffer.order(ByteOrder.LITTLE_ENDIAN)
-
-                        when (pcmEncoding) {
-                            android.media.AudioFormat.ENCODING_PCM_FLOAT -> {
-                                val floatBuf = outputBuffer.asFloatBuffer()
-                                while (floatBuf.hasRemaining() && sampledFloats.size < targetTotalSamples) {
-                                    val s = floatBuf.get()
-                                    if (channelCount > 1) {
-                                        for (ch in 1 until channelCount) {
-                                            if (floatBuf.hasRemaining()) floatBuf.get()
-                                        }
-                                    }
-                                    sampledFloats.add(s.coerceIn(-1.0f, 1.0f))
-                                }
-                            }
-                            21 -> { // ENCODING_PCM_24BIT_PACKED
-                                val bytesPerFrame = 3 * channelCount
-                                while (outputBuffer.remaining() >= bytesPerFrame && sampledFloats.size < targetTotalSamples) {
-                                    val b0 = outputBuffer.get().toInt() and 0xFF
-                                    val b1 = outputBuffer.get().toInt() and 0xFF
-                                    val b2 = outputBuffer.get().toInt()
-                                    val s24 = (b2 shl 16) or (b1 shl 8) or b0
-                                    val sFloat = (s24.toFloat() / 8388608.0f).coerceIn(-1.0f, 1.0f)
-                                    sampledFloats.add(sFloat)
-                                    if (channelCount > 1) {
-                                        outputBuffer.position(outputBuffer.position() + 3 * (channelCount - 1))
-                                    }
-                                }
-                            }
-                            22 -> { // ENCODING_PCM_32BIT
-                                val intBuf = outputBuffer.asIntBuffer()
-                                while (intBuf.hasRemaining() && sampledFloats.size < targetTotalSamples) {
-                                    val s = intBuf.get()
-                                    if (channelCount > 1) {
-                                        for (ch in 1 until channelCount) {
-                                            if (intBuf.hasRemaining()) intBuf.get()
-                                        }
-                                    }
-                                    sampledFloats.add((s.toFloat() / 2147483648.0f).coerceIn(-1.0f, 1.0f))
-                                }
-                            }
-                            else -> { // ENCODING_PCM_16BIT
-                                val shortBuf = outputBuffer.asShortBuffer()
-                                while (shortBuf.hasRemaining() && sampledFloats.size < targetTotalSamples) {
-                                    val s = shortBuf.get()
-                                    if (channelCount > 1) {
-                                        for (ch in 1 until channelCount) {
-                                            if (shortBuf.hasRemaining()) shortBuf.get()
-                                        }
-                                    }
-                                    sampledFloats.add(s.toFloat() / 32768.0f)
-                                }
+                while (sampledFloats.size < sectionTarget && !isSectionEOS && loopCount < 500) {
+                    loopCount++
+                    val inIndex = codec.dequeueInputBuffer(TIMEOUT_US)
+                    if (inIndex >= 0) {
+                        val inputBuffer = codec.getInputBuffer(inIndex)
+                        if (inputBuffer != null) {
+                            inputBuffer.clear()
+                            val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                            if (sampleSize < 0) {
+                                codec.queueInputBuffer(inIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                                isSectionEOS = true
+                            } else {
+                                val sampleTime = extractor.sampleTime
+                                codec.queueInputBuffer(inIndex, 0, sampleSize, sampleTime, 0)
+                                extractor.advance()
                             }
                         }
                     }
-                    codec.releaseOutputBuffer(outIndex, false)
-                    if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
-                        isEOS = true
-                        break
+
+                    var outIndex = codec.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                    while (outIndex >= 0) {
+                        val outputBuffer = codec.getOutputBuffer(outIndex)
+                        val outFormat = codec.outputFormat
+                        val pcmEncoding = if (outFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
+                            outFormat.getInteger(MediaFormat.KEY_PCM_ENCODING)
+                        } else {
+                            android.media.AudioFormat.ENCODING_PCM_16BIT
+                        }
+
+                        if (outputBuffer != null && bufferInfo.size > 0) {
+                            outputBuffer.position(bufferInfo.offset)
+                            outputBuffer.limit(bufferInfo.offset + bufferInfo.size)
+                            outputBuffer.order(ByteOrder.LITTLE_ENDIAN)
+
+                            when (pcmEncoding) {
+                                android.media.AudioFormat.ENCODING_PCM_FLOAT -> {
+                                    val floatBuf = outputBuffer.asFloatBuffer()
+                                    while (floatBuf.hasRemaining() && sampledFloats.size < sectionTarget) {
+                                        val s = floatBuf.get()
+                                        if (channelCount > 1) {
+                                            for (ch in 1 until channelCount) {
+                                                if (floatBuf.hasRemaining()) floatBuf.get()
+                                            }
+                                        }
+                                        sampledFloats.add(s.coerceIn(-1.0f, 1.0f))
+                                    }
+                                }
+                                21 -> { // ENCODING_PCM_24BIT_PACKED
+                                    val bytesPerFrame = 3 * channelCount
+                                    while (outputBuffer.remaining() >= bytesPerFrame && sampledFloats.size < sectionTarget) {
+                                        val b0 = outputBuffer.get().toInt() and 0xFF
+                                        val b1 = outputBuffer.get().toInt() and 0xFF
+                                        val b2 = outputBuffer.get().toInt()
+                                        val s24 = (b2 shl 16) or (b1 shl 8) or b0
+                                        val sFloat = (s24.toFloat() / 8388608.0f).coerceIn(-1.0f, 1.0f)
+                                        sampledFloats.add(sFloat)
+                                        if (channelCount > 1) {
+                                            outputBuffer.position(outputBuffer.position() + 3 * (channelCount - 1))
+                                        }
+                                    }
+                                }
+                                22 -> { // ENCODING_PCM_32BIT
+                                    val intBuf = outputBuffer.asIntBuffer()
+                                    while (intBuf.hasRemaining() && sampledFloats.size < sectionTarget) {
+                                        val s = intBuf.get()
+                                        if (channelCount > 1) {
+                                            for (ch in 1 until channelCount) {
+                                                if (intBuf.hasRemaining()) intBuf.get()
+                                            }
+                                        }
+                                        sampledFloats.add((s.toFloat() / 2147483648.0f).coerceIn(-1.0f, 1.0f))
+                                    }
+                                }
+                                else -> { // ENCODING_PCM_16BIT
+                                    val shortBuf = outputBuffer.asShortBuffer()
+                                    while (shortBuf.hasRemaining() && sampledFloats.size < sectionTarget) {
+                                        val s = shortBuf.get()
+                                        if (channelCount > 1) {
+                                            for (ch in 1 until channelCount) {
+                                                if (shortBuf.hasRemaining()) shortBuf.get()
+                                            }
+                                        }
+                                        sampledFloats.add(s.toFloat() / 32768.0f)
+                                    }
+                                }
+                            }
+                        }
+                        codec.releaseOutputBuffer(outIndex, false)
+                        if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                            isSectionEOS = true
+                            break
+                        }
+                        outIndex = codec.dequeueOutputBuffer(bufferInfo, 0L)
                     }
-                    outIndex = codec.dequeueOutputBuffer(bufferInfo, 0L)
                 }
             }
         } finally {
