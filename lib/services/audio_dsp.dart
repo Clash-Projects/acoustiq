@@ -170,10 +170,13 @@ class AudioDspEngine {
     }
     final double emptySubbandsRatio = totalHiBins > 0 ? (emptyBins / totalHiBins) : 0.0;
 
-    // 8. Dynamic displayMaxKhz coordinate ceiling (1:1 with Desktop min(nyquist, 24.0) unless genuine ultrasonic)
-    final double displayMaxKhz = (cutoffKhz > 23.5 && nyquistKhz > 24.0)
-        ? nyquistKhz
-        : math.min(nyquistKhz, 24.0);
+    // 8. Dynamic displayMaxKhz coordinate ceiling (1:1 with Desktop max(cutoff, min(nyquist, 24.0)))
+    final double displayMaxKhz = math.max(
+      cutoffKhz,
+      (cutoffKhz > 23.5 && nyquistKhz > 24.0)
+          ? nyquistKhz
+          : math.min(nyquistKhz, 24.0),
+    );
 
     final int maxDisplayBin = math.min(
       halfSize,
@@ -231,65 +234,76 @@ class AudioDspEngine {
       }
     }
 
-    // 10. Multi-Vector Lossless Scoring Matrix (1:1 with Desktop flac_analyzer.py)
+    // 10. Continuous Dynamic Forensic Scoring Matrix (Option A: 10% - 99%)
+    // Computes smooth, non-cliff scores reflecting cutoff frequency, brickwall steepness, and subband holes.
+
+    // 1. Base Frequency Score (S_freq)
+    double baseScore;
+    if (cutoffKhz >= 21.0) {
+      final double nyquistRange = math.max(1.0, nyquistKhz - 21.0);
+      final double progress = ((cutoffKhz - 21.0) / nyquistRange).clamp(0.0, 1.0);
+      baseScore = 95.0 + 4.0 * progress;
+    } else if (cutoffKhz >= 18.5) {
+      final double progress = (cutoffKhz - 18.5) / 2.5;
+      baseScore = 78.0 + 17.0 * progress;
+    } else if (cutoffKhz >= 16.0) {
+      final double progress = (cutoffKhz - 16.0) / 2.5;
+      baseScore = 38.0 + 40.0 * progress;
+    } else {
+      final double progress = math.max(0.0, (cutoffKhz - 10.0) / 6.0);
+      baseScore = 10.0 + 28.0 * math.min(1.0, progress);
+    }
+
+    // 2. Continuous Penalties
+    final double penaltyBrickwall = math.min(18.0, math.max(0.0, (slopeDropDb - 14.0) * 0.75));
+    final double penaltyHoles = math.min(15.0, math.max(0.0, (emptySubbandsRatio - 0.05) * 60.0));
+    final double rawScore = baseScore - penaltyBrickwall - penaltyHoles;
+
     int score;
     String verdict;
     String status;
 
+    // 3. Hi-Res Container Integrity Guard (sampleRate > 48 kHz, Nyquist > 24 kHz)
     if (sampleRate > 48000) {
-      // Hi-Res FLAC Check: genuine 88.2/96/192 kHz must extend into ultrasonic (>24 kHz)
       if (cutoffKhz < 22.5) {
-        score = 30;
+        score = rawScore.clamp(10.0, 30.0).round();
         verdict = 'Fake Hi-Res FLAC (${sampleRate ~/ 1000} kHz container with ${cutoffKhz.toStringAsFixed(1)} kHz lossy cutoff)';
         status = 'fake';
       } else if (cutoffKhz < 24.0) {
-        score = 50;
+        score = rawScore.clamp(10.0, 55.0).round();
         verdict = 'Suspicious Hi-Res FLAC (Premature brickwall cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz)';
         status = 'suspicious';
       } else {
-        score = 98;
-        verdict = 'Genuine Hi-Res Lossless Master (> 24 kHz acoustic bandwidth)';
+        score = rawScore.clamp(10.0, 99.0).round();
+        verdict = 'Genuine Hi-Res Lossless Master (${sampleRate ~/ 1000} kHz / >24 kHz acoustic bandwidth)';
         status = 'genuine';
       }
     } else {
-      // Standard Red Book CD / 44.1 - 48 kHz FLAC Check
-      if (cutoffKhz >= 20.5 && emptySubbandsRatio < 0.08) {
-        score = slopeDropDb < 25.0 ? 98 : 90;
-        verdict = 'Genuine Lossless (Full dynamic spectrum > 20.5 kHz)';
+      // Standard Red Book CD / 44.1 - 48 kHz FLAC
+      score = rawScore.clamp(10.0, 99.0).round();
+      if (score >= 90) {
+        verdict = 'Genuine Lossless (Full dynamic spectrum up to ${cutoffKhz.toStringAsFixed(1)} kHz)';
         status = 'genuine';
-      } else if (cutoffKhz >= 19.5) {
-        if (slopeDropDb >= 22.0 || emptySubbandsRatio >= 0.18) {
-          score = 65;
-          verdict = 'Likely 320 kbps MP3 upscale (Steep brickwall / quantization holes at ~20 kHz)';
-          status = 'suspicious';
-        } else {
-          score = 88;
-          verdict = 'High-Quality Lossless / Studio Master with high-frequency roll-off';
-          status = 'genuine';
-        }
-      } else if (cutoffKhz >= 17.5) {
-        if (slopeDropDb >= 18.0 || emptySubbandsRatio >= 0.20) {
-          score = 50;
-          verdict = 'Likely 192-256 kbps lossy upscale (Cutoff at ~18-19 kHz with quantization holes)';
-          status = 'suspicious';
-        } else {
-          score = 80;
-          verdict = 'Acoustic / Vintage recording with warm natural rolloff';
-          status = 'genuine';
-        }
-      } else if (cutoffKhz >= 15.0) {
-        score = 30;
-        verdict = 'Low-quality fake FLAC (Cutoff at ~16 kHz typical of 128 kbps MP3)';
+      } else if (score >= 80) {
+        verdict = 'Lossless with natural high-frequency roll-off at ${cutoffKhz.toStringAsFixed(1)} kHz';
+        status = 'genuine';
+      } else if (score >= 65) {
+        verdict = 'Likely 320 kbps MP3 upscale (Cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz, slope drop ${slopeDropDb.toStringAsFixed(1)} dB)';
+        status = 'suspicious';
+      } else if (score >= 50) {
+        verdict = 'Suspicious / Likely 192-256 kbps lossy upscale (Cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz)';
+        status = 'suspicious';
+      } else if (score >= 30) {
+        verdict = 'Low-quality fake FLAC (Cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz typical of 128 kbps MP3)';
         status = 'fake';
       } else {
-        score = 15;
-        verdict = 'Severe cutoff / Heavy compression upscale';
+        verdict = 'Severe cutoff / Heavy compression upscale (${cutoffKhz.toStringAsFixed(1)} kHz)';
         status = 'fake';
       }
     }
 
     if (isFake24) {
-      score = (score * 0.75).round();
+      score = (score * 0.75).round().clamp(10, 99);
       verdict = 'Fake 24-bit (Zero-padded 16-bit upsample) • $verdict';
       status = 'fake';
     }

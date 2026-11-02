@@ -61,9 +61,8 @@ class FlacInfo {
   /// Concise Studio Badge (Prevents mobile UI text truncation)
   String get shortBadge {
     if (score >= 90) return 'GENUINE LOSSLESS';
-    if (score >= 75) return 'STUDIO MASTER';
-    if (score >= 55) return 'SUSPICIOUS RES';
-    if (score >= 35) return 'LOSSY UPSCALE';
+    if (score >= 80) return 'STUDIO MASTER';
+    if (score >= 50) return 'SUSPICIOUS UPSCALE';
     return 'FAKE LOSSLESS';
   }
 

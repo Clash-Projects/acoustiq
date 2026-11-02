@@ -17,7 +17,7 @@ class ScoreGauge extends StatelessWidget {
 
   Color get statusColor {
     if (score >= 80) return const Color(0xFF00E676); // Emerald Green
-    if (score >= 55) return const Color(0xFFFFB300); // Amber
+    if (score >= 50) return const Color(0xFFFFB300); // Amber
     return const Color(0xFFFF3D3D); // Crimson Red
   }
 
