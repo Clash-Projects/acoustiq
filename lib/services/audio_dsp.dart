@@ -10,7 +10,8 @@ class DspAnalysisResult {
   final String status; // 'genuine' | 'suspicious' | 'fake'
   final bool isFake24;
   final List<double> spectrumBands; // 128 normalized frequency bands (0.0 to 1.0)
-  final List<List<double>> spectrogramMatrix; // Real 32x32 time x frequency STFT matrix
+  final List<List<double>> spectrogramMatrix; // Real time x frequency STFT matrix
+  final double displayMaxKhz; // Aligned frequency ceiling for bit-perfect desktop parity
 
   const DspAnalysisResult({
     required this.cutoffKhz,
@@ -21,6 +22,7 @@ class DspAnalysisResult {
     required this.isFake24,
     required this.spectrumBands,
     this.spectrogramMatrix = const [],
+    this.displayMaxKhz = 24.0,
   });
 }
 
@@ -80,38 +82,122 @@ class AudioDspEngine {
         status: 'unverified',
         isFake24: false,
         spectrumBands: List.filled(128, 0.05),
+        spectrogramMatrix: const [],
+        displayMaxKhz: 24.0,
       );
     }
 
-    // 2. High-Density STFT Time-Frequency Matrix (96 cols x 96 rows) & Welch PSD
+    // 2. High-Density STFT Time-Frequency Slices & True Welch Average PSD
     final numSlices = rawSamples.length ~/ _fftSize;
     final int halfSize = _fftSize ~/ 2;
-    List<double> maxPsdDb = List.filled(halfSize, -120.0);
 
+    // Linear Power accumulator for true Welch Average PSD (1:1 with scipy.signal.welch)
+    final List<double> accumPower = List.filled(halfSize, 0.0);
+    final List<List<double>> sliceDbList = [];
+
+    for (int s = 0; s < numSlices; s++) {
+      final slice = rawSamples.sublist(s * _fftSize, (s + 1) * _fftSize);
+      final powerSlice = _computePowerSlice(slice, sampleRate);
+      final psdDbSlice = List<double>.filled(halfSize, -120.0);
+      for (int i = 0; i < halfSize; i++) {
+        accumPower[i] += powerSlice[i];
+        final safePower = math.max(powerSlice[i], 1e-12);
+        psdDbSlice[i] = 10.0 * (math.log(safePower) / math.ln10);
+      }
+      sliceDbList.add(psdDbSlice);
+    }
+
+    // True Welch Average PSD in dB (cancels out transient dither spikes)
+    final welchPsdDb = List<double>.filled(halfSize, -120.0);
+    final double invSlices = numSlices > 0 ? (1.0 / numSlices) : 1.0;
+    for (int i = 0; i < halfSize; i++) {
+      final avgPower = math.max(accumPower[i] * invSlices, 1e-12);
+      welchPsdDb[i] = 10.0 * (math.log(avgPower) / math.ln10);
+    }
+
+    // 3. Frequency axis in kHz
+    final binWidthKhz = nyquistKhz / halfSize;
+
+    // 4. Reference Band (1 kHz to 5 kHz) Acoustic Energy
+    final idx1k = (1.0 / binWidthKhz).round().clamp(0, halfSize - 1);
+    final idx5k = (5.0 / binWidthKhz).round().clamp(0, halfSize - 1);
+
+    List<double> midBand = [];
+    for (int i = idx1k; i <= idx5k; i++) {
+      midBand.add(welchPsdDb[i]);
+    }
+    midBand.sort();
+    final double midEnergy = midBand.isNotEmpty
+        ? midBand[midBand.length ~/ 2]
+        : -40.0;
+
+    // 5. Measure Cutoff Frequency with 3-consecutive-bin validation (eliminates isolated dither/Nyquist spikes)
+    final double thresholdDb = midEnergy - 38.0;
+    int cutoffIdx = halfSize - 1;
+    for (int i = halfSize - 3; i >= 0; i--) {
+      if (welchPsdDb[i] >= thresholdDb &&
+          welchPsdDb[i - 1] >= thresholdDb &&
+          welchPsdDb[i - 2] >= thresholdDb) {
+        cutoffIdx = i;
+        break;
+      }
+    }
+
+    double cutoffKhz = double.parse((cutoffIdx * binWidthKhz).toStringAsFixed(1));
+    cutoffKhz = cutoffKhz.clamp(10.0, nyquistKhz);
+
+    // 6. Measure Brickwall Slope Steepness (drop between cutoff and cutoff + 1.5 kHz)
+    final idxCutoff = (cutoffKhz / binWidthKhz).round().clamp(0, halfSize - 1);
+    final idxAfter = ((cutoffKhz + 1.5) / binWidthKhz).round().clamp(0, halfSize - 1);
+
+    final double energyAtCutoff = welchPsdDb[idxCutoff];
+    final double energyAfter = welchPsdDb[idxAfter];
+    final double slopeDropDb = double.parse(
+      (energyAtCutoff - energyAfter).clamp(0.0, 60.0).toStringAsFixed(1),
+    );
+
+    // 7. Psychoacoustic spectral hole detection: scan for empty quantization subbands
+    final idx15k = (15.0 / binWidthKhz).round().clamp(0, halfSize - 1);
+    final idx21k = (math.min(21.0, nyquistKhz) / binWidthKhz).round().clamp(0, halfSize - 1);
+    int emptyBins = 0;
+    int totalHiBins = 0;
+    final double holeThreshold = midEnergy - 48.0;
+    for (int i = idx15k; i <= idx21k; i++) {
+      totalHiBins++;
+      if (welchPsdDb[i] < holeThreshold) {
+        emptyBins++;
+      }
+    }
+    final double emptySubbandsRatio = totalHiBins > 0 ? (emptyBins / totalHiBins) : 0.0;
+
+    // 8. Dynamic displayMaxKhz coordinate ceiling (1:1 with Desktop min(nyquist, 24.0) unless genuine ultrasonic)
+    final double displayMaxKhz = (cutoffKhz > 23.5 && nyquistKhz > 24.0)
+        ? nyquistKhz
+        : math.min(nyquistKhz, 24.0);
+
+    final int maxDisplayBin = math.min(
+      halfSize,
+      math.max(1, ((displayMaxKhz / nyquistKhz) * halfSize).round()),
+    );
+
+    // 9. Build 96x96 Spectrogram Matrix bounded strictly to displayMaxKhz
     const int targetCols = 96;
     const int targetRows = 96;
     final int colStep = math.max(1, (numSlices - 1) ~/ targetCols);
-    final int binStep = math.max(1, halfSize ~/ targetRows);
+    final int binStep = math.max(1, maxDisplayBin ~/ targetRows);
 
     List<List<double>> rawMatrix = [];
     List<double> allDb = [];
 
     for (int s = 0; s < numSlices; s++) {
-      final slice = rawSamples.sublist(s * _fftSize, (s + 1) * _fftSize);
-      final psdSlice = _computePsdSlice(slice, sampleRate);
-      for (int i = 0; i < halfSize; i++) {
-        if (psdSlice[i] > maxPsdDb[i]) {
-          maxPsdDb[i] = psdSlice[i];
-        }
-      }
-
       if (s % colStep == 0 && rawMatrix.length < targetCols) {
+        final psdSlice = sliceDbList[s];
         List<double> rowEnergies = List<double>.filled(targetRows, -120.0);
         for (int r = 0; r < targetRows; r++) {
           double sumDb = 0.0;
           final startB = r * binStep;
           int count = 0;
-          for (int k = 0; k < binStep && (startB + k) < halfSize; k++) {
+          for (int k = 0; k < binStep && (startB + k) < maxDisplayBin; k++) {
             sumDb += psdSlice[startB + k];
             count++;
           }
@@ -145,60 +231,7 @@ class AudioDspEngine {
       }
     }
 
-    // 3. Frequency axis in kHz
-    final binWidthKhz = nyquistKhz / halfSize;
-
-    // 4. Reference Band (1 kHz to 5 kHz) Acoustic Energy
-    final idx1k = (1.0 / binWidthKhz).round().clamp(0, halfSize - 1);
-    final idx5k = (5.0 / binWidthKhz).round().clamp(0, halfSize - 1);
-
-    List<double> midBand = [];
-    for (int i = idx1k; i <= idx5k; i++) {
-      midBand.add(maxPsdDb[i]);
-    }
-    midBand.sort();
-    final double midEnergy = midBand.isNotEmpty
-        ? midBand[midBand.length ~/ 2]
-        : -40.0;
-
-    // 5. Measure Cutoff Frequency with 3-consecutive-bin validation (eliminates isolated dither/Nyquist spikes)
-    final double thresholdDb = midEnergy - 38.0;
-    int cutoffIdx = halfSize - 1;
-    for (int i = halfSize - 3; i >= 0; i--) {
-      if (maxPsdDb[i] >= thresholdDb && maxPsdDb[i - 1] >= thresholdDb && maxPsdDb[i - 2] >= thresholdDb) {
-        cutoffIdx = i;
-        break;
-      }
-    }
-
-    double cutoffKhz = double.parse((cutoffIdx * binWidthKhz).toStringAsFixed(1));
-    cutoffKhz = cutoffKhz.clamp(10.0, nyquistKhz);
-
-    // 6. Measure Brickwall Slope Steepness (drop between cutoff and cutoff + 1.5 kHz)
-    final idxCutoff = (cutoffKhz / binWidthKhz).round().clamp(0, halfSize - 1);
-    final idxAfter = ((cutoffKhz + 1.5) / binWidthKhz).round().clamp(0, halfSize - 1);
-
-    final double energyAtCutoff = maxPsdDb[idxCutoff];
-    final double energyAfter = maxPsdDb[idxAfter];
-    final double slopeDropDb = double.parse(
-      (energyAtCutoff - energyAfter).clamp(0.0, 60.0).toStringAsFixed(1),
-    );
-
-    // 7. Psychoacoustic spectral hole detection: scan for empty quantization subbands
-    final idx15k = (15.0 / binWidthKhz).round().clamp(0, halfSize - 1);
-    final idx21k = (math.min(21.0, nyquistKhz) / binWidthKhz).round().clamp(0, halfSize - 1);
-    int emptyBins = 0;
-    int totalHiBins = 0;
-    final double holeThreshold = midEnergy - 48.0;
-    for (int i = idx15k; i <= idx21k; i++) {
-      totalHiBins++;
-      if (maxPsdDb[i] < holeThreshold) {
-        emptyBins++;
-      }
-    }
-    final double emptySubbandsRatio = totalHiBins > 0 ? (emptyBins / totalHiBins) : 0.0;
-
-    // 8. Multi-Vector Lossless Scoring Matrix (1:1 with Desktop flac_analyzer.py)
+    // 10. Multi-Vector Lossless Scoring Matrix (1:1 with Desktop flac_analyzer.py)
     int score;
     String verdict;
     String status;
@@ -261,17 +294,17 @@ class AudioDspEngine {
       status = 'fake';
     }
 
-    // 8. Downsample to 128 Frequency Bands for Real Canvas Spectrogram
+    // 11. Downsample to 128 Frequency Bands bounded strictly to displayMaxKhz
     const int numBands = 128;
     List<double> bands = List.filled(numBands, 0.0);
-    final int step = math.max(1, halfSize ~/ numBands);
+    final int bandStep = math.max(1, maxDisplayBin ~/ numBands);
 
     for (int b = 0; b < numBands; b++) {
       double sum = 0.0;
-      final start = b * step;
+      final start = b * bandStep;
       int count = 0;
-      for (int k = 0; k < step && (start + k) < halfSize; k++) {
-        sum += maxPsdDb[start + k];
+      for (int k = 0; k < bandStep && (start + k) < maxDisplayBin; k++) {
+        sum += welchPsdDb[start + k];
         count++;
       }
       final avgDb = count > 0 ? sum / count : -120.0;
@@ -287,11 +320,12 @@ class AudioDspEngine {
       isFake24: isFake24,
       spectrumBands: bands,
       spectrogramMatrix: realSpectrogramMatrix,
+      displayMaxKhz: displayMaxKhz,
     );
   }
 
-  /// Compute PSD for a single 2048-sample window using Hann window and FFT
-  static List<double> _computePsdSlice(List<double> samples, int sampleRate) {
+  /// Compute raw linear power spectral density for a single 2048-sample window using Hann window and FFT
+  static List<double> _computePowerSlice(List<double> samples, int sampleRate) {
     final int n = _fftSize;
     final int half = n ~/ 2;
 
@@ -307,14 +341,12 @@ class AudioDspEngine {
     // In-place Radix-2 Cooley-Tukey FFT
     _cooleyTukeyFft(real, imag, n);
 
-    // Compute Power Spectral Density in dB
-    final psd = List<double>.filled(half, -120.0);
+    // Compute raw Linear Power Spectral Density (1:1 with scipy.signal.welch)
+    final power = List<double>.filled(half, 0.0);
     for (int i = 0; i < half; i++) {
-      final power = (real[i] * real[i] + imag[i] * imag[i]) / (n * sampleRate);
-      final safePower = math.max(power, 1e-12);
-      psd[i] = 10.0 * (math.log(safePower) / math.ln10);
+      power[i] = (real[i] * real[i] + imag[i] * imag[i]) / (n * sampleRate);
     }
-    return psd;
+    return power;
   }
 
   /// In-place iterative Radix-2 Cooley-Tukey FFT

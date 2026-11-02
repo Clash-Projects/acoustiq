@@ -1069,6 +1069,43 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
             ],
           ),
 
+          const SizedBox(height: 12),
+
+          // Liquid Glass Spectrogram Reading Guide
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0x22161B22) : const Color(0x0C000000),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark ? const Color(0x3330363D) : const Color(0x18000000),
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 14,
+                  color: activeAccent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Cyan dotted line = Studio CD limit (20 kHz). Brighter glow = louder sound energy. Red hatched area = compression dead zone where audio was permanently cut off.',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10.5,
+                      height: 1.35,
+                      color: subTextColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 14),
 
           // Symmetrical 2x2 Key Metrics Grid

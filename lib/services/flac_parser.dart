@@ -154,8 +154,6 @@ class FlacParser {
       final lyrics = tags['lyrics'] ?? tags['unsyncedlyrics'];
       final hasLyrics = lyrics != null && lyrics.trim().isNotEmpty;
 
-      final maxKhz = double.parse(((sampleRate / 2000.0).clamp(0.0, 24.0)).toStringAsFixed(1));
-
       // Close random access file before running decoder on the file
       await raf?.close();
       raf = null;
@@ -185,7 +183,7 @@ class FlacParser {
         hasCover: hasCover,
         coverBytes: coverBytes,
         cutoffKhz: dspResult.cutoffKhz,
-        maxKhz: maxKhz,
+        maxKhz: dspResult.displayMaxKhz,
         slopeDropDb: dspResult.slopeDropDb,
         score: dspResult.score,
         verdict: dspResult.verdict,
