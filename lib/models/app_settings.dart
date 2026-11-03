@@ -31,7 +31,7 @@ class AppState extends ChangeNotifier {
   bool get liquidGlassEnabled => _isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get amoledMode => _amoledMode;
-  bool get audiophileMode => _audiophileMode;
+  bool get audiophileMode => true; // Unified mode: full precision always available
   String get visualizerMode => _visualizerMode;
   bool get devModeEnabled => _devModeEnabled;
   FlacInfo? get injectedMockTrack => _injectedMockTrack;

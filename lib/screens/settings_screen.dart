@@ -187,30 +187,36 @@ class SettingsScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 4. AUDIO ENGINE & AUDIOPHILE SETTINGS
-                  buildSectionHeader('Audio Engine & Audiophile Settings', subTextColor),
+                  // 4. AUDIO ENGINE & SOUND STAGE
+                  buildSectionHeader('Audio Engine & Sound Stage', subTextColor),
                   ExpressiveGroup(
-                    rowCount: 4,
+                    rowCount: 3,
                     itemBuilder: (context, index, position) {
                       switch (index) {
                         case 0:
-                          // Pro Audiophile Mode Switch
+                          // Visualizer Stage Switcher
                           return ExpressiveGroupRow(
-                            icon: Icons.science_rounded,
-                            iconColor: const Color(0xFF00D2FF),
-                            iconBgColor: const Color(0xFF00D2FF).withOpacity(isDark ? 0.20 : 0.12),
-                            title: 'Pro Audiophile Mode',
-                            subtitle: appState.audiophileMode
-                                ? 'Displaying raw Nyquist limit, STFT dB slope, and bit-depth metrics'
-                                : 'Everyday mode active • Simple human-friendly audio terms',
+                            icon: Icons.auto_graph_rounded,
+                            iconColor: activeAccent,
+                            iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                            title: 'Sound Stage Visualizer',
+                            subtitle: 'Default style for the audio purity stage',
                             position: position,
-                            trailing: Switch.adaptive(
-                              value: appState.audiophileMode,
-                              activeColor: activeAccent,
-                              onChanged: (val) {
-                                if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                                appState.setAudiophileMode(val);
-                              },
+                            trailing: Container(
+                              height: 28,
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
+                                borderRadius: BorderRadius.circular(9),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _microVisualizerButton('gauge', Icons.speed_rounded, appState.visualizerMode, isDark, activeAccent),
+                                  _microVisualizerButton('hybrid', Icons.electric_bolt_rounded, appState.visualizerMode, isDark, activeAccent),
+                                  _microVisualizerButton('waveform', Icons.bar_chart_rounded, appState.visualizerMode, isDark, activeAccent),
+                                ],
+                              ),
                             ),
                           );
                         case 1:

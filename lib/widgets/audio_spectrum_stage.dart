@@ -8,6 +8,7 @@ import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'app_snack_bar.dart';
 import 'app_glass_dialog.dart';
+import 'animated_status_badge.dart';
 
 /// Studio Audio Authenticity Stage (Speedometer Gauge + Waveform Hybrid Switcher)
 ///
@@ -147,7 +148,6 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
         final activeAccent = appState.getAccentColor(context);
-        final isPro = appState.audiophileMode;
         final mode = appState.visualizerMode; // 'hybrid', 'gauge', 'waveform'
         final safeMax = widget.maxKhz > 0 ? widget.maxKhz : 24.0;
 
@@ -182,7 +182,7 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isPro ? 'Acoustic Spectrum' : 'Audio Quality',
+                            'Acoustic Spectrum',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 13,
@@ -247,18 +247,14 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                   // 3. Footer Bar: Readout + Full Spectrogram Trigger
                   Row(
                     children: [
-                      // Human or Pro Frequency Readout
+                      // High-Precision Frequency Readout
                       Expanded(
                         child: Text(
-                          isPro
-                              ? 'Cutoff: ${widget.cutoffKhz.toStringAsFixed(1)}k / ${safeMax.toStringAsFixed(0)}k'
-                              : (widget.status == 'genuine'
-                                  ? 'Full Spectrum (${widget.cutoffKhz.toStringAsFixed(1)} kHz)'
-                                  : 'Cut off at ${widget.cutoffKhz.toStringAsFixed(1)} kHz'),
+                          'Cutoff: ${widget.cutoffKhz.toStringAsFixed(1)}k / ${safeMax.toStringAsFixed(0)}k',
                           style: TextStyle(
-                            fontFamily: isPro ? 'JetBrainsMono' : 'Inter',
+                            fontFamily: 'JetBrainsMono',
                             fontSize: 11,
-                            fontWeight: isPro ? FontWeight.w700 : FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             color: widget.status == 'genuine' ? activeAccent : widget.statusColor,
                           ),
                           maxLines: 1,
@@ -871,21 +867,11 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: widget.statusColor.withOpacity(isDark ? 0.20 : 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          widget.status == 'genuine'
-                              ? Icons.verified_rounded
-                              : (widget.status == 'suspicious'
-                                  ? Icons.warning_amber_rounded
-                                  : Icons.cancel_rounded),
-                          size: 18,
-                          color: widget.statusColor,
-                        ),
+                      AnimatedStatusBadge(
+                        status: widget.status,
+                        color: widget.statusColor,
+                        size: 32,
+                        animatePulse: true,
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -1072,44 +1058,12 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
 
           const SizedBox(height: 12),
 
-          // Liquid Glass Spectrogram Reading Guide
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0x22161B22) : const Color(0x0C000000),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isDark ? const Color(0x3330363D) : const Color(0x18000000),
-                width: 0.8,
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 14,
-                  color: activeAccent,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Cyan dotted line = Studio CD limit (20 kHz). Brighter glow = louder sound energy. Red hatched area = compression dead zone where audio was permanently cut off.',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 10.5,
-                      height: 1.35,
-                      color: subTextColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Visual Swatch Legend Strip (Replaces squished single-paragraph text)
+          _buildVisualLegendStrip(isDark, textColor, subTextColor, activeAccent),
 
           const SizedBox(height: 14),
 
-          // Symmetrical 2x2 Key Metrics Grid
+          // Symmetrical 2x2 Key Metrics Grid (Tap any metric to learn more)
           Row(
             children: [
               Expanded(
@@ -1119,6 +1073,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   icon: Icons.graphic_eq_rounded,
                   color: widget.statusColor,
                   isDark: isDark,
+                  onTap: () => _showMetricExplanation(context, 'reach'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1129,6 +1084,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   icon: Icons.shield_outlined,
                   color: activeAccent,
                   isDark: isDark,
+                  onTap: () => _showMetricExplanation(context, 'nyquist'),
                 ),
               ),
             ],
@@ -1145,6 +1101,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   icon: Icons.speed_rounded,
                   color: activeAccent,
                   isDark: isDark,
+                  onTap: () => _showMetricExplanation(context, 'sample_rate'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1157,6 +1114,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   icon: Icons.memory_rounded,
                   color: activeAccent,
                   isDark: isDark,
+                  onTap: () => _showMetricExplanation(context, 'bit_depth'),
                 ),
               ),
             ],
@@ -1640,69 +1598,333 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     );
   }
 
+  Widget _buildVisualLegendStrip(
+    bool isDark,
+    Color textColor,
+    Color subTextColor,
+    Color activeAccent,
+  ) {
+    final bool hasDeadZone = (widget.score < 80 || widget.status != 'genuine') &&
+        widget.cutoffKhz < (widget.maxKhz - 0.7);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0x22161B22) : const Color(0x0C000000),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0x3330363D) : const Color(0x18000000),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildLegendItem(
+                  swatch: _buildDottedCyanSwatch(),
+                  title: '20k CD Standard',
+                  desc: 'Studio CD limit',
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildLegendItem(
+                  swatch: _buildSolidLineSwatch(widget.statusColor),
+                  title: 'Acoustic Reach',
+                  desc: '${widget.cutoffKhz.toStringAsFixed(1)} kHz cutoff',
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: hasDeadZone
+                    ? _buildLegendItem(
+                        swatch: _buildHatchedRedSwatch(),
+                        title: 'Dead Zone',
+                        desc: 'MP3 compression drop',
+                        textColor: textColor,
+                        subTextColor: subTextColor,
+                      )
+                    : _buildLegendItem(
+                        swatch: _buildCheckmarkSwatch(),
+                        title: 'Full Spectrum',
+                        desc: 'Zero dead zones',
+                        textColor: textColor,
+                        subTextColor: subTextColor,
+                      ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildLegendItem(
+                  swatch: _buildInfernoGradientSwatch(),
+                  title: 'Harmonic Detail',
+                  desc: 'Brighter = louder audio',
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDottedCyanSwatch() {
+    return SizedBox(
+      width: 24,
+      height: 8,
+      child: CustomPaint(
+        painter: _DottedLinePainter(color: const Color(0xFF00E5FF)),
+      ),
+    );
+  }
+
+  Widget _buildSolidLineSwatch(Color color) {
+    return Container(
+      width: 24,
+      height: 3,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHatchedRedSwatch() {
+    return SizedBox(
+      width: 24,
+      height: 12,
+      child: CustomPaint(
+        painter: _HatchedBoxPainter(color: const Color(0xFFFF3D3D)),
+      ),
+    );
+  }
+
+  Widget _buildCheckmarkSwatch() {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        color: const Color(0xFF00E676).withOpacity(0.18),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(
+        Icons.check_rounded,
+        size: 12,
+        color: Color(0xFF00E676),
+      ),
+    );
+  }
+
+  Widget _buildInfernoGradientSwatch() {
+    return Container(
+      width: 24,
+      height: 9,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(3),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF420A68),
+            Color(0xFFDD513A),
+            Color(0xFFFCFFA4),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegendItem({
+    required Widget swatch,
+    required String title,
+    required String desc,
+    required Color textColor,
+    required Color subTextColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        swatch,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                  letterSpacing: -0.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                desc,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 9.0,
+                  color: subTextColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showMetricExplanation(BuildContext context, String metric) {
+    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+    String title;
+    String content;
+    IconData icon;
+    Color iconColor;
+
+    switch (metric) {
+      case 'reach':
+        title = 'Acoustic Reach (${widget.cutoffKhz.toStringAsFixed(1)} kHz)';
+        icon = Icons.graphic_eq_rounded;
+        iconColor = widget.statusColor;
+        content = widget.cutoffKhz >= 20.5
+            ? 'This track preserves full acoustic frequencies up to ${widget.cutoffKhz.toStringAsFixed(1)} kHz. Authentic studio recordings reach 20–24 kHz, ensuring crisp cymbals and natural harmonic overtones.'
+            : 'Frequencies sharply stop at ${widget.cutoffKhz.toStringAsFixed(1)} kHz. In lossy MP3/AAC compression, audio above 16–18 kHz is permanently discarded to save file size.';
+        break;
+      case 'nyquist':
+        title = 'Frequency Ceiling (${widget.maxKhz.toStringAsFixed(1)} kHz)';
+        icon = Icons.shield_outlined;
+        iconColor = const Color(0xFF00E5FF);
+        content = 'The Nyquist theorem states that digital audio can only store sound frequencies up to half its sampling rate (Sampling Rate ÷ 2). A 44.1 kHz file has a 22.05 kHz ceiling, while 48 kHz reaches 24 kHz.';
+        break;
+      case 'sample_rate':
+        final rateKhz = widget.sampleRate != null ? (widget.sampleRate! / 1000).toStringAsFixed(1) : '44.1';
+        title = 'Sampling Rate ($rateKhz kHz)';
+        icon = Icons.speed_rounded;
+        iconColor = const Color(0xFF7C4DFF);
+        content = 'The number of audio snapshots captured every second. Standard CD audio uses 44.1 kHz (44,100 samples/sec). Studio master Hi-Res audio uses 48, 88.2, 96, or 192 kHz.';
+        break;
+      case 'bit_depth':
+      default:
+        final bits = widget.bitDepth ?? 16;
+        title = 'True Bit Depth ($bits-bit)';
+        icon = Icons.memory_rounded;
+        iconColor = const Color(0xFFFF9500);
+        content = 'The dynamic volume resolution of each sample. Standard 16-bit audio provides 65,536 volume steps (96 dB dynamic range). Studio 24-bit audio provides 16.7 million steps (144 dB). AcoustiQ verifies whether a 24-bit file has real audio resolution or is just a 16-bit track padded with zeroes.';
+        break;
+    }
+
+    showAppGlassDialog(
+      context: context,
+      icon: icon,
+      iconColor: iconColor,
+      title: title,
+      content: content,
+      confirmLabel: 'Understood',
+    );
+  }
+
   Widget _metricTile({
     required String label,
     required String value,
     required IconData icon,
     required Color color,
     required bool isDark,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000),
-          width: 0.8,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000),
+            width: 0.8,
+          ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withOpacity(isDark ? 0.20 : 0.12),
-              borderRadius: BorderRadius.circular(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withOpacity(isDark ? 0.20 : 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 17, color: color),
             ),
-            child: Icon(icon, size: 17, color: color),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? const Color(0x99FFFFFF) : const Color(0x88000000),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? const Color(0x99FFFFFF) : const Color(0x88000000),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (onTap != null) ...[
+                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.help_outline_rounded,
+                          size: 9.5,
+                          color: isDark ? const Color(0x66FFFFFF) : const Color(0x55000000),
+                        ),
+                      ],
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: color,
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2043,4 +2265,57 @@ class _Spectrogram2dPainter extends CustomPainter {
         oldDelegate.status != status ||
         oldDelegate.spectrogramMatrix != spectrogramMatrix;
   }
+}
+
+class _DottedLinePainter extends CustomPainter {
+  final Color color;
+  _DottedLinePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+    double x = 0;
+    while (x < size.width) {
+      canvas.drawLine(
+        Offset(x, size.height / 2),
+        Offset(math.min(x + 4, size.width), size.height / 2),
+        p,
+      );
+      x += 7;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DottedLinePainter oldDelegate) => oldDelegate.color != color;
+}
+
+class _HatchedBoxPainter extends CustomPainter {
+  final Color color;
+  _HatchedBoxPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = color.withOpacity(0.20);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), const Radius.circular(2)),
+      bg,
+    );
+
+    final lineP = Paint()
+      ..color = color.withOpacity(0.85)
+      ..strokeWidth = 1.0;
+    for (double x = -size.height; x < size.width; x += 5) {
+      canvas.drawLine(
+        Offset(math.max(0.0, x), 0),
+        Offset(math.min(size.width, x + size.height), size.height),
+        lineP,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HatchedBoxPainter oldDelegate) => oldDelegate.color != color;
 }

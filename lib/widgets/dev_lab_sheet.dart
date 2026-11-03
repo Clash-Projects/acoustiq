@@ -275,11 +275,11 @@ class DevLabSheet extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _togglePill(
-                                  label: 'Audiophile Pro',
-                                  value: appState.audiophileMode,
+                                  label: 'AMOLED Pitch',
+                                  value: appState.amoledMode,
                                   isDark: isDark,
                                   activeAccent: activeAccent,
-                                  onChanged: (val) => appState.setAudiophileMode(val),
+                                  onChanged: (val) => appState.setAmoledMode(val),
                                 ),
                               ),
                             ],

@@ -11,6 +11,7 @@ import '../widgets/glass_surface.dart';
 import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
+import '../widgets/animated_status_badge.dart';
 import 'settings_screen.dart';
 
 /// 1:1 Port of LastWave Native's Borderless AMOLED Track List Stage for FLAC Audio Auditing
@@ -963,20 +964,12 @@ class _AuditScreenState extends State<AuditScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (track.status == 'genuine')
-                      const Icon(
-                        Icons.verified_rounded,
-                        size: 16,
-                        color: AppColors.genuineEmerald,
-                      )
-                    else
-                      Icon(
-                        track.status == 'suspicious'
-                            ? Icons.warning_amber_rounded
-                            : Icons.cancel_rounded,
-                        size: 16,
-                        color: statusColor,
-                      ),
+                    AnimatedStatusBadge(
+                      status: track.status,
+                      color: statusColor,
+                      size: 17,
+                      animatePulse: track.status == 'genuine',
+                    ),
                     const SizedBox(width: 5),
                     Text(
                       '${track.score}%',
@@ -1097,14 +1090,15 @@ class _TrackDetailModal extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (track.status == 'genuine') ...[
-                          const SizedBox(width: 6),
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 20,
-                            color: AppColors.genuineEmerald,
-                          ),
-                        ],
+                        const SizedBox(width: 8),
+                        AnimatedStatusBadge(
+                          status: track.status,
+                          color: track.status == 'genuine'
+                              ? AppColors.genuineEmerald
+                              : (track.status == 'suspicious' ? const Color(0xFFFFB300) : const Color(0xFFFF3D3D)),
+                          size: 24,
+                          animatePulse: true,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 3),
