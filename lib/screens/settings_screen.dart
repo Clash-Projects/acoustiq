@@ -592,9 +592,8 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 10),
-        // Master Card: Custom Resonance
-        _buildCustomResonanceCard(
-          context: context,
+        // Master Card: Custom Resonance (Inline Studio Tuner)
+        _CustomResonanceCard(
           isDark: isDark,
           textColor: textColor,
           subTextColor: subTextColor,
@@ -603,11 +602,6 @@ class SettingsScreen extends StatelessWidget {
           onSelect: () {
             if (appState.hapticsEnabled) HapticFeedback.selectionClick();
             appState.setAccentPreset('Custom Resonance');
-          },
-          onTune: () {
-            if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-            appState.setAccentPreset('Custom Resonance');
-            _openCustomColorPicker(context, isDark, textColor, subTextColor);
           },
         ),
       ],
@@ -722,164 +716,6 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomResonanceCard({
-    required BuildContext context,
-    required bool isDark,
-    required Color textColor,
-    required Color subTextColor,
-    required bool isSelected,
-    required Color customColor,
-    required VoidCallback onSelect,
-    required VoidCallback onTune,
-  }) {
-    final hexStr = '#${customColor.value.toRadixString(16).substring(2).toUpperCase()}';
-    const pattern = [0.4, 0.65, 0.9, 0.75, 1.0, 0.8, 0.6, 0.45, 0.3];
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onSelect,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? customColor.withOpacity(isDark ? 0.9 : 0.8)
-                  : (isDark ? const Color(0x22FFFFFF) : const Color(0x14000000)),
-              width: isSelected ? 1.5 : 0.85,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: customColor.withOpacity(isDark ? 0.22 : 0.12),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: GlassSurface(
-            borderRadius: BorderRadius.circular(16),
-            style: GlassStyle.frosted,
-            borderless: true,
-            tintColor: isSelected ? customColor.withOpacity(isDark ? 0.16 : 0.08) : null,
-            padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: customColor,
-                              shape: BoxShape.circle,
-                              boxShadow: isSelected
-                                  ? [BoxShadow(color: customColor.withOpacity(0.8), blurRadius: 4)]
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Custom Resonance',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? textColor : textColor.withOpacity(0.9),
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          if (isSelected) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 17,
-                              height: 17,
-                              decoration: BoxDecoration(
-                                color: customColor,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.check_rounded,
-                                size: 11,
-                                color: AppColors.getOnAccentColor(customColor, isDark: isDark),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _MiniSoundstageWaveform(
-                        color: customColor,
-                        heights: pattern,
-                        isAnimated: isSelected,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Active Chroma: $hexStr // Tap Tune to customize',
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 9.0,
-                          fontWeight: FontWeight.w500,
-                          color: isSelected ? customColor : subTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Tune Button Pill
-                GestureDetector(
-                  onTap: onTune,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: customColor.withOpacity(isDark ? 0.22 : 0.14),
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(
-                        color: customColor.withOpacity(0.4),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.palette_outlined,
-                          size: 14,
-                          color: customColor,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'TUNE',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: isDark ? Colors.white : customColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -1306,303 +1142,6 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  /// Apple WWDC25 Frosted Glass Custom Accent Palette & Hue Scrub Sheet
-  void _openCustomColorPicker(
-    BuildContext context,
-    bool isDark,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    final curColor = appState.customColor;
-    final hsv = HSVColor.fromColor(curColor);
-    double currentHue = hsv.hue;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.55),
-      isScrollControlled: true,
-      builder: (modalCtx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final activeCustom = appState.customColor;
-            final hexStr = '#${activeCustom.value.toRadixString(16).substring(2).toUpperCase()}';
-
-            const swatches = [
-              Color(0xFF00D2FF), // Electric Cyan
-              Color(0xFF00E5FF), // Neon Teal
-              Color(0xFF0091EA), // Deep Azure
-              Color(0xFF536DFE), // Royal Indigo
-              Color(0xFF7C4DFF), // Electric Purple
-              Color(0xFFE040FB), // Vivid Magenta
-              Color(0xFFFF4081), // Hot Pink
-              Color(0xFFFF5252), // Sunset Coral
-              Color(0xFFFF6E40), // Flame Orange
-              Color(0xFFFFD700), // Amber Gold
-              Color(0xFF00E676), // Lime Emerald
-              Color(0xFF1DE9B6), // Mint Jade
-            ];
-
-            return BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: SafeArea(
-                top: false,
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 16),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xE012161A) : const Color(0xF5FFFFFF),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                  border: Border(
-                    top: BorderSide(
-                      color: isDark ? const Color(0x33FFFFFF) : const Color(0x20000000),
-                      width: 1.0,
-                    ),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Drag Handle
-                    Center(
-                      child: Container(
-                        width: 38,
-                        height: 4.5,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x40FFFFFF) : const Color(0x30000000),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                    ),
-
-                    // Header Row: Title & Active Color Swatch Pill
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Custom Accent Color',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.4,
-                                color: textColor,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Live chromatic palette across all surfaces',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                color: subTextColor,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Live Swatch Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: activeCustom.withOpacity(0.60),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: activeCustom,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.35),
-                                    width: 1.0,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                hexStr,
-                                style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // 12 Curated Swatches Grid (6 across x 2 rows)
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.spaceBetween,
-                      children: [
-                        for (final c in swatches)
-                          MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              onTap: () {
-                                if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                                appState.setAccentPreset('Custom Resonance', c);
-                                setModalState(() {
-                                  currentHue = HSVColor.fromColor(c).hue;
-                                });
-                              },
-                              child: Container(
-                                width: (MediaQuery.of(context).size.width - 40 - (5 * 12)) / 6,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: c,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: activeCustom.value == c.value
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    width: 2.5,
-                                  ),
-                                  boxShadow: activeCustom.value == c.value
-                                      ? const [
-                                          BoxShadow(
-                                            color: Color(0x40000000),
-                                            blurRadius: 6,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: activeCustom.value == c.value
-                                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                                    : null,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    // Spectrum Hue Slider Title
-                    Text(
-                      'SPECTRUM HUE',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: subTextColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Rainbow Track Container with Overlay Slider
-                    Container(
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFF0000),
-                            Color(0xFFFFFF00),
-                            Color(0xFF00FF00),
-                            Color(0xFF00FFFF),
-                            Color(0xFF0000FF),
-                            Color(0xFFFF00FF),
-                            Color(0xFFFF0000),
-                          ],
-                        ),
-                      ),
-                      child: SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 36,
-                          activeTrackColor: Colors.transparent,
-                          inactiveTrackColor: Colors.transparent,
-                          thumbColor: Colors.white,
-                          thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 14,
-                            elevation: 4,
-                          ),
-                          overlayColor: Colors.transparent,
-                          mouseCursor: const MaterialStatePropertyAll(SystemMouseCursors.click),
-                        ),
-                        child: Slider(
-                          value: currentHue,
-                          min: 0.0,
-                          max: 360.0,
-                          onChanged: (val) {
-                            setModalState(() => currentHue = val);
-                            final newCol = HSVColor.fromAHSV(1.0, val, 0.85, 0.95).toColor();
-                            appState.setAccentPreset('Custom Resonance', newCol);
-                          },
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Done / Apply Pill Button
-                    MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () {
-                          if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
-                          Navigator.pop(modalCtx);
-                        },
-                        child: Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: activeCustom,
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x33000000),
-                                blurRadius: 8,
-                                offset: Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Apply Accent Color',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildThemeModeRow(
     BuildContext context,
     GroupPosition position,
@@ -1828,6 +1367,408 @@ class _MiniSoundstageWaveformState extends State<_MiniSoundstageWaveform>
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _CustomResonanceCard extends StatefulWidget {
+  final bool isDark;
+  final Color textColor;
+  final Color subTextColor;
+  final bool isSelected;
+  final Color customColor;
+  final VoidCallback onSelect;
+
+  const _CustomResonanceCard({
+    required this.isDark,
+    required this.textColor,
+    required this.subTextColor,
+    required this.isSelected,
+    required this.customColor,
+    required this.onSelect,
+  });
+
+  @override
+  State<_CustomResonanceCard> createState() => _CustomResonanceCardState();
+}
+
+class _CustomResonanceCardState extends State<_CustomResonanceCard> {
+  bool _isExpanded = false;
+  late double _currentHue;
+
+  static const swatches = [
+    Color(0xFF00D2FF), // Electric Cyan
+    Color(0xFF00E5FF), // Neon Teal
+    Color(0xFF0091EA), // Deep Azure
+    Color(0xFF536DFE), // Royal Indigo
+    Color(0xFF7C4DFF), // Electric Purple
+    Color(0xFFE040FB), // Vivid Magenta
+    Color(0xFFFF4081), // Hot Pink
+    Color(0xFFFF5252), // Sunset Coral
+    Color(0xFFFF6E40), // Flame Orange
+    Color(0xFFFFD700), // Amber Gold
+    Color(0xFF00E676), // Lime Emerald
+    Color(0xFF1DE9B6), // Mint Jade
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentHue = HSVColor.fromColor(widget.customColor).hue;
+  }
+
+  @override
+  void didUpdateWidget(covariant _CustomResonanceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isSelected && _isExpanded) {
+      _isExpanded = false;
+    }
+    if (oldWidget.customColor != widget.customColor) {
+      final fromColorHue = HSVColor.fromColor(widget.customColor).hue;
+      if ((fromColorHue - _currentHue).abs() > 2.0) {
+        _currentHue = fromColorHue;
+      }
+    }
+  }
+
+  Widget _buildSwatchItem(Color c) {
+    final isSelected = widget.customColor.value == c.value;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+          appState.setAccentPreset('Custom Resonance', c);
+          setState(() {
+            _currentHue = HSVColor.fromColor(c).hue;
+          });
+        },
+        child: Container(
+          height: 32,
+          decoration: BoxDecoration(
+            color: c,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? Colors.white : Colors.white.withOpacity(0.18),
+              width: isSelected ? 2.0 : 0.8,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: c.withOpacity(0.55),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: isSelected
+              ? const Center(
+                  child: Icon(Icons.check_rounded, color: Colors.white, size: 16),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hexStr = '#${widget.customColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    const pattern = [0.4, 0.65, 0.9, 0.75, 1.0, 0.8, 0.6, 0.45, 0.3];
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: widget.isSelected
+                ? widget.customColor.withOpacity(widget.isDark ? 0.9 : 0.8)
+                : (widget.isDark ? const Color(0x22FFFFFF) : const Color(0x14000000)),
+            width: widget.isSelected ? 1.5 : 0.85,
+          ),
+          boxShadow: widget.isSelected
+              ? [
+                  BoxShadow(
+                    color: widget.customColor.withOpacity(widget.isDark ? 0.22 : 0.12),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: GlassSurface(
+          borderRadius: BorderRadius.circular(16),
+          style: GlassStyle.frosted,
+          borderless: true,
+          tintColor: widget.isSelected
+              ? widget.customColor.withOpacity(widget.isDark ? 0.16 : 0.08)
+              : null,
+          padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: widget.onSelect,
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: widget.customColor,
+                                  shape: BoxShape.circle,
+                                  boxShadow: widget.isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: widget.customColor.withOpacity(0.8),
+                                            blurRadius: 4,
+                                          )
+                                        ]
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Custom Resonance',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: widget.isSelected
+                                      ? widget.textColor
+                                      : widget.textColor.withOpacity(0.9),
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              if (widget.isSelected) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 17,
+                                  height: 17,
+                                  decoration: BoxDecoration(
+                                    color: widget.customColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.check_rounded,
+                                    size: 11,
+                                    color: AppColors.getOnAccentColor(
+                                      widget.customColor,
+                                      isDark: widget.isDark,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          _MiniSoundstageWaveform(
+                            color: widget.customColor,
+                            heights: pattern,
+                            isAnimated: widget.isSelected,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _isExpanded
+                                ? 'Active Chroma: $hexStr // Adjust swatches or hue below'
+                                : 'Active Chroma: $hexStr // Tap Tune to customize',
+                            style: TextStyle(
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 9.0,
+                              fontWeight: FontWeight.w500,
+                              color: widget.isSelected ? widget.customColor : widget.subTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Tune / Done Button Pill
+                  GestureDetector(
+                    onTap: () {
+                      if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                      if (!widget.isSelected) {
+                        widget.onSelect();
+                      }
+                      setState(() {
+                        _isExpanded = !_isExpanded;
+                        _currentHue = HSVColor.fromColor(widget.customColor).hue;
+                      });
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: widget.customColor.withOpacity(widget.isDark ? 0.22 : 0.14),
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: widget.customColor.withOpacity(0.4),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isExpanded ? Icons.check_rounded : Icons.palette_outlined,
+                            size: 14,
+                            color: widget.customColor,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            _isExpanded ? 'DONE' : 'TUNE',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              color: widget.isDark ? Colors.white : widget.customColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Smooth inline expansion
+              AnimatedSize(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeInOutCubic,
+                child: _isExpanded
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            height: 1,
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            color: widget.isDark
+                                ? const Color(0x22FFFFFF)
+                                : const Color(0x14000000),
+                          ),
+                          Text(
+                            'STUDIO PALETTE PRESETS',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: widget.subTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              for (int i = 0; i < 6; i++) ...[
+                                if (i > 0) const SizedBox(width: 8),
+                                Expanded(child: _buildSwatchItem(swatches[i])),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              for (int i = 6; i < 12; i++) ...[
+                                if (i > 6) const SizedBox(width: 8),
+                                Expanded(child: _buildSwatchItem(swatches[i])),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'SPECTRUM HUE',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: widget.subTextColor,
+                                ),
+                              ),
+                              Text(
+                                hexStr,
+                                style: TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: widget.customColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 30,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(15),
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFFFF0000),
+                                  Color(0xFFFFFF00),
+                                  Color(0xFF00FF00),
+                                  Color(0xFF00FFFF),
+                                  Color(0xFF0000FF),
+                                  Color(0xFFFF00FF),
+                                  Color(0xFFFF0000),
+                                ],
+                              ),
+                            ),
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 30,
+                                activeTrackColor: Colors.transparent,
+                                inactiveTrackColor: Colors.transparent,
+                                thumbColor: Colors.white,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 12,
+                                  elevation: 3,
+                                ),
+                                overlayColor: Colors.transparent,
+                                mouseCursor: const MaterialStatePropertyAll(
+                                  SystemMouseCursors.click,
+                                ),
+                              ),
+                              child: Slider(
+                                value: _currentHue.clamp(0.0, 360.0),
+                                min: 0.0,
+                                max: 360.0,
+                                onChanged: (val) {
+                                  setState(() => _currentHue = val);
+                                  final newCol = HSVColor.fromAHSV(
+                                    1.0,
+                                    val,
+                                    0.85,
+                                    0.95,
+                                  ).toColor();
+                                  appState.setAccentPreset('Custom Resonance', newCol);
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
