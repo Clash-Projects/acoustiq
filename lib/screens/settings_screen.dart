@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -117,9 +118,9 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // 1. ACCENT SECTION (LastWave 8-Preset Palette Grid)
-                  buildSectionHeader('Accent', subTextColor),
-                  _buildAccentGrid(context, isDark, textColor, subTextColor),
+                  // 1. ACOUSTIC SOUNDSTAGE PALETTE (Proprietary Hardware Modules)
+                  buildSectionHeader('Acoustic Soundstage Palette', subTextColor),
+                  _buildSoundstagePalette(context, isDark, textColor, subTextColor),
 
                   const SizedBox(height: 16),
 
@@ -476,350 +477,413 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// 8-Preset Accent Palette Grid (Exact 1:1 match with LastWave Image 1)
-  Widget _buildAccentGrid(
+  /// The Acoustic Soundstage Palette (Proprietary Hardware Modules with Live Spectrum Visualizers)
+  Widget _buildSoundstagePalette(
     BuildContext context,
     bool isDark,
     Color textColor,
     Color subTextColor,
   ) {
-    const presets = [
+    final modules = [
       (
-        name: 'Crimson',
-        shades: [Color(0xFF8B1A1A), Color(0xFFB71C1C), Color(0xFFEF9A9A), Color(0xFFE03030)],
+        id: 'Prism Cyan',
+        title: 'Prism Cyan',
+        subtitle: 'CD Master // 20 kHz Ref',
+        color: const Color(0xFF00E5FF),
+        pattern: [0.4, 0.7, 0.95, 0.6, 0.85, 1.0, 0.75, 0.5, 0.3],
       ),
       (
-        name: 'Violet',
-        shades: [Color(0xFF4C27B8), Color(0xFF673AB7), Color(0xFFB39DDB), Color(0xFF7C4DFF)],
+        id: 'Analog Amber',
+        title: 'Analog Amber',
+        subtitle: 'Tube Warmth // Vinyl Tone',
+        color: const Color(0xFFFF9500),
+        pattern: [0.6, 0.85, 0.7, 0.9, 0.6, 0.75, 0.5, 0.4, 0.3],
       ),
       (
-        name: 'Ocean',
-        shades: [Color(0xFF135A7A), Color(0xFF1B7BA3), Color(0xFF72C3E5), Color(0xFF2196C6)],
+        id: 'Acoustic Emerald',
+        title: 'Acoustic Emerald',
+        subtitle: 'Lossless Lock // Studio Monitor',
+        color: const Color(0xFF00E676),
+        pattern: [0.35, 0.55, 0.8, 1.0, 0.9, 0.75, 0.6, 0.45, 0.3],
       ),
       (
-        name: 'Sage',
-        shades: [Color(0xFF3B5E3B), Color(0xFF4E7D4E), Color(0xFFA5D6A5), Color(0xFF6B9E6B)],
+        id: 'Ultraviolet Hi-Res',
+        title: 'Ultraviolet Hi-Res',
+        subtitle: 'Ultrasonic // 96k Master',
+        color: const Color(0xFF8B5CF6),
+        pattern: [0.5, 0.75, 0.9, 0.7, 1.0, 0.85, 0.95, 0.65, 0.4],
       ),
       (
-        name: 'Amber',
-        shades: [Color(0xFF8C5E13), Color(0xFFB7791A), Color(0xFFFFE082), Color(0xFFE0A030)],
+        id: 'Crimson Peak',
+        title: 'Crimson Peak',
+        subtitle: 'Dynamic // Transient Energy',
+        color: const Color(0xFFFF3B30),
+        pattern: [0.3, 0.6, 0.85, 1.0, 0.4, 0.95, 0.7, 0.5, 0.35],
       ),
       (
-        name: 'Rose',
-        shades: [Color(0xFF8C2442), Color(0xFFB83259), Color(0xFFF48FB1), Color(0xFFE0507A)],
+        id: 'Titanium Mono',
+        title: 'Titanium Mono',
+        subtitle: 'Studio Console // High-Contrast',
+        color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+        pattern: [0.5, 0.5, 0.8, 0.8, 1.0, 1.0, 0.7, 0.7, 0.4],
       ),
     ];
 
-    return GlassSurface(
-      borderRadius: BorderRadius.circular(24),
-      style: GlassStyle.frosted,
-      borderless: false,
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        children: [
-          // Row 1: Crimson, Violet, Ocean, Sage
-          Row(
-            children: [
-              for (int i = 0; i < 4; i++) ...[
-                if (i > 0) const SizedBox(width: 10),
-                Expanded(
-                  child: _buildAccentTile(
-                    context: context,
-                    name: presets[i].name,
-                    shades: presets[i].shades,
-                    isSelected: appState.accentPreset == presets[i].name,
-                    isDark: isDark,
-                    textColor: textColor,
-                    subTextColor: subTextColor,
-                    onTap: () {
-                      if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                      appState.setAccentPreset(presets[i].name);
-                    },
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Row 2: Amber, Rose, Mono, Custom
+    final currentPreset = appState.accentPreset;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 2-Column Module Grid Pairs
+        for (int r = 0; r < modules.length; r += 2) ...[
+          if (r > 0) const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
-                child: _buildAccentTile(
+                child: _buildSoundstageModuleCard(
                   context: context,
-                  name: presets[4].name,
-                  shades: presets[4].shades,
-                  isSelected: appState.accentPreset == presets[4].name,
                   isDark: isDark,
                   textColor: textColor,
                   subTextColor: subTextColor,
-                  onTap: () {
+                  id: modules[r].id,
+                  title: modules[r].title,
+                  subtitle: modules[r].subtitle,
+                  color: modules[r].color,
+                  pattern: modules[r].pattern,
+                  isSelected: currentPreset == modules[r].id ||
+                      (modules[r].id == 'Prism Cyan' && currentPreset == 'Ocean') ||
+                      (modules[r].id == 'Analog Amber' && currentPreset == 'Amber') ||
+                      (modules[r].id == 'Acoustic Emerald' && currentPreset == 'Sage') ||
+                      (modules[r].id == 'Ultraviolet Hi-Res' && currentPreset == 'Violet') ||
+                      (modules[r].id == 'Crimson Peak' && currentPreset == 'Crimson') ||
+                      (modules[r].id == 'Titanium Mono' && currentPreset == 'Mono'),
+                  onSelect: () {
                     if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                    appState.setAccentPreset(presets[4].name);
+                    appState.setAccentPreset(modules[r].id);
                   },
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _buildAccentTile(
+                child: _buildSoundstageModuleCard(
                   context: context,
-                  name: presets[5].name,
-                  shades: presets[5].shades,
-                  isSelected: appState.accentPreset == presets[5].name,
                   isDark: isDark,
                   textColor: textColor,
                   subTextColor: subTextColor,
-                  onTap: () {
+                  id: modules[r + 1].id,
+                  title: modules[r + 1].title,
+                  subtitle: modules[r + 1].subtitle,
+                  color: modules[r + 1].color,
+                  pattern: modules[r + 1].pattern,
+                  isSelected: currentPreset == modules[r + 1].id ||
+                      (modules[r + 1].id == 'Prism Cyan' && currentPreset == 'Ocean') ||
+                      (modules[r + 1].id == 'Analog Amber' && currentPreset == 'Amber') ||
+                      (modules[r + 1].id == 'Acoustic Emerald' && currentPreset == 'Sage') ||
+                      (modules[r + 1].id == 'Ultraviolet Hi-Res' && currentPreset == 'Violet') ||
+                      (modules[r + 1].id == 'Crimson Peak' && currentPreset == 'Crimson') ||
+                      (modules[r + 1].id == 'Titanium Mono' && currentPreset == 'Mono'),
+                  onSelect: () {
                     if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                    appState.setAccentPreset(presets[5].name);
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Mono Tile
-              Expanded(
-                child: _buildSpecialAccentTile(
-                  context: context,
-                  name: 'Mono',
-                  isSelected: appState.accentPreset == 'Mono',
-                  isDark: isDark,
-                  textColor: textColor,
-                  subTextColor: subTextColor,
-                  icon: Icons.contrast_rounded,
-                  bg: isDark ? const Color(0xFF22262B) : const Color(0xFFE2E4E8),
-                  iconColor: isDark ? Colors.white : const Color(0xFF101828),
-                  onTap: () {
-                    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                    appState.setAccentPreset('Mono');
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Custom Tile (Rainbow Gradient)
-              Expanded(
-                child: _buildSpecialAccentTile(
-                  context: context,
-                  name: 'Custom',
-                  isSelected: appState.accentPreset == 'Custom',
-                  isDark: isDark,
-                  textColor: textColor,
-                  subTextColor: subTextColor,
-                  icon: Icons.colorize_rounded,
-                  gradient: const SweepGradient(
-                    colors: [
-                      Color(0xFFE03030),
-                      Color(0xFFE0A030),
-                      Color(0xFF6B9E6B),
-                      Color(0xFF2196C6),
-                      Color(0xFF7C4DFF),
-                      Color(0xFFE03030),
-                    ],
-                  ),
-                  iconColor: Colors.white,
-                  onTap: () {
-                    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                    appState.setAccentPreset('Custom');
-                    _openCustomColorPicker(context, isDark, textColor, subTextColor);
+                    appState.setAccentPreset(modules[r + 1].id);
                   },
                 ),
               ),
             ],
           ),
         ],
-      ),
+        const SizedBox(height: 10),
+        // Master Card: Custom Resonance
+        _buildCustomResonanceCard(
+          context: context,
+          isDark: isDark,
+          textColor: textColor,
+          subTextColor: subTextColor,
+          isSelected: currentPreset == 'Custom Resonance' || currentPreset == 'Custom',
+          customColor: appState.customColor,
+          onSelect: () {
+            if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+            appState.setAccentPreset('Custom Resonance');
+          },
+          onTune: () {
+            if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+            appState.setAccentPreset('Custom Resonance');
+            _openCustomColorPicker(context, isDark, textColor, subTextColor);
+          },
+        ),
+      ],
     );
   }
 
-  /// Quadrant 2x2 Swatch Tile for color presets
-  Widget _buildAccentTile({
+  Widget _buildSoundstageModuleCard({
     required BuildContext context,
-    required String name,
-    required List<Color> shades,
-    required bool isSelected,
     required bool isDark,
     required Color textColor,
     required Color subTextColor,
-    required VoidCallback onTap,
+    required String id,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required List<double> pattern,
+    required bool isSelected,
+    required VoidCallback onSelect,
   }) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: onSelect,
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          children: [
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? (isDark ? Colors.white : const Color(0xFF101828))
-                        : Colors.transparent,
-                    width: 2.0,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Stack(
-                    children: [
-                      // 2x2 Quadrant Shades
-                      Column(
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(child: Container(color: shades[0])),
-                                Expanded(child: Container(color: shades[1])),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(child: Container(color: shades[2])),
-                                Expanded(child: Container(color: shades[3])),
-                              ],
-                            ),
-                          ),
-                        ],
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? color.withOpacity(isDark ? 0.9 : 0.8)
+                  : (isDark ? const Color(0x22FFFFFF) : const Color(0x14000000)),
+              width: isSelected ? 1.5 : 0.85,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: color.withOpacity(isDark ? 0.22 : 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: GlassSurface(
+            borderRadius: BorderRadius.circular(16),
+            style: GlassStyle.frosted,
+            borderless: true,
+            tintColor: isSelected ? color.withOpacity(isDark ? 0.16 : 0.08) : null,
+            padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        boxShadow: isSelected
+                            ? [BoxShadow(color: color.withOpacity(0.8), blurRadius: 4)]
+                            : null,
                       ),
-                      // Checkmark Badge when selected
-                      if (isSelected)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.45),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check_rounded,
-                              size: 13,
-                              color: Colors.white,
-                            ),
-                          ),
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected ? textColor : textColor.withOpacity(0.9),
+                          letterSpacing: -0.2,
                         ),
-                    ],
-                  ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isSelected)
+                      Container(
+                        width: 17,
+                        height: 17,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check_rounded,
+                          size: 11,
+                          color: AppColors.getOnAccentColor(color, isDark: isDark),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 10),
+                _MiniSoundstageWaveform(
+                  color: color,
+                  heights: pattern,
+                  isAnimated: isSelected,
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontFamily: 'JetBrainsMono',
+                    fontSize: 9.0,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected ? color : subTextColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            const SizedBox(height: 5),
-            Text(
-              name,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? textColor : subTextColor,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  /// Special Tile for Mono and Custom (Rainbow gradient)
-  Widget _buildSpecialAccentTile({
+  Widget _buildCustomResonanceCard({
     required BuildContext context,
-    required String name,
-    required bool isSelected,
     required bool isDark,
     required Color textColor,
     required Color subTextColor,
-    required IconData icon,
-    Color? bg,
-    Gradient? gradient,
-    required Color iconColor,
-    required VoidCallback onTap,
+    required bool isSelected,
+    required Color customColor,
+    required VoidCallback onSelect,
+    required VoidCallback onTune,
   }) {
+    final hexStr = '#${customColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    const pattern = [0.4, 0.65, 0.9, 0.75, 1.0, 0.8, 0.6, 0.45, 0.3];
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: onSelect,
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          children: [
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: bg,
-                  gradient: gradient,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? (isDark ? Colors.white : const Color(0xFF101828))
-                        : Colors.transparent,
-                    width: 2.0,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Stack(
-                    alignment: Alignment.center,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? customColor.withOpacity(isDark ? 0.9 : 0.8)
+                  : (isDark ? const Color(0x22FFFFFF) : const Color(0x14000000)),
+              width: isSelected ? 1.5 : 0.85,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: customColor.withOpacity(isDark ? 0.22 : 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: GlassSurface(
+            borderRadius: BorderRadius.circular(16),
+            style: GlassStyle.frosted,
+            borderless: true,
+            tintColor: isSelected ? customColor.withOpacity(isDark ? 0.16 : 0.08) : null,
+            padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(icon, size: 22, color: iconColor),
-                      if (isSelected)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.45),
+                              color: customColor,
                               shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check_rounded,
-                              size: 13,
-                              color: Colors.white,
+                              boxShadow: isSelected
+                                  ? [BoxShadow(color: customColor.withOpacity(0.8), blurRadius: 4)]
+                                  : null,
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Custom Resonance',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? textColor : textColor.withOpacity(0.9),
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          if (isSelected) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 17,
+                              height: 17,
+                              decoration: BoxDecoration(
+                                color: customColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.check_rounded,
+                                size: 11,
+                                color: AppColors.getOnAccentColor(customColor, isDark: isDark),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      _MiniSoundstageWaveform(
+                        color: customColor,
+                        heights: pattern,
+                        isAnimated: isSelected,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Active Chroma: $hexStr // Tap Tune to customize',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 9.0,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected ? customColor : subTextColor,
                         ),
+                      ),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                // Tune Button Pill
+                GestureDetector(
+                  onTap: onTune,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: customColor.withOpacity(isDark ? 0.22 : 0.14),
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(
+                        color: customColor.withOpacity(0.4),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.palette_outlined,
+                          size: 14,
+                          color: customColor,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'TUNE',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: isDark ? Colors.white : customColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 5),
-            Text(
-              name,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? textColor : subTextColor,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1397,7 +1461,7 @@ class SettingsScreen extends StatelessWidget {
                             child: GestureDetector(
                               onTap: () {
                                 if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                                appState.setAccentPreset('Custom', c);
+                                appState.setAccentPreset('Custom Resonance', c);
                                 setModalState(() {
                                   currentHue = HSVColor.fromColor(c).hue;
                                 });
@@ -1485,7 +1549,7 @@ class SettingsScreen extends StatelessWidget {
                           onChanged: (val) {
                             setModalState(() => currentHue = val);
                             final newCol = HSVColor.fromAHSV(1.0, val, 0.85, 0.95).toColor();
-                            appState.setAccentPreset('Custom', newCol);
+                            appState.setAccentPreset('Custom Resonance', newCol);
                           },
                         ),
                       ),
@@ -1668,6 +1732,102 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MiniSoundstageWaveform extends StatefulWidget {
+  final Color color;
+  final List<double> heights;
+  final bool isAnimated;
+
+  const _MiniSoundstageWaveform({
+    super.key,
+    required this.color,
+    required this.heights,
+    required this.isAnimated,
+  });
+
+  @override
+  State<_MiniSoundstageWaveform> createState() => _MiniSoundstageWaveformState();
+}
+
+class _MiniSoundstageWaveformState extends State<_MiniSoundstageWaveform>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _animController;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isAnimated) {
+      _animController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 1400),
+      )..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _MiniSoundstageWaveform oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isAnimated && _animController == null) {
+      _animController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 1400),
+      )..repeat(reverse: true);
+    } else if (!widget.isAnimated && _animController != null) {
+      _animController?.dispose();
+      _animController = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_animController == null) {
+      return _buildBars(0.0);
+    }
+    return AnimatedBuilder(
+      animation: _animController!,
+      builder: (context, _) => _buildBars(_animController!.value),
+    );
+  }
+
+  Widget _buildBars(double animVal) {
+    return SizedBox(
+      height: 20,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(widget.heights.length, (i) {
+          final baseH = widget.heights[i];
+          final phase = math.sin((animVal * math.pi * 2) + (i * 0.7));
+          final scale = widget.isAnimated ? (baseH * (0.75 + 0.25 * phase)) : baseH;
+          final h = math.max(4.0, 19.0 * scale.clamp(0.15, 1.0));
+
+          return Container(
+            width: 3.5,
+            height: h,
+            margin: const EdgeInsets.only(right: 3.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(1.5),
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  widget.color.withOpacity(0.40),
+                  widget.color,
+                ],
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

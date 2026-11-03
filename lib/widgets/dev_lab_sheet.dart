@@ -249,12 +249,12 @@ class DevLabSheet extends StatelessWidget {
                             spacing: 6,
                             runSpacing: 6,
                             children: [
-                              _accentChip('Mono', Colors.white, appState.accentPreset == 'Mono', isDark, () => appState.setAccentPreset('Mono')),
-                              _accentChip('Cyan', const Color(0xFF00E5FF), appState.accentPreset == 'Cyan' || appState.accentPreset == 'Ocean', isDark, () => appState.setAccentPreset('Ocean')),
-                              _accentChip('Amber', const Color(0xFFFF9500), appState.accentPreset == 'Amber', isDark, () => appState.setAccentPreset('Amber')),
-                              _accentChip('Emerald', const Color(0xFF00E676), appState.accentPreset == 'Emerald' || appState.accentPreset == 'Sage', isDark, () => appState.setAccentPreset('Sage')),
-                              _accentChip('Violet', const Color(0xFF8B5CF6), appState.accentPreset == 'Violet', isDark, () => appState.setAccentPreset('Violet')),
-                              _accentChip('Crimson', const Color(0xFFFF3B30), appState.accentPreset == 'Crimson', isDark, () => appState.setAccentPreset('Crimson')),
+                              _accentChip('Mono', Colors.white, appState.accentPreset == 'Titanium Mono' || appState.accentPreset == 'Mono', isDark, () => appState.setAccentPreset('Titanium Mono')),
+                              _accentChip('Cyan', const Color(0xFF00E5FF), appState.accentPreset == 'Prism Cyan' || appState.accentPreset == 'Ocean', isDark, () => appState.setAccentPreset('Prism Cyan')),
+                              _accentChip('Amber', const Color(0xFFFF9500), appState.accentPreset == 'Analog Amber' || appState.accentPreset == 'Amber', isDark, () => appState.setAccentPreset('Analog Amber')),
+                              _accentChip('Emerald', const Color(0xFF00E676), appState.accentPreset == 'Acoustic Emerald' || appState.accentPreset == 'Sage', isDark, () => appState.setAccentPreset('Acoustic Emerald')),
+                              _accentChip('Violet', const Color(0xFF8B5CF6), appState.accentPreset == 'Ultraviolet Hi-Res' || appState.accentPreset == 'Violet', isDark, () => appState.setAccentPreset('Ultraviolet Hi-Res')),
+                              _accentChip('Crimson', const Color(0xFFFF3B30), appState.accentPreset == 'Crimson Peak' || appState.accentPreset == 'Crimson', isDark, () => appState.setAccentPreset('Crimson Peak')),
                             ],
                           ),
 

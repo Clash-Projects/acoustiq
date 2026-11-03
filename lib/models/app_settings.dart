@@ -11,8 +11,8 @@ class AppState extends ChangeNotifier {
   bool _hapticsEnabled = true;
   bool _amoledMode = true;
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
-  String _accentPreset = 'Ocean'; // 'Crimson', 'Violet', 'Ocean', 'Sage', 'Amber', 'Rose', 'Mono', 'Custom'
-  Color _customColor = const Color(0xFF2196C6);
+  String _accentPreset = 'Prism Cyan'; // 'Prism Cyan', 'Analog Amber', 'Acoustic Emerald', 'Ultraviolet Hi-Res', 'Crimson Peak', 'Titanium Mono', 'Custom Resonance'
+  Color _customColor = const Color(0xFF00E5FF);
   String _wallpaperPreset = 'nebula'; // 'nebula', 'abyss', 'sunset', 'solid', 'custom'
   String? _customWallpaperPath;
 
@@ -52,7 +52,23 @@ class AppState extends ChangeNotifier {
       _hapticsEnabled = _prefs?.getBool('haptics_enabled') ?? true;
       _amoledMode = _prefs?.getBool('amoled_mode') ?? true;
       _themeMode = _prefs?.getString('theme_mode') ?? 'dark';
-      _accentPreset = _prefs?.getString('accent_preset') ?? 'Ocean';
+      _accentPreset = _prefs?.getString('accent_preset') ?? 'Prism Cyan';
+      // Seamless migration from legacy LastWave preset names
+      if (_accentPreset == 'Ocean') {
+        _accentPreset = 'Prism Cyan';
+      } else if (_accentPreset == 'Amber') {
+        _accentPreset = 'Analog Amber';
+      } else if (_accentPreset == 'Sage') {
+        _accentPreset = 'Acoustic Emerald';
+      } else if (_accentPreset == 'Violet') {
+        _accentPreset = 'Ultraviolet Hi-Res';
+      } else if (_accentPreset == 'Crimson') {
+        _accentPreset = 'Crimson Peak';
+      } else if (_accentPreset == 'Mono') {
+        _accentPreset = 'Titanium Mono';
+      } else if (_accentPreset == 'Custom') {
+        _accentPreset = 'Custom Resonance';
+      }
 
       final savedColor = _prefs?.getInt('custom_color_value');
       if (savedColor != null) {
@@ -82,20 +98,27 @@ class AppState extends ChangeNotifier {
 
   Color getAccentColor(BuildContext context) {
     switch (_accentPreset) {
-      case 'Crimson':
-        return const Color(0xFFE03030);
-      case 'Violet':
-        return const Color(0xFF7C4DFF);
+      case 'Prism Cyan':
       case 'Ocean':
-        return const Color(0xFF2196C6);
-      case 'Sage':
-        return const Color(0xFF6B9E6B);
+        return const Color(0xFF00E5FF);
+      case 'Analog Amber':
       case 'Amber':
-        return const Color(0xFFE0A030);
+        return const Color(0xFFFF9500);
+      case 'Acoustic Emerald':
+      case 'Sage':
+        return const Color(0xFF00E676);
+      case 'Ultraviolet Hi-Res':
+      case 'Violet':
+        return const Color(0xFF8B5CF6);
+      case 'Crimson Peak':
+      case 'Crimson':
+        return const Color(0xFFFF3B30);
+      case 'Titanium Mono':
+      case 'Mono':
+        return isCurrentDark(context) ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
       case 'Rose':
         return const Color(0xFFE0507A);
-      case 'Mono':
-        return isCurrentDark(context) ? Colors.white : const Color(0xFF101828);
+      case 'Custom Resonance':
       case 'Custom':
       default:
         return _customColor;
