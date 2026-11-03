@@ -127,15 +127,36 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
   void _showExplanationTooltip(BuildContext context, bool isDark, Color textColor, Color subTextColor) {
     if (appState.hapticsEnabled) HapticFeedback.selectionClick();
     final isLossless = widget.status == 'genuine';
+    final activeAccent = appState.getAccentColor(context);
+
     showAppGlassDialog(
       context: context,
-      icon: isLossless ? Icons.verified_rounded : Icons.info_outline_rounded,
+      icon: isLossless
+          ? Icons.verified_rounded
+          : (widget.status == 'suspicious' ? Icons.warning_amber_rounded : Icons.cancel_rounded),
       iconColor: widget.statusColor,
-      title: isLossless ? 'Genuine Lossless Audio' : 'Compressed / Cutoff Audio',
-      content: isLossless
-          ? 'This audio file preserves the complete acoustic spectrum without lossy frequency compression. Frequencies extend smoothly past 20 kHz to the recording limit.'
-          : 'This audio file cuts off abruptly around ${widget.cutoffKhz.toStringAsFixed(1)} kHz. In typical MP3/AAC compression, audio above 16-18 kHz is discarded to save file size.',
-      confirmLabel: 'Got it',
+      title: isLossless ? 'Genuine Lossless Audio' : (widget.status == 'suspicious' ? 'Suspicious Audio' : 'Fake Lossless Audio'),
+      content: '',
+      confirmLabel: 'Understood',
+      customBody: _MetricExplanationDialogContent(
+        isDark: isDark,
+        textColor: textColor,
+        subTextColor: subTextColor,
+        accentColor: activeAccent,
+        summary: 'Acoustic Spectrum inspects high-frequency audio harmonics to detect lossy compression and upscaled files.',
+        point1Title: 'Purity Score (${widget.score.round()}%)',
+        point1Desc: 'Measures harmonic energy density across the ultrasonic spectrum. Authentic studio recordings score 85% to 99%.',
+        point2Title: 'Frequency Cutoff (${widget.cutoffKhz.toStringAsFixed(1)} kHz)',
+        point2Desc: isLossless
+            ? 'Frequencies extend smoothly past 20 kHz to the studio ceiling with no unnatural compression barriers.'
+            : 'Frequencies abruptly cut off near ${widget.cutoffKhz.toStringAsFixed(1)} kHz, characteristic of an MP3 converted into a FLAC.',
+        statusLabel: isLossless ? 'VERIFIED LOSSLESS' : (widget.status == 'suspicious' ? 'SUSPICIOUS CUTOFF' : 'FAKE UPSAMPLED'),
+        statusDesc: widget.verdict ?? (isLossless ? 'Full studio dynamic bandwidth intact.' : 'Brickwall frequency cutoff detected.'),
+        statusIcon: isLossless
+            ? Icons.verified_rounded
+            : (widget.status == 'suspicious' ? Icons.warning_amber_rounded : Icons.cancel_rounded),
+        statusColor: widget.statusColor,
+      ),
     );
   }
 
@@ -867,11 +888,18 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 children: [
                   Row(
                     children: [
-                      AnimatedStatusBadge(
-                        status: widget.status,
-                        color: widget.statusColor,
-                        size: 32,
-                        animatePulse: true,
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: widget.statusColor.withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: AnimatedStatusBadge(
+                          status: widget.status,
+                          color: widget.statusColor,
+                          size: 18,
+                          animatePulse: true,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -1607,76 +1635,228 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     final bool hasDeadZone = (widget.score < 80 || widget.status != 'genuine') &&
         widget.cutoffKhz < (widget.maxKhz - 0.7);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0x22161B22) : const Color(0x0C000000),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? const Color(0x3330363D) : const Color(0x18000000),
-          width: 0.8,
+    return GestureDetector(
+      onTap: () => _showSpectrogramGuide(context, isDark, textColor, subTextColor, activeAccent),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0x22161B22) : const Color(0x0C000000),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0x3330363D) : const Color(0x18000000),
+            width: 0.8,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'VISUAL GUIDE',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: subTextColor.withOpacity(0.7),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.help_outline_rounded,
+                  size: 11,
+                  color: subTextColor.withOpacity(0.6),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildLegendItem(
+                    swatch: _buildDottedCyanSwatch(),
+                    title: '20k CD Standard',
+                    desc: 'Studio CD limit',
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildLegendItem(
+                    swatch: _buildSolidLineSwatch(widget.statusColor),
+                    title: 'Acoustic Reach',
+                    desc: '${widget.cutoffKhz.toStringAsFixed(1)} kHz cutoff',
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: hasDeadZone
+                      ? _buildLegendItem(
+                          swatch: _buildHatchedRedSwatch(),
+                          title: 'Dead Zone',
+                          desc: 'MP3 compression drop',
+                          textColor: textColor,
+                          subTextColor: subTextColor,
+                        )
+                      : _buildLegendItem(
+                          swatch: _buildCheckmarkSwatch(),
+                          title: 'Full Spectrum',
+                          desc: 'Zero dead zones',
+                          textColor: textColor,
+                          subTextColor: subTextColor,
+                        ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildLegendItem(
+                    swatch: _buildInfernoGradientSwatch(),
+                    title: 'Harmonic Detail',
+                    desc: 'Brighter = louder audio',
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      child: Column(
+    );
+  }
+
+  void _showSpectrogramGuide(
+    BuildContext context,
+    bool isDark,
+    Color textColor,
+    Color subTextColor,
+    Color activeAccent,
+  ) {
+    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+    final bool hasDeadZone = (widget.score < 80 || widget.status != 'genuine') &&
+        widget.cutoffKhz < (widget.maxKhz - 0.7);
+
+    showAppGlassDialog(
+      context: context,
+      icon: Icons.auto_graph_rounded,
+      iconColor: const Color(0xFF00E5FF),
+      title: 'Spectrogram Visual Guide',
+      content: '',
+      confirmLabel: 'Understood',
+      customBody: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildLegendItem(
-                  swatch: _buildDottedCyanSwatch(),
-                  title: '20k CD Standard',
-                  desc: 'Studio CD limit',
-                  textColor: textColor,
-                  subTextColor: subTextColor,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildLegendItem(
-                  swatch: _buildSolidLineSwatch(widget.statusColor),
-                  title: 'Acoustic Reach',
-                  desc: '${widget.cutoffKhz.toStringAsFixed(1)} kHz cutoff',
-                  textColor: textColor,
-                  subTextColor: subTextColor,
-                ),
-              ),
-            ],
+          Text(
+            'The spectrogram plots audio frequency (height) against time (left to right). Colors and marker lines explain the audio authenticity:',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // 1. Cyan Dotted Line
+          _buildGuideSwatchRow(
+            swatch: _buildDottedCyanSwatch(),
+            title: '1. Cyan Dashed Line (20 kHz Limit)',
+            desc: 'The studio CD benchmark. Genuine studio master tracks maintain musical energy reaching up to or above this line.',
+            textColor: textColor,
+            subTextColor: subTextColor,
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: hasDeadZone
-                    ? _buildLegendItem(
-                        swatch: _buildHatchedRedSwatch(),
-                        title: 'Dead Zone',
-                        desc: 'MP3 compression drop',
-                        textColor: textColor,
-                        subTextColor: subTextColor,
-                      )
-                    : _buildLegendItem(
-                        swatch: _buildCheckmarkSwatch(),
-                        title: 'Full Spectrum',
-                        desc: 'Zero dead zones',
-                        textColor: textColor,
-                        subTextColor: subTextColor,
-                      ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildLegendItem(
-                  swatch: _buildInfernoGradientSwatch(),
-                  title: 'Harmonic Detail',
-                  desc: 'Brighter = louder audio',
-                  textColor: textColor,
-                  subTextColor: subTextColor,
-                ),
-              ),
-            ],
+
+          // 2. Solid Line (Cutoff)
+          _buildGuideSwatchRow(
+            swatch: _buildSolidLineSwatch(widget.statusColor),
+            title: '2. Solid Line (${widget.cutoffKhz.toStringAsFixed(1)} kHz Reach)',
+            desc: 'Shows the exact ceiling where real instrument harmonics stop in this audio file.',
+            textColor: textColor,
+            subTextColor: subTextColor,
+          ),
+          const SizedBox(height: 10),
+
+          // 3. Dead Zone or Full Spectrum
+          _buildGuideSwatchRow(
+            swatch: hasDeadZone ? _buildHatchedRedSwatch() : _buildCheckmarkSwatch(),
+            title: hasDeadZone ? '3. Red Hatched Area (Dead Zone)' : '3. Full Spectrum (Zero Dead Zones)',
+            desc: hasDeadZone
+                ? 'Empty frequency gap where sound was erased by lossy MP3 compression.'
+                : 'No compression cutoff. Frequencies naturally extend across the full audio range.',
+            textColor: textColor,
+            subTextColor: subTextColor,
+          ),
+          const SizedBox(height: 10),
+
+          // 4. Color Gradient
+          _buildGuideSwatchRow(
+            swatch: _buildInfernoGradientSwatch(),
+            title: '4. Inferno Gradient (Sound Energy)',
+            desc: 'Dark purple is quiet/silence (-90 dB). Bright yellow and orange show loud musical harmonics (0 dB).',
+            textColor: textColor,
+            subTextColor: subTextColor,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGuideSwatchRow({
+    required Widget swatch,
+    required String title,
+    required String desc,
+    required Color textColor,
+    required Color subTextColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 30,
+          height: 22,
+          alignment: Alignment.center,
+          child: swatch,
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  color: subTextColor,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1798,40 +1978,95 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
 
   void _showMetricExplanation(BuildContext context, String metric) {
     if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+    final isDark = appState.isCurrentDark(context);
+    final textColor = appState.getTextColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+    final activeAccent = appState.getAccentColor(context);
+
     String title;
-    String content;
     IconData icon;
     Color iconColor;
+    String summary;
+    String point1Title;
+    String point1Desc;
+    String point2Title;
+    String point2Desc;
+    String statusLabel;
+    String statusDesc;
+    IconData statusIcon;
+    Color statusColor;
 
     switch (metric) {
       case 'reach':
+        final isGenuine = widget.cutoffKhz >= 20.0;
         title = 'Acoustic Reach (${widget.cutoffKhz.toStringAsFixed(1)} kHz)';
         icon = Icons.graphic_eq_rounded;
         iconColor = widget.statusColor;
-        content = widget.cutoffKhz >= 20.5
-            ? 'This track preserves full acoustic frequencies up to ${widget.cutoffKhz.toStringAsFixed(1)} kHz. Authentic studio recordings reach 20–24 kHz, ensuring crisp cymbals and natural harmonic overtones.'
-            : 'Frequencies sharply stop at ${widget.cutoffKhz.toStringAsFixed(1)} kHz. In lossy MP3/AAC compression, audio above 16–18 kHz is permanently discarded to save file size.';
+        summary = 'The highest sound frequency where real musical instruments and overtones exist in this file.';
+        point1Title = 'Studio Master (20–24 kHz)';
+        point1Desc = 'Real studio recordings preserve crisp cymbals, air, and room reverb all the way up to 22+ kHz.';
+        point2Title = 'Compressed MP3 Cutoff (15–18 kHz)';
+        point2Desc = 'MP3 and AAC compression permanently removes all audio above 16–18 kHz to shrink file size.';
+        statusLabel = '${widget.cutoffKhz.toStringAsFixed(1)} kHz Acoustic Reach';
+        statusDesc = isGenuine
+            ? 'Full dynamic range preserved. Frequencies reach studio master standards.'
+            : 'Sharp compression cutoff detected. Frequencies above ${widget.cutoffKhz.toStringAsFixed(1)} kHz are missing.';
+        statusIcon = isGenuine ? Icons.verified_rounded : Icons.cancel_rounded;
+        statusColor = widget.statusColor;
         break;
+
       case 'nyquist':
-        title = 'Frequency Ceiling (${widget.maxKhz.toStringAsFixed(1)} kHz)';
+        title = 'Frequency Limit (${widget.maxKhz.toStringAsFixed(1)} kHz)';
         icon = Icons.shield_outlined;
         iconColor = const Color(0xFF00E5FF);
-        content = 'The Nyquist theorem states that digital audio can only store sound frequencies up to half its sampling rate (Sampling Rate ÷ 2). A 44.1 kHz file has a 22.05 kHz ceiling, while 48 kHz reaches 24 kHz.';
+        summary = 'The theoretical maximum frequency the audio container file can mathematically store.';
+        point1Title = 'The 50% Rule (Nyquist Limit)';
+        point1Desc = 'Digital audio can only hold frequencies up to half its sample rate (Sampling Rate ÷ 2). Standard CD (44.1k) caps at 22.05 kHz.';
+        point2Title = 'The Fake Hi-Res Trap';
+        point2Desc = 'A file can claim 96 kHz (48 kHz limit), but if actual sound stops at 18 kHz, it is a fake upsampled MP3.';
+        statusLabel = '${widget.maxKhz.toStringAsFixed(1)} kHz Storage Ceiling';
+        statusDesc = widget.cutoffKhz >= (widget.maxKhz - 1.5)
+            ? 'Frequencies fill the container ceiling cleanly.'
+            : 'Audio stops well below the format ceiling (${(widget.maxKhz - widget.cutoffKhz).toStringAsFixed(1)} kHz unused headroom).';
+        statusIcon = Icons.shield_outlined;
+        statusColor = const Color(0xFF00E5FF);
         break;
+
       case 'sample_rate':
         final rateKhz = widget.sampleRate != null ? (widget.sampleRate! / 1000).toStringAsFixed(1) : '44.1';
-        title = 'Sampling Rate ($rateKhz kHz)';
+        title = 'Sample Rate ($rateKhz kHz)';
         icon = Icons.speed_rounded;
         iconColor = const Color(0xFF7C4DFF);
-        content = 'The number of audio snapshots captured every second. Standard CD audio uses 44.1 kHz (44,100 samples/sec). Studio master Hi-Res audio uses 48, 88.2, 96, or 192 kHz.';
+        summary = 'How many discrete audio measurements (snapshots) are taken every second.';
+        point1Title = 'Standard CD Audio (44.1 kHz)';
+        point1Desc = 'Captures 44,100 samples every second. This perfectly captures every sound up to the human hearing limit (20 kHz).';
+        point2Title = 'Studio Hi-Res Audio (48k – 96k)';
+        point2Desc = 'Captures 48,000 to 96,000 samples/sec for ultrasonic frequencies and ultra-smooth analog reconstruction.';
+        statusLabel = '$rateKhz kHz Sampling Rate';
+        statusDesc = widget.sampleRate != null && widget.sampleRate! > 44100
+            ? 'Studio Hi-Res sample rate detected.'
+            : 'Standard studio CD sample rate.';
+        statusIcon = Icons.speed_rounded;
+        statusColor = const Color(0xFF7C4DFF);
         break;
+
       case 'bit_depth':
       default:
         final bits = widget.bitDepth ?? 16;
         title = 'True Bit Depth ($bits-bit)';
         icon = Icons.memory_rounded;
         iconColor = const Color(0xFFFF9500);
-        content = 'The dynamic volume resolution of each sample. Standard 16-bit audio provides 65,536 volume steps (96 dB dynamic range). Studio 24-bit audio provides 16.7 million steps (144 dB). AcoustiQ verifies whether a 24-bit file has real audio resolution or is just a 16-bit track padded with zeroes.';
+        summary = 'The dynamic volume resolution and dynamic range of each audio sample.';
+        point1Title = '16-Bit Audio (CD Quality)';
+        point1Desc = 'Provides 65,536 distinct volume steps (~96 dB dynamic range). Crystal clear for music playback.';
+        point2Title = '24-Bit Studio Master';
+        point2Desc = 'Provides 16.7 million steps (~144 dB dynamic range). AcoustiQ verifies if lower 8 bits carry real audio data.';
+        statusLabel = '$bits-Bit Volume Resolution';
+        statusDesc = bits >= 24
+            ? 'Studio master 24-bit resolution confirmed.'
+            : 'Standard 16-bit studio CD dynamic range.';
+        statusIcon = Icons.memory_rounded;
+        statusColor = const Color(0xFFFF9500);
         break;
     }
 
@@ -1840,8 +2075,23 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
       icon: icon,
       iconColor: iconColor,
       title: title,
-      content: content,
+      content: '',
       confirmLabel: 'Understood',
+      customBody: _MetricExplanationDialogContent(
+        isDark: isDark,
+        textColor: textColor,
+        subTextColor: subTextColor,
+        accentColor: activeAccent,
+        summary: summary,
+        point1Title: point1Title,
+        point1Desc: point1Desc,
+        point2Title: point2Title,
+        point2Desc: point2Desc,
+        statusLabel: statusLabel,
+        statusDesc: statusDesc,
+        statusIcon: statusIcon,
+        statusColor: statusColor,
+      ),
     );
   }
 
@@ -2318,4 +2568,170 @@ class _HatchedBoxPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HatchedBoxPainter oldDelegate) => oldDelegate.color != color;
+}
+
+class _MetricExplanationDialogContent extends StatelessWidget {
+  final bool isDark;
+  final Color textColor;
+  final Color subTextColor;
+  final Color accentColor;
+  final String summary;
+  final String point1Title;
+  final String point1Desc;
+  final String point2Title;
+  final String point2Desc;
+  final String statusLabel;
+  final String statusDesc;
+  final IconData statusIcon;
+  final Color statusColor;
+
+  const _MetricExplanationDialogContent({
+    required this.isDark,
+    required this.textColor,
+    required this.subTextColor,
+    required this.accentColor,
+    required this.summary,
+    required this.point1Title,
+    required this.point1Desc,
+    required this.point2Title,
+    required this.point2Desc,
+    required this.statusLabel,
+    required this.statusDesc,
+    required this.statusIcon,
+    required this.statusColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          summary,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: textColor,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        _buildPoint('1', point1Title, point1Desc, accentColor),
+        const SizedBox(height: 10),
+        _buildPoint('2', point2Title, point2Desc, accentColor),
+        const SizedBox(height: 14),
+
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: statusColor.withOpacity(isDark ? 0.16 : 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: statusColor.withOpacity(0.35),
+              width: 0.9,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(isDark ? 0.22 : 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(statusIcon, size: 17, color: statusColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      statusDesc,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: subTextColor,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPoint(String number, String title, String desc, Color badgeColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: badgeColor.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            number,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: badgeColor,
+            ),
+          ),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11.5,
+                  color: subTextColor,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

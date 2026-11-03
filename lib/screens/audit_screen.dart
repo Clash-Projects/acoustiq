@@ -967,8 +967,8 @@ class _AuditScreenState extends State<AuditScreen> {
                     AnimatedStatusBadge(
                       status: track.status,
                       color: statusColor,
-                      size: 17,
-                      animatePulse: track.status == 'genuine',
+                      size: 16,
+                      animatePulse: false,
                     ),
                     const SizedBox(width: 5),
                     Text(

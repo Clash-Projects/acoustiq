@@ -220,32 +220,6 @@ class SettingsScreen extends StatelessWidget {
                             ),
                           );
                         case 1:
-                          // Visualizer Stage Switcher
-                          return ExpressiveGroupRow(
-                            icon: Icons.auto_graph_rounded,
-                            iconColor: activeAccent,
-                            iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                            title: 'Sound Stage Visualizer',
-                            subtitle: 'Default style for the audio purity stage',
-                            position: position,
-                            trailing: Container(
-                              height: 28,
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _microVisualizerButton('gauge', Icons.speed_rounded, appState.visualizerMode, isDark, activeAccent),
-                                  _microVisualizerButton('hybrid', Icons.electric_bolt_rounded, appState.visualizerMode, isDark, activeAccent),
-                                  _microVisualizerButton('waveform', Icons.bar_chart_rounded, appState.visualizerMode, isDark, activeAccent),
-                                ],
-                              ),
-                            ),
-                          );
-                        case 2:
                           // Haptic Feedback Switch
                           return ExpressiveGroupRow(
                             icon: Icons.vibration_rounded,
@@ -263,7 +237,7 @@ class SettingsScreen extends StatelessWidget {
                               },
                             ),
                           );
-                        case 3:
+                        case 2:
                         default:
                           // Hardware MediaCodec Audio Engine Status
                           return ExpressiveGroupRow(
