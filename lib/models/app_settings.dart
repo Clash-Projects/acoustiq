@@ -15,6 +15,7 @@ class AppState extends ChangeNotifier {
   Color _customColor = const Color(0xFF00E5FF);
   String _wallpaperPreset = 'nebula'; // 'nebula', 'abyss', 'sunset', 'solid', 'custom'
   String? _customWallpaperPath;
+  String _motionPreset = 'full'; // 'full' (120Hz micro-interactions), 'reduced' (transitions only), 'off' (static battery saver)
 
   bool _audiophileMode = false; // false = Everyday Music Lover, true = Acoustic Engineer / Pro
   String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
@@ -40,6 +41,10 @@ class AppState extends ChangeNotifier {
   Color get customColor => _customColor;
   String get wallpaperPreset => _wallpaperPreset;
   String? get customWallpaperPath => _customWallpaperPath;
+  String get motionPreset => _motionPreset;
+  bool get isFullMotion => _motionPreset == 'full';
+  bool get isReducedMotion => _motionPreset == 'reduced';
+  bool get isMotionOff => _motionPreset == 'off';
   List<FlacInfo> get sharedLibrary => _sharedLibrary;
   String? get lastScannedFolder => _lastScannedFolder;
   List<String> get recentFilePaths => _recentFilePaths;
@@ -77,6 +82,7 @@ class AppState extends ChangeNotifier {
 
       _wallpaperPreset = _prefs?.getString('wallpaper_preset') ?? 'nebula';
       _customWallpaperPath = _prefs?.getString('custom_wallpaper_path');
+      _motionPreset = _prefs?.getString('motion_preset') ?? 'full';
 
       _audiophileMode = _prefs?.getBool('audiophile_mode') ?? false;
       _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
@@ -210,6 +216,12 @@ class AppState extends ChangeNotifier {
   void setVisualizerMode(String mode) {
     _visualizerMode = mode;
     _prefs?.setString('visualizer_mode', mode);
+    notifyListeners();
+  }
+
+  void setMotionPreset(String preset) {
+    _motionPreset = preset;
+    _prefs?.setString('motion_preset', preset);
     notifyListeners();
   }
 
