@@ -11,7 +11,7 @@ class AppState extends ChangeNotifier {
   bool _hapticsEnabled = true;
   bool _amoledMode = true;
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
-  String _accentPreset = 'Prism Cyan'; // 'Prism Cyan', 'Analog Amber', 'Acoustic Emerald', 'Ultraviolet Hi-Res', 'Crimson Peak', 'Titanium Mono', 'Custom Resonance'
+  String _accentPreset = 'Cyan'; // 'Cyan', 'Amber', 'Emerald', 'Violet', 'Crimson', 'Monochrome', 'Custom'
   Color _customColor = const Color(0xFF00E5FF);
   String _wallpaperPreset = 'nebula'; // 'nebula', 'abyss', 'sunset', 'solid', 'custom'
   String? _customWallpaperPath;
@@ -57,22 +57,22 @@ class AppState extends ChangeNotifier {
       _hapticsEnabled = _prefs?.getBool('haptics_enabled') ?? true;
       _amoledMode = _prefs?.getBool('amoled_mode') ?? true;
       _themeMode = _prefs?.getString('theme_mode') ?? 'dark';
-      _accentPreset = _prefs?.getString('accent_preset') ?? 'Prism Cyan';
-      // Seamless migration from legacy LastWave preset names
-      if (_accentPreset == 'Ocean') {
-        _accentPreset = 'Prism Cyan';
-      } else if (_accentPreset == 'Amber') {
-        _accentPreset = 'Analog Amber';
-      } else if (_accentPreset == 'Sage') {
-        _accentPreset = 'Acoustic Emerald';
-      } else if (_accentPreset == 'Violet') {
-        _accentPreset = 'Ultraviolet Hi-Res';
-      } else if (_accentPreset == 'Crimson') {
-        _accentPreset = 'Crimson Peak';
-      } else if (_accentPreset == 'Mono') {
-        _accentPreset = 'Titanium Mono';
-      } else if (_accentPreset == 'Custom') {
-        _accentPreset = 'Custom Resonance';
+      _accentPreset = _prefs?.getString('accent_preset') ?? 'Cyan';
+      // Seamless migration from legacy LastWave and prototype preset names
+      if (_accentPreset == 'Ocean' || _accentPreset == 'Prism Cyan') {
+        _accentPreset = 'Cyan';
+      } else if (_accentPreset == 'Amber' || _accentPreset == 'Analog Amber') {
+        _accentPreset = 'Amber';
+      } else if (_accentPreset == 'Sage' || _accentPreset == 'Acoustic Emerald') {
+        _accentPreset = 'Emerald';
+      } else if (_accentPreset == 'Violet' || _accentPreset == 'Ultraviolet Hi-Res') {
+        _accentPreset = 'Violet';
+      } else if (_accentPreset == 'Crimson' || _accentPreset == 'Crimson Peak') {
+        _accentPreset = 'Crimson';
+      } else if (_accentPreset == 'Mono' || _accentPreset == 'Titanium Mono') {
+        _accentPreset = 'Monochrome';
+      } else if (_accentPreset == 'Custom' || _accentPreset == 'Custom Resonance') {
+        _accentPreset = 'Custom';
       }
 
       final savedColor = _prefs?.getInt('custom_color_value');
@@ -104,26 +104,30 @@ class AppState extends ChangeNotifier {
 
   Color getAccentColor(BuildContext context) {
     switch (_accentPreset) {
+      case 'Cyan':
       case 'Prism Cyan':
       case 'Ocean':
         return const Color(0xFF00E5FF);
-      case 'Analog Amber':
       case 'Amber':
+      case 'Analog Amber':
         return const Color(0xFFFF9500);
+      case 'Emerald':
       case 'Acoustic Emerald':
       case 'Sage':
         return const Color(0xFF00E676);
-      case 'Ultraviolet Hi-Res':
       case 'Violet':
+      case 'Ultraviolet Hi-Res':
         return const Color(0xFF8B5CF6);
-      case 'Crimson Peak':
       case 'Crimson':
+      case 'Crimson Peak':
         return const Color(0xFFFF3B30);
+      case 'Monochrome':
       case 'Titanium Mono':
       case 'Mono':
         return isCurrentDark(context) ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
       case 'Rose':
         return const Color(0xFFE0507A);
+      case 'Custom Color':
       case 'Custom Resonance':
       case 'Custom':
       default:

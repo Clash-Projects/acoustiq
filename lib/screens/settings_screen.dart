@@ -198,12 +198,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             accentColor: activeAccent,
             icon: Icons.palette_rounded,
             title: 'Appearance & Visuals',
-            subtitle: 'Soundstage modules, ambient glass wallpapers, themes & 120Hz motion',
+            subtitle: 'Accent colors, ambient wallpapers, theme modes & smooth animations',
             badges: [
-              appState.accentPreset,
-              appState.amoledMode && isDark ? 'AMOLED' : (isDark ? 'Graphite' : 'Light'),
-              if (appState.isLiquidGlass) 'Liquid Glass',
-              motionLabel,
+              appState.accentPreset.toUpperCase(),
+              appState.amoledMode && isDark ? 'PURE BLACK' : (isDark ? 'DARK' : 'LIGHT'),
+              if (appState.isLiquidGlass) 'GLASS BLUR',
+              motionLabel.toUpperCase(),
             ],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
@@ -220,12 +220,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             accentColor: AppColors.genuineEmerald,
             icon: Icons.memory_rounded,
             title: 'Audio Engine & Detection',
-            subtitle: 'MediaCodec DSP hardware pipeline, stage visualizer & tactile haptics',
+            subtitle: 'Lossless audio decoder, visualizer style & haptic feedback',
             badges: [
-              'DSP ACTIVE',
-              '4096-pt FFT',
-              '${appState.visualizerMode.toUpperCase()} STAGE',
-              if (appState.hapticsEnabled) 'Haptics ON',
+              'AUDIO READY',
+              '${appState.visualizerMode.toUpperCase()} VISUALIZER',
+              if (appState.hapticsEnabled) 'HAPTICS ON',
             ],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
@@ -242,11 +241,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             accentColor: const Color(0xFFA78BFA),
             icon: Icons.library_music_rounded,
             title: 'Library & Storage Management',
-            subtitle: 'Audited library index, source directories & 1-tap fast scanner',
+            subtitle: 'Music folders, audited tracks & library scanning',
             badges: [
               '$libraryCount TRACKS',
-              if (appState.lastScannedFolder != null) 'FOLDER LINKED' else 'NO FOLDER',
-              'SAF READY',
+              if (appState.lastScannedFolder != null) 'FOLDER LINKED' else 'READY TO SCAN',
             ],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
@@ -263,72 +261,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             accentColor: const Color(0xFF38BDF8),
             icon: Icons.info_outline_rounded,
             title: 'Diagnostics & About AcoustiQ',
-            subtitle: 'Engine version, QA Laboratory, architecture & offline privacy',
+            subtitle: 'App version, verification standards & privacy guarantee',
             badges: [
-              'BUILD #62',
-              'ARM64-V8A',
-              if (appState.devModeEnabled) 'DEV LAB UNLOCKED',
-              '100% OFFLINE',
+              'VERSION 1.1.0',
+              'OFFLINE & PRIVATE',
+              if (appState.devModeEnabled) 'DEV LAB',
             ],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = 3);
-            },
-          ),
-
-          const SizedBox(height: 8),
-
-          // Quick Actions Section
-          buildSectionHeader('Quick Actions', subTextColor),
-          ExpressiveGroup(
-            rowCount: appState.devModeEnabled ? 2 : 1,
-            itemBuilder: (context, index, position) {
-              if (index == 0) {
-                return ExpressiveGroupRow(
-                  icon: Icons.flash_on_rounded,
-                  iconColor: AppColors.genuineEmerald,
-                  iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-                  title: '1-Tap Quick Scan Music',
-                  subtitle: '/storage/emulated/0/Music • Direct scan with zero SAF prompt',
-                  position: position,
-                  onTap: () => _quickScanDeviceMusic(context),
-                  trailing: Icon(Icons.play_arrow_rounded, color: AppColors.genuineEmerald, size: 20),
-                );
-              } else {
-                return ExpressiveGroupRow(
-                  icon: Icons.science_rounded,
-                  iconColor: activeAccent,
-                  iconBgColor: activeAccent.withOpacity(isDark ? 0.30 : 0.12),
-                  title: 'AcoustiQ Dev Lab & QA Suite',
-                  subtitle: 'Mock audio injection, live theme matrix & modal contrast QA',
-                  position: position,
-                  onTap: () => showDevLabSheet(context),
-                  trailing: LuminousFeedback(
-                    onTap: () => showDevLabSheet(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: activeAccent.withOpacity(isDark ? 0.25 : 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: activeAccent.withOpacity(0.4),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        'Open Lab',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: activeAccent,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
             },
           ),
         ],
@@ -591,7 +532,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSubPageHeader(
             title: 'Appearance & Visuals',
-            subtitle: 'Palettes, wallpapers, glass materials & 120Hz physics',
+            subtitle: 'Accent colors, ambient wallpapers, theme modes & animations',
             onBack: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = null);
@@ -602,20 +543,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             isDark: isDark,
           ),
 
-          // 1. ACOUSTIC SOUNDSTAGE PALETTE
-          buildSectionHeader('Acoustic Soundstage Palette', subTextColor),
-          _buildSoundstagePalette(context, isDark, textColor, subTextColor),
+          // 1. ACCENT COLOR GRID
+          buildSectionHeader('Accent Color', subTextColor),
+          _buildAccentColorGrid(context, isDark, textColor, subTextColor),
 
           const SizedBox(height: 16),
 
-          // 2. AMBIENT ENVIRONMENT & WALLPAPER
-          buildSectionHeader('Ambient Glass Environment', subTextColor),
+          // 2. AMBIENT WALLPAPER
+          buildSectionHeader('Ambient Wallpaper', subTextColor),
           _buildWallpaperSection(context, isDark, textColor, subTextColor, activeAccent),
 
           const SizedBox(height: 16),
 
-          // 3. THEME & GLASS MATERIALS
-          buildSectionHeader('Theme & Materials', subTextColor),
+          // 3. DISPLAY & SURFACES
+          buildSectionHeader('Display & Surfaces', subTextColor),
           ExpressiveGroup(
             rowCount: 3,
             itemBuilder: (context, index, position) {
@@ -627,12 +568,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.brightness_2_rounded,
                     iconColor: const Color(0xFFC084FC),
                     iconBgColor: isDark ? const Color(0x30C084FC) : const Color(0xFFF3E8FF),
-                    title: 'AMOLED Pure Black',
+                    title: 'Pure Black (OLED)',
                     subtitle: isDark
                         ? (appState.amoledMode
-                            ? 'True 0-nit pitch black (#000000) for OLED panels'
-                            : 'Deep obsidian graphite (#12161A)')
-                        : 'Active only in dark mode',
+                            ? 'Deep pure black backgrounds to save battery on OLED screens'
+                            : 'Soft graphite dark backgrounds')
+                        : 'Active only when dark mode is enabled',
                     position: position,
                     trailing: Switch.adaptive(
                       value: appState.amoledMode,
@@ -649,10 +590,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.blur_on_rounded,
                     iconColor: activeAccent,
                     iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                    title: 'Liquid Glass Blur',
+                    title: 'Glass Blur Effect',
                     subtitle: appState.isLiquidGlass
-                        ? 'Frosted optical blur & ambient glass styling'
-                        : 'Solid opaque surfaces (Battery saver)',
+                        ? 'Frosted translucent glass across cards and dialogs'
+                        : 'Solid opaque surfaces to save battery on older devices',
                     position: position,
                     trailing: Switch.adaptive(
                       value: appState.isLiquidGlass,
@@ -669,7 +610,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 16),
 
-          // 4. ANIMATIONS & MOTION HUB (Item 3.3)
+          // 4. MOTION & ANIMATIONS
           _buildMotionHubSection(context, isDark, textColor, subTextColor, activeAccent),
         ],
       ),
@@ -685,24 +626,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     final currentPreset = appState.motionPreset;
 
-    String desc;
+    final IconData statusIcon;
+    final String statusBadge;
+    final Color statusBadgeBg;
+    final Color statusBadgeText;
+    final String statusTitle;
+    final String statusBody1;
+    final String statusBody2;
+
     switch (currentPreset) {
       case 'reduced':
-        desc = 'Essential page transitions only. Zero continuous looping tickers for reduced battery consumption.';
+        statusIcon = Icons.tune_rounded;
+        statusBadge = 'BALANCED';
+        statusBadgeBg = AppColors.suspiciousAmber.withOpacity(isDark ? 0.25 : 0.15);
+        statusBadgeText = AppColors.suspiciousAmber;
+        statusTitle = 'Essential Screen Transitions';
+        statusBody1 = 'Page transitions remain smooth and responsive.';
+        statusBody2 = 'Continuous looping waveforms are paused to save battery.';
         break;
       case 'off':
-        desc = 'Instant static rendering. All background waveform and spectrum tickers disabled for maximum battery saving.';
+        statusIcon = Icons.block_rounded;
+        statusBadge = 'BATTERY SAVER';
+        statusBadgeBg = const Color(0xFF64748B).withOpacity(isDark ? 0.25 : 0.15);
+        statusBadgeText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+        statusTitle = 'Instant Static Rendering';
+        statusBody1 = 'Zero animation overhead across the entire app.';
+        statusBody2 = 'Maximum battery life and optimal performance on low-power devices.';
         break;
       case 'full':
       default:
-        desc = 'Full 120Hz high-refresh animations, continuous dancing waveforms, and tactile spring dynamics.';
+        statusIcon = Icons.bolt_rounded;
+        statusBadge = '120Hz SMOOTH';
+        statusBadgeBg = AppColors.genuineEmerald.withOpacity(isDark ? 0.25 : 0.15);
+        statusBadgeText = AppColors.genuineEmerald;
+        statusTitle = 'Full Fluid Animations';
+        statusBody1 = 'High-refresh 120Hz screen transitions and active visualizers.';
+        statusBody2 = 'Recommended for modern displays for maximum visual fluidity.';
         break;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        buildSectionHeader('Animations & Motion', subTextColor),
+        buildSectionHeader('Motion & Animations', subTextColor),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -736,7 +702,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Motion Architecture',
+                            'Motion Smoothness',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 14.5,
@@ -745,7 +711,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           Text(
-                            'Frame rate dynamics & UI physics',
+                            'Animation refresh rate & power balance',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 11,
@@ -758,7 +724,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                // 3-way segment buttons
+                // 3-way segment buttons (Clean Native Vector Icons, zero emojis)
                 Container(
                   height: 38,
                   padding: const EdgeInsets.all(3),
@@ -768,37 +734,124 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Row(
                     children: [
-                      _buildMotionSegment('full', '⚡ Full', currentPreset, isDark, activeAccent, textColor),
-                      _buildMotionSegment('reduced', '⚖️ Reduced', currentPreset, isDark, activeAccent, textColor),
-                      _buildMotionSegment('off', '🔋 Off', currentPreset, isDark, activeAccent, textColor),
+                      _buildMotionSegment('full', Icons.bolt_rounded, 'Full', currentPreset, isDark, activeAccent, textColor),
+                      _buildMotionSegment('reduced', Icons.tune_rounded, 'Reduced', currentPreset, isDark, activeAccent, textColor),
+                      _buildMotionSegment('off', Icons.block_rounded, 'Off', currentPreset, isDark, activeAccent, textColor),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
+                // Formatted Status Card (Structured typography, bold highlights, line gaps)
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0x14FFFFFF) : const Color(0x0A000000),
-                    borderRadius: BorderRadius.circular(10),
+                    color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
+                      width: 0.8,
+                    ),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 14,
-                        color: subTextColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          desc,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11,
-                            color: subTextColor,
-                            height: 1.3,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: statusBadgeBg,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(statusIcon, size: 12, color: statusBadgeText),
+                                const SizedBox(width: 4),
+                                Text(
+                                  statusBadge,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                    color: statusBadgeText,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              statusTitle,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: activeAccent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              statusBody1,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: subTextColor,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: activeAccent.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              statusBody2,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: subTextColor,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -813,6 +866,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildMotionSegment(
     String presetKey,
+    IconData icon,
     String label,
     String activePreset,
     bool isDark,
@@ -847,14 +901,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : null,
             ),
             alignment: Alignment.center,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? textColor : textColor.withOpacity(0.65),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 13,
+                  color: isSelected ? activeAccent : textColor.withOpacity(0.55),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? textColor : textColor.withOpacity(0.65),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1344,55 +1410,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// The Acoustic Soundstage Palette (Proprietary Hardware Modules with Live Spectrum Visualizers)
-  Widget _buildSoundstagePalette(
+  /// Sleek Studio Accent Color Grid (Clean Swatches, Zero Waveform Clutter)
+  Widget _buildAccentColorGrid(
     BuildContext context,
     bool isDark,
     Color textColor,
     Color subTextColor,
   ) {
-    final modules = [
+    final presets = [
       (
-        id: 'Prism Cyan',
-        title: 'Prism Cyan',
-        subtitle: 'CD Master // 20 kHz Ref',
+        id: 'Cyan',
+        title: 'Cyan',
+        subtitle: 'Cool Electric',
         color: const Color(0xFF00E5FF),
-        pattern: [0.4, 0.7, 0.95, 0.6, 0.85, 1.0, 0.75, 0.5, 0.3],
       ),
       (
-        id: 'Analog Amber',
-        title: 'Analog Amber',
-        subtitle: 'Tube Warmth // Vinyl Tone',
+        id: 'Amber',
+        title: 'Amber',
+        subtitle: 'Warm Golden',
         color: const Color(0xFFFF9500),
-        pattern: [0.6, 0.85, 0.7, 0.9, 0.6, 0.75, 0.5, 0.4, 0.3],
       ),
       (
-        id: 'Acoustic Emerald',
-        title: 'Acoustic Emerald',
-        subtitle: 'Lossless Lock // Studio Monitor',
+        id: 'Emerald',
+        title: 'Emerald',
+        subtitle: 'Fresh Studio',
         color: const Color(0xFF00E676),
-        pattern: [0.35, 0.55, 0.8, 1.0, 0.9, 0.75, 0.6, 0.45, 0.3],
       ),
       (
-        id: 'Ultraviolet Hi-Res',
-        title: 'Ultraviolet Hi-Res',
-        subtitle: 'Ultrasonic // 96k Master',
+        id: 'Violet',
+        title: 'Violet',
+        subtitle: 'Vivid Hi-Res',
         color: const Color(0xFF8B5CF6),
-        pattern: [0.5, 0.75, 0.9, 0.7, 1.0, 0.85, 0.95, 0.65, 0.4],
       ),
       (
-        id: 'Crimson Peak',
-        title: 'Crimson Peak',
-        subtitle: 'Dynamic // Transient Energy',
+        id: 'Crimson',
+        title: 'Crimson',
+        subtitle: 'Dynamic Energy',
         color: const Color(0xFFFF3B30),
-        pattern: [0.3, 0.6, 0.85, 1.0, 0.4, 0.95, 0.7, 0.5, 0.35],
       ),
       (
-        id: 'Titanium Mono',
-        title: 'Titanium Mono',
-        subtitle: 'Studio Console // High-Contrast',
+        id: 'Monochrome',
+        title: 'Monochrome',
+        subtitle: 'Clean Contrast',
         color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
-        pattern: [0.5, 0.5, 0.8, 0.8, 1.0, 1.0, 0.7, 0.7, 0.4],
       ),
     ];
 
@@ -1401,57 +1461,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 2-Column Module Grid Pairs
-        for (int r = 0; r < modules.length; r += 2) ...[
+        // 2-Column Clean Swatch Grid
+        for (int r = 0; r < presets.length; r += 2) ...[
           if (r > 0) const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
-                child: _buildSoundstageModuleCard(
+                child: _buildAccentColorCard(
                   context: context,
                   isDark: isDark,
                   textColor: textColor,
                   subTextColor: subTextColor,
-                  id: modules[r].id,
-                  title: modules[r].title,
-                  subtitle: modules[r].subtitle,
-                  color: modules[r].color,
-                  pattern: modules[r].pattern,
-                  isSelected: currentPreset == modules[r].id ||
-                      (modules[r].id == 'Prism Cyan' && currentPreset == 'Ocean') ||
-                      (modules[r].id == 'Analog Amber' && currentPreset == 'Amber') ||
-                      (modules[r].id == 'Acoustic Emerald' && currentPreset == 'Sage') ||
-                      (modules[r].id == 'Ultraviolet Hi-Res' && currentPreset == 'Violet') ||
-                      (modules[r].id == 'Crimson Peak' && currentPreset == 'Crimson') ||
-                      (modules[r].id == 'Titanium Mono' && currentPreset == 'Mono'),
+                  id: presets[r].id,
+                  title: presets[r].title,
+                  subtitle: presets[r].subtitle,
+                  color: presets[r].color,
+                  isSelected: currentPreset == presets[r].id ||
+                      (presets[r].id == 'Cyan' && (currentPreset == 'Prism Cyan' || currentPreset == 'Ocean')) ||
+                      (presets[r].id == 'Amber' && (currentPreset == 'Analog Amber')) ||
+                      (presets[r].id == 'Emerald' && (currentPreset == 'Acoustic Emerald' || currentPreset == 'Sage')) ||
+                      (presets[r].id == 'Violet' && (currentPreset == 'Ultraviolet Hi-Res')) ||
+                      (presets[r].id == 'Crimson' && (currentPreset == 'Crimson Peak')) ||
+                      (presets[r].id == 'Monochrome' && (currentPreset == 'Titanium Mono' || currentPreset == 'Mono')),
                   onSelect: () {
                     if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                    appState.setAccentPreset(modules[r].id);
+                    appState.setAccentPreset(presets[r].id);
                   },
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _buildSoundstageModuleCard(
+                child: _buildAccentColorCard(
                   context: context,
                   isDark: isDark,
                   textColor: textColor,
                   subTextColor: subTextColor,
-                  id: modules[r + 1].id,
-                  title: modules[r + 1].title,
-                  subtitle: modules[r + 1].subtitle,
-                  color: modules[r + 1].color,
-                  pattern: modules[r + 1].pattern,
-                  isSelected: currentPreset == modules[r + 1].id ||
-                      (modules[r + 1].id == 'Prism Cyan' && currentPreset == 'Ocean') ||
-                      (modules[r + 1].id == 'Analog Amber' && currentPreset == 'Amber') ||
-                      (modules[r + 1].id == 'Acoustic Emerald' && currentPreset == 'Sage') ||
-                      (modules[r + 1].id == 'Ultraviolet Hi-Res' && currentPreset == 'Violet') ||
-                      (modules[r + 1].id == 'Crimson Peak' && currentPreset == 'Crimson') ||
-                      (modules[r + 1].id == 'Titanium Mono' && currentPreset == 'Mono'),
+                  id: presets[r + 1].id,
+                  title: presets[r + 1].title,
+                  subtitle: presets[r + 1].subtitle,
+                  color: presets[r + 1].color,
+                  isSelected: currentPreset == presets[r + 1].id ||
+                      (presets[r + 1].id == 'Cyan' && (currentPreset == 'Prism Cyan' || currentPreset == 'Ocean')) ||
+                      (presets[r + 1].id == 'Amber' && (currentPreset == 'Analog Amber')) ||
+                      (presets[r + 1].id == 'Emerald' && (currentPreset == 'Acoustic Emerald' || currentPreset == 'Sage')) ||
+                      (presets[r + 1].id == 'Violet' && (currentPreset == 'Ultraviolet Hi-Res')) ||
+                      (presets[r + 1].id == 'Crimson' && (currentPreset == 'Crimson Peak')) ||
+                      (presets[r + 1].id == 'Monochrome' && (currentPreset == 'Titanium Mono' || currentPreset == 'Mono')),
                   onSelect: () {
                     if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                    appState.setAccentPreset(modules[r + 1].id);
+                    appState.setAccentPreset(presets[r + 1].id);
                   },
                 ),
               ),
@@ -1459,23 +1517,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
         const SizedBox(height: 10),
-        // Master Card: Custom Resonance (Inline Studio Tuner)
-        _CustomResonanceCard(
+        // Master Card: Custom Color (Inline Chromatic Tuner)
+        _CustomColorCard(
           isDark: isDark,
           textColor: textColor,
           subTextColor: subTextColor,
-          isSelected: currentPreset == 'Custom Resonance' || currentPreset == 'Custom',
+          isSelected: currentPreset == 'Custom' || currentPreset == 'Custom Resonance' || currentPreset == 'Custom Color',
           customColor: appState.customColor,
           onSelect: () {
             if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-            appState.setAccentPreset('Custom Resonance');
+            appState.setAccentPreset('Custom');
           },
         ),
       ],
     );
   }
 
-  Widget _buildSoundstageModuleCard({
+  Widget _buildAccentColorCard({
     required BuildContext context,
     required bool isDark,
     required Color textColor,
@@ -1484,7 +1542,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     required String subtitle,
     required Color color,
-    required List<double> pattern,
     required bool isSelected,
     required VoidCallback onSelect,
   }) {
@@ -1493,7 +1550,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: GestureDetector(
         onTap: onSelect,
         behavior: HitTestBehavior.opaque,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
@@ -1517,31 +1576,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: GlassStyle.frosted,
             borderless: true,
             tintColor: isSelected ? color.withOpacity(isDark ? 0.16 : 0.08) : null,
-            padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        boxShadow: isSelected
-                            ? [BoxShadow(color: color.withOpacity(0.8), blurRadius: 4)]
-                            : null,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.35),
+                        blurRadius: isSelected ? 8 : 4,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
+                    ],
+                  ),
+                  child: isSelected
+                      ? Center(
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 17,
+                            color: AppColors.getOnAccentColor(color, isDark: isDark),
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
                         title,
                         style: TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: isSelected ? textColor : textColor.withOpacity(0.9),
                           letterSpacing: -0.2,
@@ -1549,40 +1621,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (isSelected)
-                      Container(
-                        width: 17,
-                        height: 17,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected ? color : subTextColor,
                         ),
-                        child: Icon(
-                          Icons.check_rounded,
-                          size: 11,
-                          color: AppColors.getOnAccentColor(color, isDark: isDark),
-                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                _MiniSoundstageWaveform(
-                  color: color,
-                  heights: pattern,
-                  isAnimated: isSelected,
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 9.0,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected ? color : subTextColor,
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -2143,104 +2195,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _MiniSoundstageWaveform extends StatefulWidget {
-  final Color color;
-  final List<double> heights;
-  final bool isAnimated;
-
-  const _MiniSoundstageWaveform({
-    super.key,
-    required this.color,
-    required this.heights,
-    required this.isAnimated,
-  });
-
-  @override
-  State<_MiniSoundstageWaveform> createState() => _MiniSoundstageWaveformState();
-}
-
-class _MiniSoundstageWaveformState extends State<_MiniSoundstageWaveform>
-    with SingleTickerProviderStateMixin {
-  AnimationController? _animController;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.isAnimated && !appState.isMotionOff) {
-      _animController = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 1400),
-      )..repeat(reverse: true);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _MiniSoundstageWaveform oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final shouldAnimate = widget.isAnimated && !appState.isMotionOff;
-    if (shouldAnimate && _animController == null) {
-      _animController = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 1400),
-      )..repeat(reverse: true);
-    } else if (!shouldAnimate && _animController != null) {
-      _animController?.dispose();
-      _animController = null;
-    }
-  }
-
-  @override
-  void dispose() {
-    _animController?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_animController == null) {
-      return _buildBars(0.0);
-    }
-    return AnimatedBuilder(
-      animation: _animController!,
-      builder: (context, _) => _buildBars(_animController!.value),
-    );
-  }
-
-  Widget _buildBars(double animVal) {
-    return SizedBox(
-      height: 20,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(widget.heights.length, (i) {
-          final baseH = widget.heights[i];
-          final phase = math.sin((animVal * math.pi * 2) + (i * 0.7));
-          final scale = widget.isAnimated ? (baseH * (0.75 + 0.25 * phase)) : baseH;
-          final h = math.max(4.0, 19.0 * scale.clamp(0.15, 1.0));
-
-          return Container(
-            width: 3.5,
-            height: h,
-            margin: const EdgeInsets.only(right: 3.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(1.5),
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  widget.color.withOpacity(0.40),
-                  widget.color,
-                ],
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
-class _CustomResonanceCard extends StatefulWidget {
+class _CustomColorCard extends StatefulWidget {
   final bool isDark;
   final Color textColor;
   final Color subTextColor;
@@ -2248,7 +2203,7 @@ class _CustomResonanceCard extends StatefulWidget {
   final Color customColor;
   final VoidCallback onSelect;
 
-  const _CustomResonanceCard({
+  const _CustomColorCard({
     required this.isDark,
     required this.textColor,
     required this.subTextColor,
@@ -2258,10 +2213,10 @@ class _CustomResonanceCard extends StatefulWidget {
   });
 
   @override
-  State<_CustomResonanceCard> createState() => _CustomResonanceCardState();
+  State<_CustomColorCard> createState() => _CustomColorCardState();
 }
 
-class _CustomResonanceCardState extends State<_CustomResonanceCard> {
+class _CustomColorCardState extends State<_CustomColorCard> {
   bool _isExpanded = false;
   late double _currentHue;
 
@@ -2287,7 +2242,7 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
   }
 
   @override
-  void didUpdateWidget(covariant _CustomResonanceCard oldWidget) {
+  void didUpdateWidget(covariant _CustomColorCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.isSelected && _isExpanded) {
       _isExpanded = false;
@@ -2307,7 +2262,7 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
       child: GestureDetector(
         onTap: () {
           if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-          appState.setAccentPreset('Custom Resonance', c);
+          appState.setAccentPreset('Custom', c);
           setState(() {
             _currentHue = HSVColor.fromColor(c).hue;
           });
@@ -2344,11 +2299,12 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
   @override
   Widget build(BuildContext context) {
     final hexStr = '#${widget.customColor.value.toRadixString(16).substring(2).toUpperCase()}';
-    const pattern = [0.4, 0.65, 0.9, 0.75, 1.0, 0.8, 0.6, 0.45, 0.3];
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -2374,7 +2330,7 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
           tintColor: widget.isSelected
               ? widget.customColor.withOpacity(widget.isDark ? 0.16 : 0.08)
               : null,
-          padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -2384,85 +2340,96 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
                     child: GestureDetector(
                       onTap: widget.onSelect,
                       behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: widget.customColor,
-                                  shape: BoxShape.circle,
-                                  boxShadow: widget.isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: widget.customColor.withOpacity(0.8),
-                                            blurRadius: 4,
-                                          )
-                                        ]
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Custom Resonance',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: widget.isSelected
-                                      ? widget.textColor
-                                      : widget.textColor.withOpacity(0.9),
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              if (widget.isSelected) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 17,
-                                  height: 17,
-                                  decoration: BoxDecoration(
-                                    color: widget.customColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.check_rounded,
-                                    size: 11,
-                                    color: AppColors.getOnAccentColor(
-                                      widget.customColor,
-                                      isDark: widget.isDark,
-                                    ),
-                                  ),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: widget.customColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: widget.customColor.withOpacity(0.40),
+                                  blurRadius: widget.isSelected ? 8 : 4,
+                                  offset: const Offset(0, 2),
                                 ),
                               ],
-                            ],
+                            ),
+                            child: widget.isSelected
+                                ? Center(
+                                    child: Icon(
+                                      Icons.check_rounded,
+                                      size: 17,
+                                      color: AppColors.getOnAccentColor(
+                                        widget.customColor,
+                                        isDark: widget.isDark,
+                                      ),
+                                    ),
+                                  )
+                                : null,
                           ),
-                          const SizedBox(height: 8),
-                          _MiniSoundstageWaveform(
-                            color: widget.customColor,
-                            heights: pattern,
-                            isAnimated: widget.isSelected,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _isExpanded
-                                ? 'Active Chroma: $hexStr // Adjust swatches or hue below'
-                                : 'Active Chroma: $hexStr // Tap Tune to customize',
-                            style: TextStyle(
-                              fontFamily: 'JetBrainsMono',
-                              fontSize: 9.0,
-                              fontWeight: FontWeight.w500,
-                              color: widget.isSelected ? widget.customColor : widget.subTextColor,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Custom Color',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: widget.isSelected
+                                        ? widget.textColor
+                                        : widget.textColor.withOpacity(0.9),
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: widget.customColor.withOpacity(widget.isDark ? 0.20 : 0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        hexStr,
+                                        style: TextStyle(
+                                          fontFamily: 'JetBrainsMono',
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: widget.customColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        _isExpanded ? 'Adjust hue below' : 'Tap Tune to adjust',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: widget.subTextColor,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   // Tune / Done Button Pill
                   GestureDetector(
                     onTap: () {
@@ -2477,11 +2444,11 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
                     },
                     behavior: HitTestBehavior.opaque,
                     child: Container(
-                      height: 36,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      height: 32,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
                         color: widget.customColor.withOpacity(widget.isDark ? 0.22 : 0.14),
-                        borderRadius: BorderRadius.circular(11),
+                        borderRadius: BorderRadius.circular(9),
                         border: Border.all(
                           color: widget.customColor.withOpacity(0.4),
                           width: 1.0,
@@ -2492,15 +2459,15 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
                         children: [
                           Icon(
                             _isExpanded ? Icons.check_rounded : Icons.palette_outlined,
-                            size: 14,
+                            size: 13,
                             color: widget.customColor,
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 4),
                           Text(
                             _isExpanded ? 'DONE' : 'TUNE',
                             style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 11,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
                               color: widget.isDark ? Colors.white : widget.customColor,
@@ -2528,7 +2495,7 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
                                 : const Color(0x14000000),
                           ),
                           Text(
-                            'STUDIO PALETTE PRESETS',
+                            'CURATED PALETTE PRESETS',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 10,
@@ -2624,7 +2591,7 @@ class _CustomResonanceCardState extends State<_CustomResonanceCard> {
                                     0.85,
                                     0.95,
                                   ).toColor();
-                                  appState.setAccentPreset('Custom Resonance', newCol);
+                                  appState.setAccentPreset('Custom', newCol);
                                 },
                               ),
                             ),
