@@ -7,6 +7,7 @@ import 'screens/inspect_screen.dart';
 import 'screens/audit_screen.dart';
 import 'screens/duplicates_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/splash_screen.dart';
 import 'ui/theme/colors.dart';
 import 'widgets/ambient_wallpaper.dart';
 import 'widgets/liquid_lens_dock.dart';
@@ -22,11 +23,11 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-  runApp(const FlacToolkitApp());
+  runApp(const AcoustiQApp());
 }
 
-class FlacToolkitApp extends StatelessWidget {
-  const FlacToolkitApp({super.key});
+class AcoustiQApp extends StatelessWidget {
+  const AcoustiQApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +47,7 @@ class FlacToolkitApp extends StatelessWidget {
         );
 
         return MaterialApp(
-          title: 'FLAC Toolkit',
+          title: 'AcoustiQ',
           debugShowCheckedModeBanner: false,
           scrollBehavior: const AppScrollBehavior(),
           themeMode: appState.themeMode == 'light'
@@ -72,7 +73,7 @@ class FlacToolkitApp extends StatelessWidget {
               surface: AppColors.surfaceContainer,
             ),
           ),
-          home: const MainShell(),
+          home: const AcoustiQSplashScreen(),
         );
       },
     );
