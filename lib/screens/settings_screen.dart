@@ -39,6 +39,99 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   int? _activeSubPageIndex; // null = Master Hub, 0 = Appearance, 1 = Audio Engine, 2 = Library, 3 = About
   static int _devTapCount = 0;
+  String _cacheSizeText = 'Calculating...';
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateCacheSize();
+  }
+
+  Future<void> _calculateCacheSize() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      int totalBytes = 0;
+      if (tempDir.existsSync()) {
+        await for (final entity in tempDir.list(recursive: true, followLinks: false)) {
+          if (entity is File) {
+            try {
+              totalBytes += await entity.length();
+            } catch (_) {}
+          }
+        }
+      }
+      final sizeText = totalBytes < 1024
+          ? '$totalBytes B'
+          : (totalBytes < 1024 * 1024
+              ? '${(totalBytes / 1024).toStringAsFixed(1)} KB'
+              : '${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB');
+
+      if (mounted) {
+        setState(() {
+          _cacheSizeText = sizeText;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _cacheSizeText = '0.0 KB';
+        });
+      }
+    }
+  }
+
+  Future<void> _clearLibraryCache(BuildContext context) async {
+    if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+
+    try {
+      // 1. Purge disk temp files (decoded PCM chunks, spectrogram cache, audio previews)
+      final tempDir = await getTemporaryDirectory();
+      if (tempDir.existsSync()) {
+        final entities = tempDir.listSync(recursive: false, followLinks: false);
+        for (final entity in entities) {
+          try {
+            if (entity is File) {
+              await entity.delete();
+            } else if (entity is Directory) {
+              await entity.delete(recursive: true);
+            }
+          } catch (_) {}
+        }
+      }
+
+      // 2. Clear Flutter image caches completely
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+
+      // 3. Clear in-memory audited FLAC list & reset library path
+      appState.setSharedLibrary([], '');
+
+      // 4. Update UI cache size
+      if (mounted) {
+        setState(() {
+          _cacheSizeText = '0.0 KB';
+        });
+      }
+
+      if (context.mounted) {
+        showThemedSnackBar(
+          context,
+          'Library & temporary cache cleared (0.0 KB)',
+          icon: Icons.delete_sweep_rounded,
+          accentColor: AppColors.genuineEmerald,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showThemedSnackBar(
+          context,
+          'Failed to clear cache: $e',
+          icon: Icons.error_outline_rounded,
+          accentColor: AppColors.fakeCoral,
+        );
+      }
+    }
+  }
 
   Future<void> _quickScanDeviceMusic(BuildContext context) async {
     const path = '/storage/emulated/0/Music';
@@ -1323,19 +1416,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             itemBuilder: (context, index, position) {
               return ExpressiveGroupRow(
                 icon: Icons.delete_outline_rounded,
-                title: 'Clear Library Cache',
-                subtitle: 'Reset in-memory audited FLAC tracks and duplicate cache',
+                title: 'Clear Library & Audio Cache',
+                subtitle: 'Purge decoded PCM chunks, image buffers & in-memory library',
                 position: position,
                 danger: true,
-                onTap: () {
-                  if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
-                  appState.setSharedLibrary([], '');
-                  showThemedSnackBar(
-                    context,
-                    'Library cache cleared successfully',
-                    icon: Icons.delete_sweep_rounded,
-                  );
-                },
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? const Color(0x25FFFFFF) : const Color(0x18000000),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    _cacheSizeText,
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
+                    ),
+                  ),
+                ),
+                onTap: () => _clearLibraryCache(context),
               );
             },
           ),
@@ -1784,9 +1889,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color activeAccent,
   ) {
     const presets = [
-      (key: 'abyss', name: 'Emerald\nAbyss'),
-      (key: 'titanium', name: 'Dark\nTitanium'),
-      (key: 'acoustic', name: 'Studio\nAcoustic'),
+      (key: 'cloud', name: 'Storm\nClouds'),
+      (key: 'vinyl', name: 'Studio\nVinyl'),
+      (key: 'emerald', name: 'Misty\nEmerald'),
       (key: 'solid', name: 'Solid\nCanvas'),
     ];
 

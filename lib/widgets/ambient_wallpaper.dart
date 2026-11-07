@@ -32,7 +32,7 @@ class AmbientWallpaperView extends StatelessWidget {
                   height: double.infinity,
                   alignment: Alignment.center,
                   errorBuilder: (context, error, stackTrace) =>
-                      _buildAbyssMesh(isDark),
+                      _buildSolidFallback(isDark),
                 ),
                 // Soft Scrim for AAA Text Readability & Specular Rim Contrast
                 Container(
@@ -46,16 +46,20 @@ class AmbientWallpaperView extends StatelessWidget {
         }
 
         switch (preset) {
-          case 'titanium':
-            return _buildDarkTitanium(isDark);
+          case 'cloud':
+            return _buildAssetWallpaper('assets/wallpapers/dusk_cloud.webp', isDark);
+          case 'vinyl':
           case 'acoustic':
-            return _buildStudioAcoustic(isDark);
+          case 'titanium':
+            return _buildAssetWallpaper('assets/wallpapers/studio_vinyl.webp', isDark);
+          case 'emerald':
+          case 'abyss':
+            return _buildAssetWallpaper('assets/wallpapers/misty_emerald.webp', isDark);
           case 'solid':
           case 'pure_black':
             return _buildPureBlack(context, isDark);
-          case 'abyss':
           default:
-            return _buildAbyssMesh(isDark);
+            return _buildAssetWallpaper('assets/wallpapers/dusk_cloud.webp', isDark);
         }
       },
     );
@@ -64,6 +68,38 @@ class AmbientWallpaperView extends StatelessWidget {
   Widget _buildPureBlack(BuildContext context, bool isDark) {
     final bg = appState.getBgColor(context);
     return Container(color: bg);
+  }
+
+  Widget _buildSolidFallback(bool isDark) {
+    return Container(
+      color: isDark ? const Color(0xFF0F1218) : const Color(0xFFF1F5F9),
+    );
+  }
+
+  /// Preset 1: Dusk Storm Cloud / Preset 2: Studio Vinyl / Preset 3: Misty Emerald
+  /// Real-world environment photos with deep contrast and natural illumination.
+  Widget _buildAssetWallpaper(String assetPath, bool isDark) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Base photographic wallpaper asset
+        Image.asset(
+          assetPath,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          alignment: Alignment.center,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildSolidFallback(isDark),
+        ),
+        // Soft optical scrim ensuring AAA text contrast and specular rim definition
+        Container(
+          color: isDark
+              ? Colors.black.withOpacity(0.36)
+              : Colors.white.withOpacity(0.62),
+        ),
+      ],
+    );
   }
 
   /// Preset 1: Emerald Abyss
@@ -328,33 +364,23 @@ class AmbientWallpaperView extends StatelessWidget {
   /// Miniature preview swatch for Settings Screen
   static Widget buildPreview(String preset, bool isDark) {
     switch (preset) {
-      case 'titanium':
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF334155), Color(0xFF1E293B), Color(0xFF0F172A)],
-            ),
-          ),
-          child: const CustomPaint(
-            painter: _TitaniumBrushedPainter(isDark: true),
-          ),
+      case 'cloud':
+        return Image.asset(
+          'assets/wallpapers/thumbs/dusk_cloud_thumb.webp',
+          fit: BoxFit.cover,
         );
+      case 'vinyl':
+      case 'titanium':
       case 'acoustic':
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1E222A), Color(0xFF13151B), Color(0xFF090A0D)],
-            ),
-          ),
-          child: const CustomPaint(
-            painter: _AcousticDiffuserPainter(isDark: true),
-          ),
+        return Image.asset(
+          'assets/wallpapers/thumbs/studio_vinyl_thumb.webp',
+          fit: BoxFit.cover,
+        );
+      case 'emerald':
+      case 'abyss':
+        return Image.asset(
+          'assets/wallpapers/thumbs/misty_emerald_thumb.webp',
+          fit: BoxFit.cover,
         );
       case 'solid':
       case 'pure_black':
@@ -368,17 +394,10 @@ class AmbientWallpaperView extends StatelessWidget {
             ),
           ),
         );
-      case 'abyss':
       default:
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF00796B), Color(0xFF004D40), Color(0xFF001E1D)],
-            ),
-          ),
+        return Image.asset(
+          'assets/wallpapers/thumbs/dusk_cloud_thumb.webp',
+          fit: BoxFit.cover,
         );
     }
   }

@@ -13,7 +13,7 @@ class AppState extends ChangeNotifier {
   String _themeMode = 'dark'; // 'system', 'light', 'dark'
   String _accentPreset = 'Cyan'; // 'Cyan', 'Amber', 'Emerald', 'Violet', 'Crimson', 'Monochrome', 'Custom'
   Color _customColor = const Color(0xFF00E5FF);
-  String _wallpaperPreset = 'abyss'; // 'abyss', 'titanium', 'acoustic', 'solid', 'custom'
+  String _wallpaperPreset = 'cloud'; // 'cloud', 'vinyl', 'emerald', 'solid', 'custom'
   String? _customWallpaperPath;
   String _motionPreset = 'full'; // 'full' (120Hz micro-interactions), 'reduced' (transitions only), 'off' (static battery saver)
 
@@ -80,10 +80,16 @@ class AppState extends ChangeNotifier {
         _customColor = Color(savedColor);
       }
 
-      _wallpaperPreset = _prefs?.getString('wallpaper_preset') ?? 'abyss';
-      if (_wallpaperPreset == 'nebula' || _wallpaperPreset == 'sunset') {
-        _wallpaperPreset = 'abyss';
-        _prefs?.setString('wallpaper_preset', 'abyss');
+      _wallpaperPreset = _prefs?.getString('wallpaper_preset') ?? 'cloud';
+      if (_wallpaperPreset == 'nebula' ||
+          _wallpaperPreset == 'sunset' ||
+          _wallpaperPreset == 'titanium' ||
+          _wallpaperPreset == 'acoustic') {
+        _wallpaperPreset = 'cloud';
+        _prefs?.setString('wallpaper_preset', 'cloud');
+      } else if (_wallpaperPreset == 'abyss') {
+        _wallpaperPreset = 'emerald';
+        _prefs?.setString('wallpaper_preset', 'emerald');
       }
       _customWallpaperPath = _prefs?.getString('custom_wallpaper_path');
       _motionPreset = _prefs?.getString('motion_preset') ?? 'full';
@@ -96,7 +102,7 @@ class AppState extends ChangeNotifier {
       if (_customWallpaperPath != null && !File(_customWallpaperPath!).existsSync()) {
         _customWallpaperPath = null;
         if (_wallpaperPreset == 'custom') {
-          _wallpaperPreset = 'abyss';
+          _wallpaperPreset = 'cloud';
         }
       }
 
@@ -261,9 +267,9 @@ class AppState extends ChangeNotifier {
       } catch (_) {}
     }
     _customWallpaperPath = null;
-    _wallpaperPreset = 'abyss';
+    _wallpaperPreset = 'cloud';
     _prefs?.remove('custom_wallpaper_path');
-    _prefs?.setString('wallpaper_preset', 'abyss');
+    _prefs?.setString('wallpaper_preset', 'cloud');
     notifyListeners();
   }
 
