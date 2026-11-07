@@ -532,7 +532,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSubPageHeader(
             title: 'Appearance & Visuals',
-            subtitle: 'Accent colors, ambient wallpapers, theme modes & animations',
+            subtitle: 'Accent colors, wallpapers, themes & motion',
             onBack: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = null);
@@ -944,7 +944,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSubPageHeader(
             title: 'Audio Engine & Detection',
-            subtitle: 'Hardware decoding pipeline, visualizer & detection rules',
+            subtitle: 'Hardware decoder, visualizer style & verification rules',
             onBack: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = null);
@@ -955,8 +955,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             isDark: isDark,
           ),
 
-          // 1. HARDWARE DSP DECODER PIPELINE
-          buildSectionHeader('Hardware DSP Decoder Pipeline', subTextColor),
+          // 1. HARDWARE AUDIO DECODER & VISUALS
+          buildSectionHeader('Audio Processing & Visuals', subTextColor),
           ExpressiveGroup(
             rowCount: 2,
             itemBuilder: (context, index, position) {
@@ -965,8 +965,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.memory_rounded,
                   iconColor: AppColors.genuineEmerald,
                   iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-                  title: 'DSP Decoder Pipeline',
-                  subtitle: 'MediaCodec hardware PCM extractor & 4096-pt Cooley-Tukey FFT',
+                  title: 'Hardware Audio Decoder',
+                  subtitle: 'Fast hardware decoding for seamless FLAC playback',
                   position: position,
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -990,8 +990,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.auto_graph_rounded,
                   iconColor: activeAccent,
                   iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                  title: 'Sound Stage Visualizer',
-                  subtitle: 'Purity stage style for inspected tracks',
+                  title: 'Audio Visualizer Style',
+                  subtitle: 'Choose between gauge, hybrid, or waveform',
                   position: position,
                   trailing: Container(
                     height: 28,
@@ -1016,8 +1016,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 16),
 
-          // 2. TACTILE HAPTICS
-          buildSectionHeader('Tactile Feedback', subTextColor),
+          // 2. HAPTIC FEEDBACK
+          buildSectionHeader('Haptic Feedback', subTextColor),
           ExpressiveGroup(
             rowCount: 1,
             itemBuilder: (context, index, position) {
@@ -1025,8 +1025,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.vibration_rounded,
                 iconColor: const Color(0xFFA78BFA),
                 iconBgColor: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
-                title: 'Tactile Haptics',
-                subtitle: 'Vibrate lightly on tab switches, tune scrubbers and interactions',
+                title: 'Haptic Vibrations',
+                subtitle: 'Subtle tactile taps for buttons, sliders, and navigation',
                 position: position,
                 trailing: Switch.adaptive(
                   value: appState.hapticsEnabled,
@@ -1042,56 +1042,187 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 16),
 
-          // 3. LOSSLESS DETECTION RULES & CRITERIA
-          buildSectionHeader('Lossless Verification Engine', subTextColor),
+          // 3. LOSSLESS DETECTION RULES & CRITERIA (Structured Micro-Cards)
+          buildSectionHeader('Lossless Verification Rules', subTextColor),
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDark ? const Color(0x24FFFFFF) : const Color(0x16000000),
                 width: 0.85,
               ),
             ),
             child: GlassSurface(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(20),
               style: GlassStyle.frosted,
               borderless: true,
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.verified_rounded, color: AppColors.genuineEmerald, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'AcoustiQ Forensic Purity Standard',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Icon(Icons.verified_rounded, color: AppColors.genuineEmerald, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'How Lossless Verification Works',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
+                            Text(
+                              'How AcoustiQ detects genuine FLAC vs fake upsamples',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                color: subTextColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '1. Full Ultrasonic Reach (>20 kHz):\nVerifies harmonic energy above human hearing limit. Lossy MP3s hard-cutoff sharply at 16 kHz or 20 kHz.',
-                    style: TextStyle(fontFamily: 'Inter', fontSize: 11.5, color: subTextColor, height: 1.4),
+                  const SizedBox(height: 14),
+
+                  // Rule 1: High-Frequency Reach
+                  _buildVerificationRuleCard(
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                    badge: '>20 kHz',
+                    badgeColor: AppColors.genuineEmerald,
+                    title: '1. Full Frequency Reach',
+                    bodyBold: 'Authentic studio FLAC ',
+                    bodyRegular: 'preserves harmonics all the way up to 20–24 kHz. Compressed MP3s cut off abruptly below 16–20 kHz.',
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '2. Brickwall Shelf Detection:\nIdentifies telltale horizontal spectral cutoffs indicating fraudulent upsampled lossy files packed in FLAC containers.',
-                    style: TextStyle(fontFamily: 'Inter', fontSize: 11.5, color: subTextColor, height: 1.4),
+
+                  // Rule 2: Anti-Upsample Filter
+                  _buildVerificationRuleCard(
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                    badge: 'FAKE GUARD',
+                    badgeColor: AppColors.suspiciousAmber,
+                    title: '2. Brickwall Shelf Filter',
+                    bodyBold: 'Detects fake conversions ',
+                    bodyRegular: 'where low-quality MP3s were re-saved as FLAC files. An unnatural shelf cutoff exposes the fake.',
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '3. Continuous Dynamic Scoring (10% - 99%):\nHolistic mathematical scoring across spectral density, frequency ceiling, and high-frequency content.',
-                    style: TextStyle(fontFamily: 'Inter', fontSize: 11.5, color: subTextColor, height: 1.4),
+
+                  // Rule 3: Dynamic Purity Rating
+                  _buildVerificationRuleCard(
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                    badge: '10% – 99%',
+                    badgeColor: activeAccent,
+                    title: '3. Continuous Purity Score',
+                    bodyBold: 'Dynamic mathematical scoring ',
+                    bodyRegular: 'rates track purity from pristine studio master down to low-bitrate transcode.',
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationRuleCard({
+    required bool isDark,
+    required Color textColor,
+    required Color subTextColor,
+    required String badge,
+    required Color badgeColor,
+    required String title,
+    required String bodyBold,
+    required String bodyRegular,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0x18FFFFFF) : const Color(0x0A000000),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                decoration: BoxDecoration(
+                  color: badgeColor.withOpacity(isDark ? 0.22 : 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    fontFamily: 'JetBrainsMono',
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11.5,
+                color: subTextColor,
+                height: 1.35,
+              ),
+              children: [
+                TextSpan(
+                  text: bodyBold,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: textColor.withOpacity(0.9),
+                  ),
+                ),
+                TextSpan(text: bodyRegular),
+              ],
             ),
           ),
         ],
@@ -1165,8 +1296,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 16),
 
-          // 2. FAST DEVICE AUDIT
-          buildSectionHeader('Device Scan Tools', subTextColor),
+          // 2. DEVICE SCAN TOOLS (No '1-Tap', plain English)
+          buildSectionHeader('Scan Tools', subTextColor),
           ExpressiveGroup(
             rowCount: 1,
             itemBuilder: (context, index, position) {
@@ -1174,8 +1305,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.flash_on_rounded,
                 iconColor: AppColors.genuineEmerald,
                 iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-                title: '1-Tap Quick Scan Music',
-                subtitle: '/storage/emulated/0/Music • Direct scan with zero SAF prompt',
+                title: 'Scan Music Folder',
+                subtitle: '/storage/emulated/0/Music • Scans your device for FLAC tracks',
                 position: position,
                 onTap: () => _quickScanDeviceMusic(context),
                 trailing: Icon(Icons.play_arrow_rounded, color: AppColors.genuineEmerald, size: 20),
@@ -1229,7 +1360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSubPageHeader(
             title: 'Diagnostics & About',
-            subtitle: 'Engine build, hardware specs & QA Developer Lab',
+            subtitle: 'App version, hardware specs & privacy guarantee',
             onBack: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = null);
@@ -1251,7 +1382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   iconColor: const Color(0xFF38BDF8),
                   iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                   title: 'Engine Version',
-                  subtitle: 'AcoustiQ Mobile • Build 62 (Sprint 3.4)',
+                  subtitle: 'AcoustiQ Mobile • Build 64 (Sprint 3.4)',
                   position: position,
                   onTap: () {
                     _devTapCount++;
@@ -1278,7 +1409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'v1.1.0+62',
+                      'v1.1.0+64',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
                         fontSize: 11,
@@ -1328,7 +1459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 16),
 
-          // 2. HARDWARE & DECODER ARCHITECTURE
+          // 2. HARDWARE & DECODER ARCHITECTURE (De-jargoned consumer info)
           buildSectionHeader('Hardware Architecture', subTextColor),
           ExpressiveGroup(
             rowCount: 2,
@@ -1338,8 +1469,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.developer_board_rounded,
                   iconColor: const Color(0xFFC084FC),
                   iconBgColor: isDark ? const Color(0x30C084FC) : const Color(0xFFF3E8FF),
-                  title: 'DSP Execution Target',
-                  subtitle: 'Arm64-v8a • Native C++ libflac + Flutter Skia Engine',
+                  title: 'Audio Decoding Pipeline',
+                  subtitle: '64-bit hardware acceleration with native audio decoder',
                   position: position,
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1348,7 +1479,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'NEON SIMD',
+                      '64-BIT',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
                         fontSize: 10,
@@ -1363,8 +1494,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.speed_rounded,
                   iconColor: AppColors.genuineEmerald,
                   iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-                  title: 'Continuous STFT Engine',
-                  subtitle: '262k sample continuous window with 96x96 Bilinear Mesh',
+                  title: 'Spectrogram Analysis',
+                  subtitle: 'GPU-accelerated high-resolution frequency rendering',
                   position: position,
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1373,7 +1504,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
-                      'GPU TEXTURE',
+                      'GPU ACTIVE',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
                         fontSize: 10,
@@ -1390,7 +1521,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
 
           // 3. PRIVACY & LOCAL-FIRST GUARANTEE
-          buildSectionHeader('Privacy & Integrity', subTextColor),
+          buildSectionHeader('Privacy & Data Security', subTextColor),
           ExpressiveGroup(
             rowCount: 1,
             itemBuilder: (context, index, position) {
@@ -1398,8 +1529,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.verified_user_rounded,
                 iconColor: AppColors.genuineEmerald,
                 iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-                title: 'Local-First Analysis',
-                subtitle: '100% on-device audio decoding. Zero cloud telemetry or tracking.',
+                title: '100% Offline & Private',
+                subtitle: 'All audio processing happens locally on your device. Zero data ever leaves your phone.',
                 position: position,
                 trailing: Icon(Icons.lock_outline_rounded, color: AppColors.genuineEmerald, size: 18),
               );

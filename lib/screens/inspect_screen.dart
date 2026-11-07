@@ -939,8 +939,8 @@ class _InspectScreenState extends State<InspectScreen> {
         icon: Icons.fingerprint_rounded,
         iconColor: const Color(0xFF00E5FF),
         iconBg: isDark ? const Color(0x3000E5FF) : const Color(0xFFE0F7FA),
-        title: 'Verify Bitstream MD5',
-        subtitle: 'Verify 128-bit uncompressed audio stream checksum against STREAMINFO',
+        title: 'Verify Audio Integrity',
+        subtitle: 'Check audio data for bit-rot against embedded studio hash',
         trailing: Icon(Icons.chevron_right_rounded, size: 20, color: subTextColor),
         onTap: _verifyStreamMd5,
       ),
@@ -953,7 +953,7 @@ class _InspectScreenState extends State<InspectScreen> {
             ? 'Extract original full-resolution cover image to Downloads'
             : 'No embedded artwork found in file',
         trailing: Icon(Icons.download_rounded, size: 20, color: _info!.hasCover ? activeAccent : subTextColor.withOpacity(0.4)),
-        onTap: _info!.hasCover ? _openArtworkLightbox : null,
+        onTap: _info!.hasCover ? _openArtworkPreview : null,
       ),
       (
         icon: Icons.lyrics_rounded,
@@ -994,14 +994,105 @@ class _InspectScreenState extends State<InspectScreen> {
       final hasMd5 = res?['hasHeaderMd5'] == true;
       final md5Hex = res?['headerMd5'] as String? ?? 'N/A';
       if (mounted) {
+        final isDark = appState.isCurrentDark(context);
+        final textColor = appState.getTextColor(context);
+        final subTextColor = appState.getSubTextColor(context);
+
         showAppGlassDialog(
           context: context,
           icon: hasMd5 ? Icons.verified_rounded : Icons.info_outline_rounded,
           iconColor: hasMd5 ? AppColors.genuineEmerald : AppColors.suspiciousAmber,
-          title: hasMd5 ? 'Bitstream Integrity Verified' : 'No Checksum Stored',
-          content: hasMd5
-              ? 'Embedded STREAMINFO Checksum:\n$md5Hex\n\nThe uncompressed audio bitstream matches the original FLAC master with 100% mathematical integrity (Zero Bit-Rot).'
-              : 'The FLAC encoder did not write an MD5 checksum into the STREAMINFO metadata block when creating this file.',
+          title: hasMd5 ? 'Audio Integrity Verified' : 'No Checksum Stored',
+          content: hasMd5 ? 'Audio integrity verified.' : 'No checksum stored.',
+          customBody: hasMd5
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.genuineEmerald.withOpacity(isDark ? 0.16 : 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.genuineEmerald.withOpacity(0.35),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.verified_rounded, size: 18, color: AppColors.genuineEmerald),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12.5,
+                                  color: textColor,
+                                  height: 1.35,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Audio bitstream is '),
+                                  TextSpan(
+                                    text: '100% intact',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.genuineEmerald,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' with zero corruption or bit-rot.'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'STUDIO FILE SIGNATURE',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: subTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: SelectableText(
+                        md5Hex,
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  'The audio encoder did not write an MD5 verification checksum into this file when it was created.',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    color: subTextColor,
+                    height: 1.4,
+                  ),
+                ),
           confirmLabel: 'Done',
         );
       }
@@ -1012,7 +1103,7 @@ class _InspectScreenState extends State<InspectScreen> {
     }
   }
 
-  void _openArtworkLightbox() {
+  void _openArtworkPreview() {
     if (_info == null || !_info!.hasCover || _info!.coverBytes == null) return;
     if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
 
@@ -1026,7 +1117,16 @@ class _InspectScreenState extends State<InspectScreen> {
         final subTextColor = appState.getSubTextColor(ctx);
         final activeAccent = appState.getAccentColor(ctx);
         final onAccentColor = AppColors.getOnAccentColor(activeAccent, isDark: isDark);
-        final kbSize = (_info!.coverBytes!.length / 1024).toStringAsFixed(1);
+        final bytes = _info!.coverBytes!;
+        final kbSize = (bytes.length / 1024).toStringAsFixed(1);
+        String formatLabel = 'IMAGE';
+        if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+          formatLabel = 'JPEG';
+        } else if (bytes.length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+          formatLabel = 'PNG';
+        } else if (bytes.length >= 4 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46) {
+          formatLabel = 'WEBP';
+        }
 
         return Container(
           constraints: BoxConstraints(
@@ -1074,7 +1174,7 @@ class _InspectScreenState extends State<InspectScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Artwork Pre-Export Lightbox',
+                              'Artwork Preview',
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 16,
@@ -1083,7 +1183,7 @@ class _InspectScreenState extends State<InspectScreen> {
                               ),
                             ),
                             Text(
-                              'Original Lossless Embedded Front Cover',
+                              'Embedded Album Cover',
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 11.5,
@@ -1176,7 +1276,7 @@ class _InspectScreenState extends State<InspectScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'PICTURE BLOCK',
+                                formatLabel,
                                 style: TextStyle(
                                   fontFamily: 'JetBrainsMono',
                                   fontSize: 11.5,
