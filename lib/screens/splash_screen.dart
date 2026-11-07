@@ -2,17 +2,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../main.dart';
-import '../models/app_settings.dart';
 
 /// AcoustiQ Studio Splash Screen
 ///
-/// Features:
+/// Refined Animation Choreography:
 /// - 100% pitch-black OLED canvas (#000000).
-/// - High-fidelity animated AcoustiQ logo: the 5 equalizer bars pulse with dynamic
-///   audio-reactive heights for ~600ms, then seamlessly settle into the iconic resting logo mark.
-/// - Clean "A C O U S T I Q" tracking wordmark (Option D: Zero Subtitles).
-/// - Pure minimalist backdrop (Choice 2: Zero footer badges).
-/// - Non-blocking: Tap-to-skip instantly transitions into MainShell.
+/// - Android 12+ system icon disabled via values-v31 windowSplashScreenAnimatedIcon = transparent,
+///   achieving the seamless Google Pay / Apple aesthetic (zero cold-start icon flash).
+/// - Rich 1500ms audio-reactive equalizer animation:
+///   * 0ms – 150ms: Smooth emergence from black.
+///   * 150ms – 1050ms: The 5 equalizer bars pulse with organic acoustic harmonics.
+///   * 1050ms – 1300ms: Smooth deceleration & settle into the iconic resting logo mark.
+///   * 1300ms – 1500ms: Steady resting hold.
+///   * 1500ms: Fluid 250ms fade dissolve directly into MainShell.
+/// - Non-blocking: Tap anywhere at any time to skip instantly into the app.
 class AcoustiQSplashScreen extends StatefulWidget {
   const AcoustiQSplashScreen({super.key});
 
@@ -30,7 +33,7 @@ class _AcoustiQSplashScreenState extends State<AcoustiQSplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 850),
+      duration: const Duration(milliseconds: 1500),
     );
 
     _controller.addListener(() {
@@ -93,11 +96,11 @@ class _AcoustiQSplashScreenState extends State<AcoustiQSplashScreen>
             builder: (context, child) {
               final t = _controller.value;
 
-              // Smooth fade-in for overall logo mark during first 200ms
-              final logoOpacity = (t / 0.25).clamp(0.0, 1.0);
+              // Smooth fade-in for overall logo mark during initial 150ms
+              final logoOpacity = (t / 0.12).clamp(0.0, 1.0);
 
-              // Subtitle/wordmark tracking fade in
-              final textOpacity = ((t - 0.15) / 0.30).clamp(0.0, 1.0);
+              // Wordmark fade in with tracking ease
+              final textOpacity = ((t - 0.10) / 0.20).clamp(0.0, 1.0);
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -172,6 +175,7 @@ class _AnimatedEqualizerBarsPainter extends CustomPainter {
   static const List<double> _normY = [0.8158, 0.8142, 0.8019, 0.8088, 0.8135];
   static const List<double> _baseH = [0.1594, 0.2771, 0.3947, 0.2508, 0.1393];
   static const List<double> _phases = [0.0, 1.4, 2.8, 4.2, 5.5];
+  static const List<double> _harmonics = [1.0, 1.25, 0.85, 1.15, 0.95];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -182,18 +186,22 @@ class _AnimatedEqualizerBarsPainter extends CustomPainter {
       ..isAntiAlias = true
       ..style = PaintingStyle.fill;
 
-    // Settle curve: waves oscillate during t in [0.0, 0.60], then damp to 0.0 at t=0.70
-    final damp = (1.0 - (progress / 0.65)).clamp(0.0, 1.0);
+    // Settle curve:
+    // Wave bounces actively during progress in [0.0, 0.70] (~1050ms)
+    // Settle dampens to 0 between [0.70, 0.86] (~1050ms - 1300ms)
+    // Resting hold between [0.86, 1.0] (1300ms - 1500ms)
+    final damp = (1.0 - ((progress - 0.15) / 0.65)).clamp(0.0, 1.0);
 
     for (int i = 0; i < 5; i++) {
       final cx = size.width * _normX[i];
       final cy = size.height * _normY[i];
       final baseH = size.height * _baseH[i];
 
-      // Sinusoidal wave bounce
-      final wave = math.sin(progress * 22.0 + _phases[i]);
-      // Multiplier oscillates around 1.0 when active, snaps cleanly to 1.0 at rest
-      final scaleFactor = (1.0 + (wave * 0.40 * damp)).clamp(0.2, 1.6);
+      // Studio acoustic harmonic bounce
+      final freq = 18.0 * _harmonics[i];
+      final wave = math.sin(progress * freq + _phases[i]);
+      // Multiplier oscillates around 1.0 when active, smoothly settles to 1.0 at rest
+      final scaleFactor = (1.0 + (wave * 0.42 * damp)).clamp(0.25, 1.65);
       final dynamicH = baseH * scaleFactor;
 
       final rect = Rect.fromCenter(
