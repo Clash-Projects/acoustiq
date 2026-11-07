@@ -5,7 +5,7 @@ import '../models/app_settings.dart';
 /// 1:1 Ambient Glass Wallpaper & Environment Engine
 ///
 /// Renders an atmospheric lightfield behind all screens and floating glass docks.
-/// Provides physical chromatic gradients, optical caustics, and custom user images
+/// Provides physical acoustic materials, chromatic gradients, and custom user images
 /// so that Gaussian blur, specular rims, and liquid lenses have real photons to refract.
 class AmbientWallpaperView extends StatelessWidget {
   const AmbientWallpaperView({super.key});
@@ -32,7 +32,7 @@ class AmbientWallpaperView extends StatelessWidget {
                   height: double.infinity,
                   alignment: Alignment.center,
                   errorBuilder: (context, error, stackTrace) =>
-                      _buildNebulaMesh(isDark),
+                      _buildAbyssMesh(isDark),
                 ),
                 // Soft Scrim for AAA Text Readability & Specular Rim Contrast
                 Container(
@@ -46,16 +46,16 @@ class AmbientWallpaperView extends StatelessWidget {
         }
 
         switch (preset) {
-          case 'abyss':
-            return _buildAbyssMesh(isDark);
-          case 'sunset':
-            return _buildSunsetMesh(isDark);
+          case 'titanium':
+            return _buildDarkTitanium(isDark);
+          case 'acoustic':
+            return _buildStudioAcoustic(isDark);
           case 'solid':
           case 'pure_black':
             return _buildPureBlack(context, isDark);
-          case 'nebula':
+          case 'abyss':
           default:
-            return _buildNebulaMesh(isDark);
+            return _buildAbyssMesh(isDark);
         }
       },
     );
@@ -66,118 +66,7 @@ class AmbientWallpaperView extends StatelessWidget {
     return Container(color: bg);
   }
 
-  /// Preset 1: Obsidian Nebula
-  /// Deep space cosmic violet, royal indigo & azure aurora
-  Widget _buildNebulaMesh(bool isDark) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // 1. Base Deep Chromatic Canvas
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? const [
-                      Color(0xFF0E0E18),
-                      Color(0xFF090A14),
-                      Color(0xFF06070E),
-                    ]
-                  : const [
-                      Color(0xFFEDE9FE),
-                      Color(0xFFF3F0FF),
-                      Color(0xFFF8FAFC),
-                    ],
-            ),
-          ),
-        ),
-
-        // 2. High-Luminance Top-Right Radiant Orchid Bloom
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0.85, -0.60),
-                radius: 1.25,
-                colors: isDark
-                    ? [
-                        const Color(0xFF7B1FA2).withOpacity(0.55),
-                        const Color(0xFF4A148C).withOpacity(0.30),
-                        Colors.transparent,
-                      ]
-                    : [
-                        const Color(0xFF9333EA).withOpacity(0.24),
-                        const Color(0xFFC084FC).withOpacity(0.12),
-                        Colors.transparent,
-                      ],
-                stops: const [0.0, 0.50, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // 3. Diagonal Silk Ribbon across center
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: const Alignment(-0.8, -0.3),
-                end: const Alignment(0.7, 0.5),
-                colors: isDark
-                    ? [
-                        Colors.transparent,
-                        const Color(0xFF311B92).withOpacity(0.38),
-                        const Color(0xFF1A237E).withOpacity(0.25),
-                        Colors.transparent,
-                      ]
-                    : [
-                        Colors.transparent,
-                        const Color(0xFF818CF8).withOpacity(0.18),
-                        const Color(0xFFA5B4FC).withOpacity(0.10),
-                        Colors.transparent,
-                      ],
-                stops: const [0.0, 0.40, 0.70, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // 4. Lower-Center Azure Aurora (Illuminates content gliding behind the dock)
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0.1, 0.75),
-                radius: 1.15,
-                colors: isDark
-                    ? [
-                        const Color(0xFF0D47A1).withOpacity(0.48),
-                        const Color(0xFF1565C0).withOpacity(0.24),
-                        Colors.transparent,
-                      ]
-                    : [
-                        const Color(0xFF38BDF8).withOpacity(0.24),
-                        const Color(0xFF7DD3FC).withOpacity(0.12),
-                        Colors.transparent,
-                      ],
-                stops: const [0.0, 0.55, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // 5. Micro-Texture Surface (Supplies spatial grain for realistic glass frosting)
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _MicroTexturePainter(isDark: isDark),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Preset 2: Emerald Abyss
+  /// Preset 1: Emerald Abyss
   /// Oceanic deep marine teal, emerald reefs & bioluminescent glow
   Widget _buildAbyssMesh(bool isDark) {
     return Stack(
@@ -288,13 +177,13 @@ class AmbientWallpaperView extends StatelessWidget {
     );
   }
 
-  /// Preset 3: Sunset Horizon
-  /// Twilight dusk rose, burning ember & golden dusk flares
-  Widget _buildSunsetMesh(bool isDark) {
+  /// Preset 2: Dark Titanium
+  /// Precision brushed gunmetal audio chassis with specular rim highlights
+  Widget _buildDarkTitanium(bool isDark) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. Base Twilight Canvas
+        // 1. Base Metallic Canvas
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -302,61 +191,61 @@ class AmbientWallpaperView extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: isDark
                   ? const [
-                      Color(0xFF160A10),
-                      Color(0xFF10060B),
-                      Color(0xFF0A0407),
+                      Color(0xFF16181D),
+                      Color(0xFF0F1115),
+                      Color(0xFF08090C),
                     ]
                   : const [
-                      Color(0xFFFFF1F2),
-                      Color(0xFFFFF7ED),
-                      Color(0xFFFAF5FF),
+                      Color(0xFFF1F5F9),
+                      Color(0xFFE2E8F0),
+                      Color(0xFFCBD5E1),
                     ],
             ),
           ),
         ),
 
-        // 2. Top-Right Vivid Crimson Magenta Bloom
+        // 2. High-Luminance Brushed Specular Rim Reflection
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                center: const Alignment(0.85, -0.65),
-                radius: 1.30,
+                center: const Alignment(0.65, -0.70),
+                radius: 1.35,
                 colors: isDark
                     ? [
-                        const Color(0xFFAD1457).withOpacity(0.55),
-                        const Color(0xFF6A1B9A).withOpacity(0.30),
+                        const Color(0xFF94A3B8).withOpacity(0.16),
+                        const Color(0xFF64748B).withOpacity(0.08),
                         Colors.transparent,
                       ]
                     : [
-                        const Color(0xFFF43F5E).withOpacity(0.24),
-                        const Color(0xFFFB7185).withOpacity(0.12),
+                        const Color(0xFFFFFFFF).withOpacity(0.50),
+                        const Color(0xFFE2E8F0).withOpacity(0.20),
                         Colors.transparent,
                       ],
-                stops: const [0.0, 0.52, 1.0],
+                stops: const [0.0, 0.45, 1.0],
               ),
             ),
           ),
         ),
 
-        // 3. Diagonal Warm Ember Flare
+        // 3. Diagonal Sub-Surface Rim Sheen
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: const Alignment(-0.8, -0.2),
-                end: const Alignment(0.6, 0.6),
+                begin: const Alignment(-0.8, -0.4),
+                end: const Alignment(0.7, 0.6),
                 colors: isDark
                     ? [
                         Colors.transparent,
-                        const Color(0xFFC2185B).withOpacity(0.40),
-                        const Color(0xFFD84315).withOpacity(0.28),
+                        const Color(0xFF334155).withOpacity(0.15),
+                        const Color(0xFF1E293B).withOpacity(0.08),
                         Colors.transparent,
                       ]
                     : [
                         Colors.transparent,
-                        const Color(0xFFFB923C).withOpacity(0.20),
-                        const Color(0xFFFDBA74).withOpacity(0.10),
+                        const Color(0xFFFFFFFF).withOpacity(0.35),
+                        const Color(0xFFF8FAFC).withOpacity(0.15),
                         Colors.transparent,
                       ],
                 stops: const [0.0, 0.40, 0.70, 1.0],
@@ -365,34 +254,71 @@ class AmbientWallpaperView extends StatelessWidget {
           ),
         ),
 
-        // 4. Lower-Center Golden Dusk Aurora
+        // 4. Physical Brushed Metal Striations
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _TitaniumBrushedPainter(isDark: isDark),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Preset 3: Studio Acoustic
+  /// Professional recording studio soundproofing foam wedges & acoustic diffuser geometry
+  Widget _buildStudioAcoustic(bool isDark) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1. Base Studio Obsidian Canvas
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDark
+                  ? const [
+                      Color(0xFF111318),
+                      Color(0xFF0C0D11),
+                      Color(0xFF07080A),
+                    ]
+                  : const [
+                      Color(0xFFF8FAFC),
+                      Color(0xFFF1F5F9),
+                      Color(0xFFE2E8F0),
+                    ],
+            ),
+          ),
+        ),
+
+        // 2. Subtle Acoustic Monitor Center Glow
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                center: const Alignment(0.0, 0.78),
-                radius: 1.15,
+                center: const Alignment(0.0, -0.30),
+                radius: 1.20,
                 colors: isDark
                     ? [
-                        const Color(0xFFE65100).withOpacity(0.48),
-                        const Color(0xFFBF360C).withOpacity(0.26),
+                        const Color(0xFF1E293B).withOpacity(0.20),
+                        const Color(0xFF0F172A).withOpacity(0.10),
                         Colors.transparent,
                       ]
                     : [
-                        const Color(0xFFF59E0B).withOpacity(0.24),
-                        const Color(0xFFFCD34D).withOpacity(0.12),
+                        const Color(0xFFCBD5E1).withOpacity(0.25),
+                        const Color(0xFFE2E8F0).withOpacity(0.12),
                         Colors.transparent,
                       ],
-                stops: const [0.0, 0.55, 1.0],
+                stops: const [0.0, 0.50, 1.0],
               ),
             ),
           ),
         ),
 
-        // 5. Micro-Texture Surface
+        // 3. Acoustic Foam Wedge / Diffuser Baffle Matrix
         Positioned.fill(
           child: CustomPaint(
-            painter: _MicroTexturePainter(isDark: isDark),
+            painter: _AcousticDiffuserPainter(isDark: isDark),
           ),
         ),
       ],
@@ -402,26 +328,32 @@ class AmbientWallpaperView extends StatelessWidget {
   /// Miniature preview swatch for Settings Screen
   static Widget buildPreview(String preset, bool isDark) {
     switch (preset) {
-      case 'abyss':
+      case 'titanium':
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF00796B), Color(0xFF004D40), Color(0xFF001E1D)],
+              colors: [Color(0xFF334155), Color(0xFF1E293B), Color(0xFF0F172A)],
             ),
           ),
+          child: const CustomPaint(
+            painter: _TitaniumBrushedPainter(isDark: true),
+          ),
         );
-      case 'sunset':
+      case 'acoustic':
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFFAD1457), Color(0xFFD84315), Color(0xFF1E0A12)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1E222A), Color(0xFF13151B), Color(0xFF090A0D)],
             ),
+          ),
+          child: const CustomPaint(
+            painter: _AcousticDiffuserPainter(isDark: true),
           ),
         );
       case 'solid':
@@ -436,15 +368,15 @@ class AmbientWallpaperView extends StatelessWidget {
             ),
           ),
         );
-      case 'nebula':
+      case 'abyss':
       default:
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFF7B1FA2), Color(0xFF1565C0), Color(0xFF0E0E18)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF00796B), Color(0xFF004D40), Color(0xFF001E1D)],
             ),
           ),
         );
@@ -478,5 +410,100 @@ class _MicroTexturePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MicroTexturePainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
+}
+
+/// Titanium Brushed Metal Striations Painter
+///
+/// Simulates fine horizontal directional brushed striations found on
+/// premium studio audio amplifiers and DAC chassis.
+class _TitaniumBrushedPainter extends CustomPainter {
+  final bool isDark;
+
+  const _TitaniumBrushedPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    const step = 4.0;
+    for (double y = 0.0; y < size.height; y += step) {
+      final hash = (y * 73 + 19).toInt();
+      final alphaFactor = ((hash % 10) / 10.0);
+      final alpha = (isDark ? 0.032 : 0.024) * alphaFactor;
+      linePaint.color = (isDark ? Colors.white : Colors.black).withOpacity(alpha);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TitaniumBrushedPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
+}
+
+/// Studio Acoustic Foam Diffuser Painter
+///
+/// Simulates the alternating geometric pyramid wedge baffles of recording studio
+/// acoustic wall paneling.
+class _AcousticDiffuserPainter extends CustomPainter {
+  final bool isDark;
+
+  const _AcousticDiffuserPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const tileSize = 52.0;
+    final lightPaint = Paint()
+      ..color = (isDark ? Colors.white : Colors.white).withOpacity(isDark ? 0.028 : 0.40)
+      ..style = PaintingStyle.fill;
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(isDark ? 0.075 : 0.045)
+      ..style = PaintingStyle.fill;
+    final borderPaint = Paint()
+      ..color = (isDark ? Colors.white : Colors.black).withOpacity(isDark ? 0.015 : 0.025)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    int row = 0;
+    for (double y = 0; y < size.height; y += tileSize, row++) {
+      int col = 0;
+      for (double x = 0; x < size.width; x += tileSize, col++) {
+        final invert = (row + col) % 2 == 0;
+        final pathA = Path();
+        final pathB = Path();
+
+        if (invert) {
+          pathA.moveTo(x, y);
+          pathA.lineTo(x + tileSize, y);
+          pathA.lineTo(x, y + tileSize);
+          pathA.close();
+
+          pathB.moveTo(x + tileSize, y);
+          pathB.lineTo(x + tileSize, y + tileSize);
+          pathB.lineTo(x, y + tileSize);
+          pathB.close();
+        } else {
+          pathA.moveTo(x, y);
+          pathA.lineTo(x + tileSize, y);
+          pathA.lineTo(x + tileSize, y + tileSize);
+          pathA.close();
+
+          pathB.moveTo(x, y);
+          pathB.lineTo(x + tileSize, y + tileSize);
+          pathB.lineTo(x, y + tileSize);
+          pathB.close();
+        }
+
+        canvas.drawPath(pathA, lightPaint);
+        canvas.drawPath(pathB, shadowPaint);
+        canvas.drawRect(Rect.fromLTWH(x, y, tileSize, tileSize), borderPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _AcousticDiffuserPainter oldDelegate) =>
       oldDelegate.isDark != isDark;
 }

@@ -1784,9 +1784,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color activeAccent,
   ) {
     const presets = [
-      (key: 'nebula', name: 'Obsidian\nNebula'),
       (key: 'abyss', name: 'Emerald\nAbyss'),
-      (key: 'sunset', name: 'Sunset\nHorizon'),
+      (key: 'titanium', name: 'Dark\nTitanium'),
+      (key: 'acoustic', name: 'Studio\nAcoustic'),
       (key: 'solid', name: 'Solid\nCanvas'),
     ];
 
