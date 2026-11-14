@@ -4,23 +4,23 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
-/// Production 3D Liquid Lens Navigation Dock (LastWave & iOS WWDC25 Native Architecture)
+/// Authentic LastWave & WWDC25 Frosted Glass Navigation Dock
 ///
 /// Features:
-/// 1. Cohesive Integrated Capsule: Active tab pill expands and slides inside the dock's
-///    deterministic track using fluid spring physics (Curves.easeOutBack).
-/// 2. Deep Obsidian Translucent Substrate (Apple HIG Calibrated & 1:1 LastWave 48dp Spec):
-///    - 48dp exact dock height matching LastWave Native.
-///    - Compact 40dp inactive tabs with 20dp centered icons.
-///    - Horizontally expanding 120dp active pill with spring dynamics.
-///    - Real-time 24dp Gaussian blur lets scrolling album art bleed through softly.
-/// 3. True Water-Clear Droplet Optics:
-///    - 100% Achromatic body (NO cyan dye).
-///    - Top specular highlight arc (simulates ambient overhead light reflecting off water meniscus).
-///    - Inner caustic lens gradient & optical icon magnification (1.12x).
-///    - Soft diffuse ambient contact shadow.
-/// 4. Seamless Glide Gesture Tracking: Dragging smoothly hit-tests tabs and transitions
-///    active selection with tactile haptic clicks, never detaching or sticking.
+/// 1. Perfect 1:1 LastWave Proportions:
+///    - 54dp dock height (42dp active stadium pill) with balanced 296dp width.
+///    - 48dp inactive touch slots with 21dp centered glyphs.
+///    - 136dp active pill with 20dp icon + 8dp spacing + 13sp SemiBold typography.
+/// 2. Deep Smoky Translucent Glass Substrate (Zero Opaque Mud):
+///    - 40% neutral dark tint with real GPU 20dp Gaussian blur.
+///    - Content, album art, and text glide through clearly underneath.
+/// 3. True Water-Meniscus Specular Optics:
+///    - Top specular highlight line simulating ambient ceiling reflection.
+///    - Directional glass rim contour (brighter top-left, soft bottom-right).
+///    - Dual-layer soft ambient drop shadow.
+/// 4. Zero-Collision Horizontal Flow:
+///    - Pure horizontal layout (Icon + Spacing + Label) prevents any text/icon overlap.
+///    - Smooth spring expansion (Curves.easeOutCubic) with tactile haptic clicks.
 class LiquidLensNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -36,11 +36,11 @@ class LiquidLensNavBar extends StatefulWidget {
 }
 
 class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
-  static const double _kPaddingH = 6.0;
-  static const double _kDockHeight = 48.0;
-  static const double _kInactiveWidth = 40.0;
-  static const double _kActiveWidth = 120.0;
-  static const double _kTotalWidth = (2 * _kPaddingH) + (3 * _kInactiveWidth) + _kActiveWidth; // 252.0
+  static const double _kPaddingH = 8.0;
+  static const double _kDockHeight = 54.0;
+  static const double _kInactiveWidth = 48.0;
+  static const double _kActiveWidth = 136.0;
+  static const double _kTotalWidth = (2 * _kPaddingH) + (3 * _kInactiveWidth) + _kActiveWidth; // 296.0
 
   int _lastHapticIndex = -1;
 
@@ -96,15 +96,15 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         final useGlass = appState.isLiquidGlass;
         final activeAccent = appState.getAccentColor(context);
 
-        // LastWave Architecture: Ultra-Translucent Achromatic Glass Substrate (Zero opaque black)
-        // Scrim alpha 0.22 lets scrolling content, album art, and text glide through clearly with optical blur
+        // LastWave Smoky Translucent Glass (Zero opaque grey/blue tint)
+        // Lets album art, text, and vibrant colors bleed through softly with GPU blur
         final dockBg = isDark
-            ? (useGlass ? const Color(0x2B141820) : const Color(0xFF14171C))
-            : (useGlass ? Colors.white.withOpacity(0.65) : Colors.white);
+            ? (useGlass ? const Color(0x66000000) : const Color(0xF012151A))
+            : (useGlass ? Colors.white.withOpacity(0.70) : Colors.white);
 
-        final specularBorder = isDark
-            ? Colors.white.withOpacity(0.12)
-            : Colors.black.withOpacity(0.06);
+        final dockBorder = isDark
+            ? Colors.white.withOpacity(0.14)
+            : Colors.black.withOpacity(0.08);
 
         return Center(
           child: MouseRegion(
@@ -114,32 +114,37 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
               onTapDown: (details) => _handleTouchPosition(details.localPosition),
               onHorizontalDragUpdate: (details) => _handleTouchPosition(details.localPosition),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(28),
                 child: BackdropFilter(
                   filter: useGlass
-                      ? ImageFilter.blur(sigmaX: 24, sigmaY: 24)
+                      ? ImageFilter.blur(sigmaX: 20, sigmaY: 20)
                       : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                   child: Container(
                     width: _kTotalWidth,
                     height: _kDockHeight,
-                    padding: const EdgeInsets.symmetric(horizontal: _kPaddingH, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: _kPaddingH, vertical: 6),
                     decoration: BoxDecoration(
                       color: dockBg,
-                      borderRadius: BorderRadius.circular(26),
-                      border: Border.all(color: specularBorder, width: 0.6),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: dockBorder, width: 0.8),
                       boxShadow: isDark
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.40),
-                                blurRadius: 20,
-                                offset: const Offset(0, 6),
+                                color: Colors.black.withOpacity(0.45),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.20),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
                             ]
                           : [
                               BoxShadow(
-                                color: const Color(0x14000000),
-                                blurRadius: 16,
-                                offset: const Offset(0, 5),
+                                color: const Color(0x18000000),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                     ),
@@ -149,7 +154,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                         final tab = _tabs[index];
                         final isSelected = widget.currentIndex == index;
 
-                        return _IntegratedDockTab(
+                        return _LastWaveDockTab(
                           icon: tab.icon,
                           label: tab.label,
                           isSelected: isSelected,
@@ -171,8 +176,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
   }
 }
 
-/// Integrated Tab Capsule with Fluid Spring Animation & True Achromatic Water Droplet Lens
-class _IntegratedDockTab extends StatelessWidget {
+/// Individual Tab Item with Spring Expansion & Horizontal Content Alignment
+class _LastWaveDockTab extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
@@ -181,7 +186,7 @@ class _IntegratedDockTab extends StatelessWidget {
   final Color activeAccent;
   final VoidCallback onTap;
 
-  const _IntegratedDockTab({
+  const _LastWaveDockTab({
     required this.icon,
     required this.label,
     required this.isSelected,
@@ -193,63 +198,52 @@ class _IntegratedDockTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const activeWidth = 120.0;
-    const inactiveWidth = 40.0;
+    const activeWidth = 136.0;
+    const inactiveWidth = 48.0;
 
     final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final inactiveColor = isDark ? Colors.white.withOpacity(0.60) : AppColors.lightTextMuted;
+    final inactiveColor = isDark ? Colors.white.withOpacity(0.55) : AppColors.lightTextMuted;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutBack,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
       width: isSelected ? activeWidth : inactiveWidth,
-      height: 38,
+      height: 42,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           mouseCursor: SystemMouseCursors.click,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(21),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           child: isSelected
-              ? _AchromaticWaterLensPill(
+              ? _GlassActivePill(
                   isDark: isDark,
                   useGlass: useGlass,
                   activeAccent: activeAccent,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Water-magnified icon (1.12x)
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 1.0, end: 1.12),
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutBack,
-                        builder: (context, scale, child) {
-                          return Transform.scale(
-                            scale: scale,
-                            child: Icon(
-                              icon,
-                              size: 18,
-                              color: activeColor,
-                            ),
-                          );
-                        },
+                      Icon(
+                        icon,
+                        size: 20,
+                        color: activeColor,
                       ),
-                      const SizedBox(width: 6),
-                      // Smoothly expanding label
+                      const SizedBox(width: 8),
                       Flexible(
                         child: Text(
                           label,
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 13.0,
+                            fontWeight: FontWeight.w600,
                             letterSpacing: -0.2,
                             color: activeColor,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.clip,
+                          overflow: TextOverflow.fade,
+                          softWrap: false,
                         ),
                       ),
                     ],
@@ -258,7 +252,7 @@ class _IntegratedDockTab extends StatelessWidget {
               : Center(
                   child: Icon(
                     icon,
-                    size: 20,
+                    size: 21,
                     color: inactiveColor,
                   ),
                 ),
@@ -268,14 +262,14 @@ class _IntegratedDockTab extends StatelessWidget {
   }
 }
 
-/// Achromatic Water Lens Pill Substrate with Specular Arc & Refraction Rim
-class _AchromaticWaterLensPill extends StatelessWidget {
+/// Authentic Translucent Glass Pill Substrate with Specular Light Arc
+class _GlassActivePill extends StatelessWidget {
   final bool isDark;
   final bool useGlass;
   final Color activeAccent;
   final Widget child;
 
-  const _AchromaticWaterLensPill({
+  const _GlassActivePill({
     required this.isDark,
     required this.useGlass,
     required this.activeAccent,
@@ -286,75 +280,87 @@ class _AchromaticWaterLensPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(21),
         boxShadow: isDark
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
+                  color: Colors.black.withOpacity(0.30),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: const Color(0x18000000),
+                  color: const Color(0x14000000),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(21),
         child: CustomPaint(
-          painter: _WaterDropletLensPainter(
+          painter: _GlassPillPainter(
             isDark: isDark,
             activeAccent: activeAccent,
           ),
-          child: Center(child: child),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: child,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// CustomPainter rendering Achromatic Optical Water Meniscus & Specular Light Arc
-class _WaterDropletLensPainter extends CustomPainter {
+/// Painter for the Active Glass Pill:
+/// 1. Subtle translucent white glass body (12-18% alpha)
+/// 2. Top specular reflection line (ambient overhead light on water meniscus)
+/// 3. Hairline directional refraction border (brighter top-left, soft bottom-right)
+class _GlassPillPainter extends CustomPainter {
   final bool isDark;
   final Color activeAccent;
 
-  _WaterDropletLensPainter({required this.isDark, required this.activeAccent});
+  _GlassPillPainter({
+    required this.isDark,
+    required this.activeAccent,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
-      const Radius.circular(19),
+      const Radius.circular(21),
     );
 
-    // 1. Water-Clear Translucent Refraction Body (LastWave 28% Alpha, Never Opaque)
+    // 1. Crystal Translucent Glass Body (Never opaque grey)
+    // Subtle gradient giving convex optical depth
     final bodyPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                Color.lerp(Colors.white, activeAccent, 0.12)!.withOpacity(0.22),
-                Color.lerp(Colors.white, activeAccent, 0.08)!.withOpacity(0.14),
-                Color.lerp(Colors.white, activeAccent, 0.04)!.withOpacity(0.08),
+                Colors.white.withOpacity(0.18),
+                Colors.white.withOpacity(0.11),
+                Colors.white.withOpacity(0.06),
               ]
             : [
-                Color.lerp(Colors.black, activeAccent, 0.10)!.withOpacity(0.09),
-                Color.lerp(Colors.black, activeAccent, 0.06)!.withOpacity(0.06),
-                Color.lerp(Colors.black, activeAccent, 0.02)!.withOpacity(0.03),
+                Colors.white.withOpacity(0.85),
+                Colors.white.withOpacity(0.70),
+                Colors.white.withOpacity(0.55),
               ],
       ).createShader(Offset.zero & size);
 
     canvas.drawRRect(rrect, bodyPaint);
 
-    // 2. Top Specular Overhead Light Arc (Simulates ceiling light reflecting on water drop apex)
+    // 2. Top Specular Highlight Arc (Simulates overhead light reflection)
     final topArcPath = Path()
-      ..moveTo(size.width * 0.18, 1.2)
-      ..lineTo(size.width * 0.82, 1.2);
+      ..moveTo(size.width * 0.16, 1.0)
+      ..lineTo(size.width * 0.84, 1.0);
 
     final topArcPaint = Paint()
       ..style = PaintingStyle.stroke
@@ -362,30 +368,30 @@ class _WaterDropletLensPainter extends CustomPainter {
       ..shader = LinearGradient(
         colors: [
           Colors.transparent,
-          isDark ? const Color(0xCCFFFFFF) : Colors.white,
+          isDark ? const Color(0xE6FFFFFF) : Colors.white,
           Colors.transparent,
         ],
       ).createShader(Offset.zero & size);
 
     canvas.drawPath(topArcPath, topArcPaint);
 
-    // 3. Crisp Optical Contour (Refraction rim with subtle accent specular gleam)
+    // 3. Hairline Refraction Rim (Crisp, Directional 0.7px contour)
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.6
+      ..strokeWidth = 0.7
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: isDark
             ? [
-                Color.lerp(Colors.white, activeAccent, 0.25)!.withOpacity(0.45),
-                const Color(0x15FFFFFF),
-                const Color(0x05FFFFFF),
+                Colors.white.withOpacity(0.38),
+                Colors.white.withOpacity(0.15),
+                Colors.white.withOpacity(0.05),
               ]
             : [
                 Colors.white,
-                Colors.white.withOpacity(0.4),
-                Colors.white.withOpacity(0.1),
+                Colors.white.withOpacity(0.50),
+                Colors.white.withOpacity(0.20),
               ],
       ).createShader(Offset.zero & size);
 
@@ -393,7 +399,7 @@ class _WaterDropletLensPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _WaterDropletLensPainter oldDelegate) {
+  bool shouldRepaint(covariant _GlassPillPainter oldDelegate) {
     return oldDelegate.isDark != isDark || oldDelegate.activeAccent != activeAccent;
   }
 }
