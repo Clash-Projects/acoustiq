@@ -4,28 +4,27 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
-/// Authentic LastWave Liquid Sliding Glass Dock (Compact Floating Island v3)
+/// Authentic LastWave Liquid Sliding Glass Dock (Volumetric Optical Glass v4)
 ///
 /// Features:
-/// 1. Compact Floating Island Geometry:
-///    - 316dp width (sleek, refined margins on screen sides instead of a wide toolbar).
-///    - 50dp dock height with 46dp lens height (padding = 2dp). Tight molded fit
-///      eliminates the "loose button inside a tray" look.
-///    - 94dp active tab + 72dp inactive tabs: "Duplicates" has 23dp of free breathing
-///      space, zero text clipping.
-/// 2. Pure Water-Clear Liquid Lens:
-///    - Lens interior wash reduced from 12% to LastWave's exact 1.5% clear water
-///      (Colors.white.withOpacity(0.015)), eliminating cloudy grey plastic ovals.
-///    - Background wallpaper and scroll items remain crystal clear through the lens.
-/// 3. 3-Tier Layered Curvature & Meniscus Depth:
-///    - Silhouette-clipped 3-tier nested shading (6.0dp, 3.5dp, 1.5dp) creates organic
-///      liquid convex curvature and optical depth.
-///    - High-contrast directional specular light catch (88% white) along the top-left rim.
-///    - Micro-crease lower-right ambient reflection rim.
-/// 4. Translucent Frosted Glass Substrate:
-///    - Frosted white photon scattering over 16dp blur lets album art and vibrant colors
-///      bleed through with genuine optical luminance.
-///    - Inactive icons boosted to 82% crisp white for pristine resting contrast.
+/// 1. Physical Glass Slab Volumetric Gradient:
+///    - Instead of a flat empty color, the dock substrate uses a physical light-bounce gradient
+///      (14% white top catch, clear body core, 6% ground reflection) so it reads as a solid
+///      3D optical glass cylinder even over dark/black backgrounds.
+/// 2. Focal-Light Liquid Lens (Radial Optical Focus):
+///    - Active pill features a directional radial focal gradient centered at the upper-left,
+///      simulating light gathering inside a convex water droplet.
+///    - High-elevation outer shadow (35% alpha, 10px blur) casts a physical drop shadow onto
+///      the glass track bed, separating the liquid droplet from the rail.
+/// 3. Meniscus 3-Tier Layered Shading & Specular Catch:
+///    - Silhouette-clipped 3-band nested shading (6.0dp, 3.5dp, 1.5dp) creates physical
+///      meniscus thickness without wireframe strokes.
+///    - 92% bright specular white light catch arc along the upper-left chamfer.
+/// 4. Compact Floating Island Geometry:
+///    - 316dp dock width (leaves ~37dp breathing room on screen sides).
+///    - 94dp active tab + 72dp inactives: "Duplicates" fits comfortably with 23dp extra padding,
+///      zero text clipping.
+///    - Inactive icons boosted to 78% crisp white.
 class LiquidLensNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -111,13 +110,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         final isDark = appState.isCurrentDark(context);
         final useGlass = appState.isLiquidGlass;
 
-        // Frosted white photon sheen (WWDC25 & LastWave spec):
-        // White photons scatter ambient light over the 16dp blur so the dock reads as
-        // luminous physical frosted glass rather than a dark hole.
-        final railBg = isDark
-            ? (useGlass ? const Color(0x1EFFFFFF) : const Color(0xF012151A))
-            : (useGlass ? Colors.white.withOpacity(0.72) : Colors.white);
-
         // Linear continuous pill position:
         // Active 0: 3.0, Active 1: 75.0, Active 2: 147.0, Active 3: 219.0
         final pillLeft = _kPaddingH + (widget.currentIndex * _kInactiveSlotWidth);
@@ -132,9 +124,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(25),
                 child: BackdropFilter(
-                  // 16dp Gaussian optical blur (crisp, optical, never muddy)
+                  // 14dp Gaussian optical blur (crisp, optical, never muddy)
                   filter: useGlass
-                      ? ImageFilter.blur(sigmaX: 16, sigmaY: 16)
+                      ? ImageFilter.blur(sigmaX: 14, sigmaY: 14)
                       : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                   child: CustomPaint(
                     // WWDC25 & LastWave Specular Light Catch Rim along top edge
@@ -146,17 +138,42 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                       width: _kDockWidth,
                       height: _kDockHeight,
                       decoration: BoxDecoration(
-                        color: railBg,
+                        // Physical Glass Volume Gradient:
+                        // Gives the glass cylinder real physical presence and depth
+                        // even over pitch-black backgrounds.
+                        gradient: useGlass
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: isDark
+                                    ? [
+                                        Colors.white.withOpacity(0.14), // top ambient light catch
+                                        Colors.white.withOpacity(0.04), // upper body
+                                        Colors.white.withOpacity(0.02), // clear core
+                                        Colors.white.withOpacity(0.06), // bottom reflection
+                                      ]
+                                    : [
+                                        Colors.white.withOpacity(0.85),
+                                        Colors.white.withOpacity(0.70),
+                                        Colors.white.withOpacity(0.65),
+                                        Colors.white.withOpacity(0.78),
+                                      ],
+                                stops: const [0.0, 0.30, 0.70, 1.0],
+                              )
+                            : null,
+                        color: useGlass
+                            ? null
+                            : (isDark ? const Color(0xF012151A) : Colors.white),
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: isDark
                             ? [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.18),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
+                                  color: Colors.black.withOpacity(0.25),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 5),
                                 ),
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withOpacity(0.10),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -171,7 +188,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                       ),
                       child: Stack(
                         children: [
-                          // 1. Physical Sliding Glass Lens (Pure Water Droplet)
+                          // 1. Physical Sliding Glass Lens (Focal-Light Liquid Droplet)
                           AnimatedPositioned(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutCubic,
@@ -181,21 +198,36 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                             height: _kPillHeight,
                             child: Container(
                               decoration: BoxDecoration(
-                                // LastWave 1.5% water-clear wash (never cloudy grey plastic)
-                                color: isDark
-                                    ? Colors.white.withOpacity(0.015)
-                                    : Colors.black.withOpacity(0.015),
+                                // Convex Focal-Light Radial Gradient:
+                                // Simulates light gathering inside an elevated water bubble
+                                gradient: RadialGradient(
+                                  center: const Alignment(-0.25, -0.45),
+                                  radius: 0.95,
+                                  colors: isDark
+                                      ? [
+                                          Colors.white.withOpacity(0.12), // focal light gathering
+                                          Colors.white.withOpacity(0.03),
+                                          Colors.transparent,
+                                        ]
+                                      : [
+                                          Colors.white.withOpacity(0.40),
+                                          Colors.white.withOpacity(0.12),
+                                          Colors.transparent,
+                                        ],
+                                  stops: const [0.0, 0.50, 1.0],
+                                ),
                                 borderRadius: BorderRadius.circular(23),
                                 boxShadow: [
+                                  // Physical drop shadow from water droplet onto glass slab
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(isDark ? 0.22 : 0.08),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2.5),
+                                    color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
                                   ),
                                   BoxShadow(
-                                    color: Colors.white.withOpacity(isDark ? 0.05 : 0.0),
-                                    blurRadius: 1,
-                                    offset: const Offset(0, -0.5),
+                                    color: Colors.white.withOpacity(isDark ? 0.08 : 0.0),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, -1),
                                   ),
                                 ],
                               ),
@@ -219,7 +251,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
 
                                 final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
                                 final inactiveColor = isDark
-                                    ? Colors.white.withOpacity(0.82)
+                                    ? Colors.white.withOpacity(0.78)
                                     : AppColors.lightTextMuted;
 
                                 return AnimatedContainer(
@@ -294,7 +326,7 @@ class _DockSpecularRimPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius)).deflate(0.5);
 
-    // Pass 1: Crisp specular hairline
+    // Crisp specular hairline with ambient light focus
     final rimPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
@@ -302,11 +334,11 @@ class _DockSpecularRimPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Colors.white.withOpacity(isDark ? 0.55 : 0.80),
-          Colors.white.withOpacity(isDark ? 0.20 : 0.35),
-          Colors.white.withOpacity(isDark ? 0.05 : 0.10),
+          Colors.white.withOpacity(isDark ? 0.65 : 0.85),
+          Colors.white.withOpacity(isDark ? 0.25 : 0.40),
+          Colors.white.withOpacity(isDark ? 0.04 : 0.08),
         ],
-        stops: const [0.0, 0.40, 1.0],
+        stops: const [0.0, 0.42, 1.0],
       ).createShader(rect);
 
     canvas.drawRRect(rrect, rimPaint);
@@ -337,22 +369,7 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     canvas.save();
     canvas.clipRRect(rrect);
 
-    // 1. Surface reflection (ultra-subtle sheen)
-    final surfacePaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.white.withOpacity(isDark ? 0.06 : 0.10),
-          Colors.white.withOpacity(isDark ? 0.008 : 0.015),
-          Colors.transparent,
-          Colors.white.withOpacity(isDark ? 0.015 : 0.02),
-        ],
-        stops: const [0.0, 0.35, 0.65, 1.0],
-      ).createShader(rect);
-    canvas.drawRect(rect, surfacePaint);
-
-    // 2. Layered inset lower shade bands (LastWave 3-Tier Layered Curvature)
+    // 1. Layered inset lower shade bands (LastWave 3-Tier Layered Curvature)
     // Clipping strokes centred on the outline leaves soft inset depth without hard bevels.
     final lowerShadeShader = LinearGradient(
       begin: Alignment.topCenter,
@@ -360,7 +377,7 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
       colors: [
         Colors.transparent,
         Colors.transparent,
-        Colors.black.withOpacity(0.02),
+        Colors.black.withOpacity(0.03),
         Colors.black.withOpacity(isDark ? 0.18 : 0.10),
       ],
       stops: const [0.0, 0.45, 0.70, 1.0],
@@ -384,27 +401,27 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
       ..shader = lowerShadeShader;
     canvas.drawRRect(rrect, narrowShade);
 
-    // 3. Upper-left specular light catch rim (Direct LastWave formula)
+    // 2. Upper-left specular light catch rim (Direct LastWave formula)
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
+      ..strokeWidth = 1.3
       ..shader = LinearGradient(
-        begin: Alignment.topLeft,
+        begin: const Alignment(-0.5, -0.6),
         end: const Alignment(0.60, 1.0),
         colors: [
-          Colors.white.withOpacity(isDark ? 0.88 : 0.95),
-          Colors.white.withOpacity(isDark ? 0.42 : 0.55),
+          Colors.white.withOpacity(isDark ? 0.92 : 0.98),
+          Colors.white.withOpacity(isDark ? 0.45 : 0.60),
           Colors.transparent,
           Colors.transparent,
         ],
-        stops: const [0.0, 0.25, 0.52, 1.0],
+        stops: const [0.0, 0.28, 0.55, 1.0],
       ).createShader(rect);
     canvas.drawRRect(rimRRect, upperRimPaint);
 
-    // 4. Lower-right ambient reflection rim (Direct LastWave formula)
+    // 3. Lower-right ambient reflection rim (Direct LastWave formula)
     final lowerRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.7
+      ..strokeWidth = 0.8
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -412,9 +429,9 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
           Colors.transparent,
           Colors.transparent,
           Colors.white.withOpacity(0.08),
-          Colors.white.withOpacity(isDark ? 0.38 : 0.45),
+          Colors.white.withOpacity(isDark ? 0.40 : 0.48),
         ],
-        stops: const [0.0, 0.62, 0.84, 1.0],
+        stops: const [0.0, 0.60, 0.84, 1.0],
       ).createShader(rect);
     canvas.drawRRect(rimRRect, lowerRimPaint);
 
