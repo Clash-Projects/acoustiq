@@ -4,25 +4,24 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
-/// Authentic LastWave Liquid Sliding Glass Dock (Option 1: Optical Hybrid)
+/// Authentic LastWave Liquid Sliding Glass Dock (Option 1: Optical Hybrid v2)
 ///
 /// Features:
 /// 1. True 1:1 LastWave Optical Glass Substrate:
-///    - Crisp 14dp Gaussian optical blur allows wallpaper, album art, and content
-///      underneath to bleed through with vibrant glass translucency (matching
-///      the reference photo's red badge bleed-through).
-///    - Top specular chamfered hairline rim catches ambient light on the glass plate.
-/// 2. Physical Sliding Glass Lens (Continuous Motion):
-///    - Dedicated glass capsule that physically GLIDES across the dock from tab to tab.
-///    - True sliding spring animation (Curves.easeOutCubic, 300ms).
-///    - Real-time drag/scrub tracking across tabs.
-/// 3. Direct Port of LastWave LiquidBubbleHighlight:
-///    - Clear water-lens capsule with top-left ambient specular reflection.
-///    - Transparent side edges (never a cartoon wireframe outline).
-///    - Soft vertical surface sheen and ambient elevation depth.
-/// 4. Asymmetric Zero-Collision Geometry:
-///    - 340dp dock width. Active tab gets 102dp, inactives get 76dp.
-///    - Full 10-character words like "Duplicates" have ample breathing room, zero clipping.
+///    - Frosted white photon sheen (WWDC25 & LastWave spec) scatters ambient light over
+///      16dp blur so the dock reads as luminous physical frosted glass rather than a dark hole.
+///    - Background content and colors bleed through with optical luminance without dark smudging.
+///    - Soft ambient elevation shadows (alpha 0.18 / 0.08) match LastWave's exact subtle elevation.
+/// 2. Direct 1:1 Port of LastWave LiquidBubbleHighlight:
+///    - 3-tier nested stroke layering (6.0dp, 3.5dp, 1.5dp) clipped to the silhouette
+///      produces authentic 3D convex curvature and water-droplet meniscus thickness.
+///    - High-contrast directional specular highlight (85% white) along the top-left rim.
+///    - Lower-right ambient reflection rim with transparent side edges.
+/// 3. Physical Sliding Glass Lens (Continuous Motion):
+///    - Glides smoothly across the track with synchronized 300ms cubic ease.
+///    - Dynamic breathing room: 102dp for active tab, 76dp for inactives (Zero text clipping).
+/// 4. High-Contrast Optics:
+///    - Inactive icons boosted to 82% crisp white, matching LastWave's resting contrast.
 class LiquidLensNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -106,12 +105,12 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         final isDark = appState.isCurrentDark(context);
         final useGlass = appState.isLiquidGlass;
 
-        // LastWave Translucent Optical Substrate:
-        // Translucent frosted white/neutral wash over 14dp blur lets background
-        // content and vibrant colors bleed through with optical luminance.
+        // Frosted white photon sheen (WWDC25 & LastWave spec):
+        // White photons scatter ambient light over the 16dp blur so the dock reads as
+        // luminous physical frosted glass rather than a dark hole.
         final railBg = isDark
-            ? (useGlass ? const Color(0x2812161E) : const Color(0xF012151A))
-            : (useGlass ? Colors.white.withOpacity(0.68) : Colors.white);
+            ? (useGlass ? const Color(0x1EFFFFFF) : const Color(0xF012151A))
+            : (useGlass ? Colors.white.withOpacity(0.72) : Colors.white);
 
         // Linear continuous pill position:
         // Active 0: 5.0, Active 1: 81.0, Active 2: 157.0, Active 3: 233.0
@@ -127,9 +126,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26),
                 child: BackdropFilter(
-                  // 14dp Gaussian optical blur (crisp, optical, never muddy)
+                  // 16dp Gaussian optical blur (crisp, optical, never muddy)
                   filter: useGlass
-                      ? ImageFilter.blur(sigmaX: 14, sigmaY: 14)
+                      ? ImageFilter.blur(sigmaX: 16, sigmaY: 16)
                       : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                   child: CustomPaint(
                     // WWDC25 & LastWave Specular Light Catch Rim along top edge
@@ -146,27 +145,27 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                         boxShadow: isDark
                             ? [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.35),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 6),
+                                  color: Colors.black.withOpacity(0.18),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
                                 ),
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
                                 ),
                               ]
                             : [
                                 BoxShadow(
-                                  color: const Color(0x18000000),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 5),
+                                  color: const Color(0x14000000),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                       ),
                       child: Stack(
                         children: [
-                          // 1. Physical Sliding Glass Lens (Continuous Motion)
+                          // 1. Physical Sliding Glass Lens (3D Water Droplet)
                           AnimatedPositioned(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutCubic,
@@ -176,27 +175,31 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                             height: _kPillHeight,
                             child: Container(
                               decoration: BoxDecoration(
-                                // Ultra-clear water-lens wash
                                 color: isDark
-                                    ? Colors.white.withOpacity(0.09)
-                                    : Colors.black.withOpacity(0.04),
+                                    ? Colors.white.withOpacity(0.12)
+                                    : Colors.black.withOpacity(0.05),
                                 borderRadius: BorderRadius.circular(22),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(isDark ? 0.28 : 0.08),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
+                                    color: Colors.black.withOpacity(isDark ? 0.20 : 0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2.5),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(isDark ? 0.08 : 0.0),
+                                    blurRadius: 1,
+                                    offset: const Offset(0, -0.5),
                                   ),
                                 ],
                               ),
                               child: CustomPaint(
-                                // 1:1 Port of LastWave LiquidBubbleHighlight
+                                // 1:1 Port of LastWave LiquidBubbleHighlight with 3-Tier Layering
                                 painter: _LiquidBubbleHighlightPainter(isDark: isDark),
                               ),
                             ),
                           ),
 
-                          // 2. Tab Items Row (Synchronized fluid layout)
+                          // 2. Tab Items Row (High Contrast Optics)
                           Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: _kPaddingH,
@@ -209,7 +212,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
 
                                 final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
                                 final inactiveColor = isDark
-                                    ? Colors.white.withOpacity(0.55)
+                                    ? Colors.white.withOpacity(0.82)
                                     : AppColors.lightTextMuted;
 
                                 return AnimatedContainer(
@@ -271,7 +274,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
   }
 }
 
-/// CustomPainter that renders the top specular chamfered hairline rim on the dock
+/// CustomPainter that renders a dual-pass specular light catch rim along the dock top
 class _DockSpecularRimPainter extends CustomPainter {
   final bool isDark;
   final double radius;
@@ -282,20 +285,20 @@ class _DockSpecularRimPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
     final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius)).deflate(0.4);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius)).deflate(0.5);
 
     final rimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8
+      ..strokeWidth = 1.0
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Colors.white.withOpacity(isDark ? 0.38 : 0.65),
-          Colors.white.withOpacity(isDark ? 0.12 : 0.25),
-          Colors.white.withOpacity(isDark ? 0.04 : 0.08),
+          Colors.white.withOpacity(isDark ? 0.55 : 0.80),
+          Colors.white.withOpacity(isDark ? 0.20 : 0.35),
+          Colors.white.withOpacity(isDark ? 0.05 : 0.10),
         ],
-        stops: const [0.0, 0.45, 1.0],
+        stops: const [0.0, 0.40, 1.0],
       ).createShader(rect);
 
     canvas.drawRRect(rrect, rimPaint);
@@ -306,11 +309,9 @@ class _DockSpecularRimPainter extends CustomPainter {
       oldDelegate.isDark != isDark || oldDelegate.radius != radius;
 }
 
-/// CustomPainter that directly ports LastWave's LiquidBubbleHighlight optics:
-/// 1. Top-left directional ambient specular reflection (bright light catch).
-/// 2. Lower-right ambient reflection rim.
-/// 3. Soft vertical surface sheen.
-/// 4. Side edges remain transparent so it reads as physical convex glass, not a painted border.
+/// 1:1 Port of LastWave LiquidBubbleHighlight:
+/// Uses 3-tier nested stroke layering (6.0dp, 3.5dp, 1.5dp) clipped to the silhouette
+/// to produce true 3D convex curvature and water-droplet meniscus thickness.
 class _LiquidBubbleHighlightPainter extends CustomPainter {
   final bool isDark;
 
@@ -323,33 +324,68 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     final radius = Radius.circular(size.height / 2);
     final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(rect, radius);
-    final rimRRect = rrect.deflate(0.4);
+    final rimRRect = rrect.deflate(0.5);
 
-    // 1. Surface reflection (soft vertical translucent sheen)
+    canvas.save();
+    canvas.clipRRect(rrect);
+
+    // 1. Surface reflection (soft vertical sheen)
     final surfacePaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Colors.white.withOpacity(isDark ? 0.10 : 0.14),
-          Colors.white.withOpacity(isDark ? 0.015 : 0.03),
+          Colors.white.withOpacity(isDark ? 0.08 : 0.12),
+          Colors.white.withOpacity(isDark ? 0.01 : 0.02),
           Colors.transparent,
-          Colors.white.withOpacity(isDark ? 0.025 : 0.04),
+          Colors.white.withOpacity(isDark ? 0.02 : 0.03),
         ],
         stops: const [0.0, 0.38, 0.64, 1.0],
       ).createShader(rect);
-    canvas.drawRRect(rrect, surfacePaint);
+    canvas.drawRect(rect, surfacePaint);
 
-    // 2. Upper-left specular light catch rim (Direct LastWave formula)
+    // 2. Layered inset lower shade bands (LastWave 3-Tier Layered Curvature)
+    // Clipping strokes centred on the outline leaves soft inset depth without hard bevels.
+    final lowerShadeShader = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Colors.transparent,
+        Colors.transparent,
+        Colors.black.withOpacity(0.03),
+        Colors.black.withOpacity(isDark ? 0.16 : 0.10),
+      ],
+      stops: const [0.0, 0.50, 0.74, 1.0],
+    ).createShader(rect);
+
+    final broadShade = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..shader = lowerShadeShader;
+    canvas.drawRRect(rrect, broadShade);
+
+    final middleShade = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..shader = lowerShadeShader;
+    canvas.drawRRect(rrect, middleShade);
+
+    final narrowShade = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..shader = lowerShadeShader;
+    canvas.drawRRect(rrect, narrowShade);
+
+    // 3. Upper-left specular light catch rim (Direct LastWave formula)
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.85
+      ..strokeWidth = 1.1
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: const Alignment(0.60, 1.0),
         colors: [
-          Colors.white.withOpacity(isDark ? 0.72 : 0.85),
-          Colors.white.withOpacity(isDark ? 0.32 : 0.45),
+          Colors.white.withOpacity(isDark ? 0.85 : 0.95),
+          Colors.white.withOpacity(isDark ? 0.40 : 0.52),
           Colors.transparent,
           Colors.transparent,
         ],
@@ -357,22 +393,24 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
       ).createShader(rect);
     canvas.drawRRect(rimRRect, upperRimPaint);
 
-    // 3. Lower-right ambient reflection rim (Direct LastWave formula)
+    // 4. Lower-right ambient reflection rim (Direct LastWave formula)
     final lowerRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.55
+      ..strokeWidth = 0.7
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
           Colors.transparent,
           Colors.transparent,
-          Colors.white.withOpacity(0.06),
-          Colors.white.withOpacity(isDark ? 0.26 : 0.32),
+          Colors.white.withOpacity(0.08),
+          Colors.white.withOpacity(isDark ? 0.35 : 0.42),
         ],
         stops: const [0.0, 0.62, 0.84, 1.0],
       ).createShader(rect);
     canvas.drawRRect(rimRRect, lowerRimPaint);
+
+    canvas.restore();
   }
 
   @override
