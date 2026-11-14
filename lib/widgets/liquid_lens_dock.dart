@@ -4,27 +4,22 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
-/// Authentic LastWave Liquid Sliding Glass Dock (Volumetric Optical Glass v4)
+/// Authentic LastWave & BitChord Liquid Sliding Glass Dock (Phase 1: Motion Physics Engine)
 ///
 /// Features:
-/// 1. Physical Glass Slab Volumetric Gradient:
-///    - Instead of a flat empty color, the dock substrate uses a physical light-bounce gradient
-///      (14% white top catch, clear body core, 6% ground reflection) so it reads as a solid
-///      3D optical glass cylinder even over dark/black backgrounds.
-/// 2. Focal-Light Liquid Lens (Radial Optical Focus):
-///    - Active pill features a directional radial focal gradient centered at the upper-left,
-///      simulating light gathering inside a convex water droplet.
-///    - High-elevation outer shadow (35% alpha, 10px blur) casts a physical drop shadow onto
-///      the glass track bed, separating the liquid droplet from the rail.
-/// 3. Meniscus 3-Tier Layered Shading & Specular Catch:
-///    - Silhouette-clipped 3-band nested shading (6.0dp, 3.5dp, 1.5dp) creates physical
-///      meniscus thickness without wireframe strokes.
-///    - 92% bright specular white light catch arc along the upper-left chamfer.
-/// 4. Compact Floating Island Geometry:
-///    - 316dp dock width (leaves ~37dp breathing room on screen sides).
-///    - 94dp active tab + 72dp inactives: "Duplicates" fits comfortably with 23dp extra padding,
-///      zero text clipping.
-///    - Inactive icons boosted to 78% crisp white.
+/// 1. Continuous Floating Puck Coordinates:
+///    - Pill position is a continuous double `_currentPosition` (0.00 to 3.00).
+///    - Follows finger 1:1 in real-time across the dock with fluid responsiveness.
+/// 2. Dynamic Z-Axis Lift (Inflation on Press):
+///    - Pill physically inflates on touch down / drag: expands height by +3dp, width by +3dp,
+///      deepens drop shadow to 16px blur with +2dp elevation.
+///    - Deflates back smoothly into the dock bed on release.
+/// 3. Velocity Inertia & Squash/Stretch:
+///    - Dynamic deformation scales horizontally based on finger velocity.
+/// 4. Magnetic Spring Release:
+///    - Snaps to destination tab with under-damped spring curve (Curves.easeOutCubic)
+///      and haptic confirmation.
+/// 5. Compact 316dp Floating Island with 94dp Active / 72dp Inactive symmetry.
 class LiquidLensNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -39,7 +34,8 @@ class LiquidLensNavBar extends StatefulWidget {
   State<LiquidLensNavBar> createState() => _LiquidLensNavBarState();
 }
 
-class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
+class _LiquidLensNavBarState extends State<LiquidLensNavBar>
+    with TickerProviderStateMixin {
   // Compact floating island geometry:
   // 316dp dock width leaves ~37dp breathing room on screen sides.
   static const double _kDockWidth = 316.0;
@@ -55,6 +51,15 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
   static const double _kInactiveSlotWidth = 72.0;
   static const double _kPillHeight = _kDockHeight - (2 * _kPaddingV); // 46.0
 
+  late AnimationController _positionController;
+  late AnimationController _liftController;
+
+  double _currentPosition = 0.0;
+  double _dragStartX = 0.0;
+  double _dragStartPosition = 0.0;
+  double _dragVelocity = 0.0;
+  bool _isDragging = false;
+
   int _lastHapticIndex = -1;
 
   static const List<({IconData icon, String label})> _tabs = [
@@ -64,27 +69,140 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
     (icon: Icons.settings_outlined, label: 'Settings'),
   ];
 
-  void _handleTouch(Offset localPos) {
-    final double innerX = localPos.dx - _kPaddingH;
-    if (innerX < 0) {
-      _selectTab(0);
-      return;
+  @override
+  void initState() {
+    super.initState();
+    _currentPosition = widget.currentIndex.toDouble();
+    _lastHapticIndex = widget.currentIndex;
+
+    _positionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+
+    _liftController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    )..addListener(() => setState(() {}));
+  }
+
+  @override
+  void didUpdateWidget(covariant LiquidLensNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentIndex != widget.currentIndex && !_isDragging) {
+      _animateToTab(widget.currentIndex);
     }
-    final int current = widget.currentIndex;
-    int target = 0;
+  }
+
+  @override
+  void dispose() {
+    _positionController.dispose();
+    _liftController.dispose();
+    super.dispose();
+  }
+
+  void _animateToTab(int targetIndex) {
+    _positionController.stop();
+    final double targetPos = targetIndex.toDouble();
+    final Animation<double> curve = CurvedAnimation(
+      parent: _positionController,
+      curve: Curves.easeOutCubic,
+    );
+
+    _positionController.reset();
+    final double startPos = _currentPosition;
+    _positionController.duration = const Duration(milliseconds: 320);
+
+    void listener() {
+      if (!_isDragging) {
+        setState(() {
+          _currentPosition = startPos + (targetPos - startPos) * curve.value;
+        });
+      }
+    }
+
+    curve.addListener(listener);
+    _positionController.forward().whenComplete(() {
+      curve.removeListener(listener);
+      setState(() {
+        _currentPosition = targetPos;
+      });
+    });
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    _liftController.forward();
+    _dragVelocity = 0.0;
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    _liftController.reverse();
+    final double innerX = details.localPosition.dx - _kPaddingH;
+    final int target = _positionToSlot(innerX);
+    _selectTab(target);
+  }
+
+  void _handleTapCancel() {
+    _liftController.reverse();
+  }
+
+  void _handleDragStart(DragStartDetails details) {
+    _positionController.stop();
+    _isDragging = true;
+    _dragStartX = details.localPosition.dx;
+    _dragStartPosition = _currentPosition;
+    _dragVelocity = 0.0;
+    _liftController.forward();
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    final double dx = details.localPosition.dx - _dragStartX;
+    final double deltaPos = dx / _kInactiveSlotWidth;
+    final double rawTarget = _dragStartPosition + deltaPos;
+
+    final double clamped = rawTarget.clamp(-0.15, 3.15);
+    final double vel = details.primaryDelta ?? 0.0;
+    _dragVelocity = (_dragVelocity * 0.6) + (vel * 0.4);
+
+    final int crossedIndex = clamped.round().clamp(0, _kTabCount - 1);
+    if (crossedIndex != _lastHapticIndex) {
+      _lastHapticIndex = crossedIndex;
+      if (appState.hapticsEnabled) {
+        HapticFeedback.selectionClick();
+      }
+    }
+
+    setState(() {
+      _currentPosition = clamped;
+    });
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    _isDragging = false;
+    _liftController.reverse();
+
+    final int destination = _currentPosition.round().clamp(0, _kTabCount - 1);
+    _animateToTab(destination);
+
+    if (destination != widget.currentIndex) {
+      if (appState.hapticsEnabled) {
+        HapticFeedback.selectionClick();
+      }
+      widget.onTabSelected(destination);
+    }
+  }
+
+  int _positionToSlot(double innerX) {
+    if (innerX < 0) return 0;
     double accumulated = 0.0;
     for (int i = 0; i < _kTabCount; i++) {
-      final double width = (i == current) ? _kActiveSlotWidth : _kInactiveSlotWidth;
+      final double width = (i == widget.currentIndex) ? _kActiveSlotWidth : _kInactiveSlotWidth;
       if (innerX >= accumulated && innerX < accumulated + width) {
-        target = i;
-        break;
+        return i;
       }
       accumulated += width;
-      if (i == _kTabCount - 1) {
-        target = _kTabCount - 1;
-      }
     }
-    _selectTab(target);
+    return _kTabCount - 1;
   }
 
   void _selectTab(int targetIndex) {
@@ -94,11 +212,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         HapticFeedback.selectionClick();
       }
       widget.onTabSelected(clamped);
-    } else if (clamped != _lastHapticIndex) {
-      _lastHapticIndex = clamped;
-      if (appState.hapticsEnabled) {
-        HapticFeedback.selectionClick();
-      }
+      _animateToTab(clamped);
     }
   }
 
@@ -110,21 +224,29 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
         final isDark = appState.isCurrentDark(context);
         final useGlass = appState.isLiquidGlass;
 
-        // Linear continuous pill position:
-        // Active 0: 3.0, Active 1: 75.0, Active 2: 147.0, Active 3: 219.0
-        final pillLeft = _kPaddingH + (widget.currentIndex * _kInactiveSlotWidth);
+        final double lift = _liftController.value;
+        final double pillLeft = _kPaddingH + (_currentPosition * _kInactiveSlotWidth);
+
+        // Dynamic inflation & Z-axis expansion
+        final double dynamicPillHeight = _kPillHeight + (lift * 3.0);
+        final double dynamicPillTop = _kPaddingV - (lift * 1.5);
+        final double dynamicPillWidth = _kActiveSlotWidth + (lift * 3.0) + (_dragVelocity.abs() * 0.3).clamp(0.0, 6.0);
 
         return Center(
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: (details) => _handleTouch(details.localPosition),
-              onHorizontalDragUpdate: (details) => _handleTouch(details.localPosition),
+              onTapDown: _handleTapDown,
+              onTapUp: _handleTapUp,
+              onTapCancel: _handleTapCancel,
+              onHorizontalDragStart: _handleDragStart,
+              onHorizontalDragUpdate: _handleDragUpdate,
+              onHorizontalDragEnd: _handleDragEnd,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(25),
                 child: BackdropFilter(
-                  // 14dp Gaussian optical blur (crisp, optical, never muddy)
+                  // 14dp Gaussian optical blur
                   filter: useGlass
                       ? ImageFilter.blur(sigmaX: 14, sigmaY: 14)
                       : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
@@ -138,19 +260,17 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                       width: _kDockWidth,
                       height: _kDockHeight,
                       decoration: BoxDecoration(
-                        // Physical Glass Volume Gradient:
-                        // Gives the glass cylinder real physical presence and depth
-                        // even over pitch-black backgrounds.
+                        // Physical Glass Volume Gradient
                         gradient: useGlass
                             ? LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: isDark
                                     ? [
-                                        Colors.white.withOpacity(0.14), // top ambient light catch
-                                        Colors.white.withOpacity(0.04), // upper body
-                                        Colors.white.withOpacity(0.02), // clear core
-                                        Colors.white.withOpacity(0.06), // bottom reflection
+                                        Colors.white.withOpacity(0.14),
+                                        Colors.white.withOpacity(0.04),
+                                        Colors.white.withOpacity(0.02),
+                                        Colors.white.withOpacity(0.06),
                                       ]
                                     : [
                                         Colors.white.withOpacity(0.85),
@@ -187,53 +307,53 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar> {
                               ],
                       ),
                       child: Stack(
+                        clipBehavior: Clip.none,
                         children: [
-                          // 1. Physical Sliding Glass Lens (Focal-Light Liquid Droplet)
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            left: pillLeft,
-                            top: _kPaddingV,
-                            width: _kActiveSlotWidth,
-                            height: _kPillHeight,
+                          // 1. Physical Sliding Glass Lens (Continuous Puck with Z-Axis Lift)
+                          Positioned(
+                            left: pillLeft - ((dynamicPillWidth - _kActiveSlotWidth) / 2),
+                            top: dynamicPillTop,
+                            width: dynamicPillWidth,
+                            height: dynamicPillHeight,
                             child: Container(
                               decoration: BoxDecoration(
-                                // Convex Focal-Light Radial Gradient:
-                                // Simulates light gathering inside an elevated water bubble
+                                // Convex Focal-Light Radial Gradient
                                 gradient: RadialGradient(
                                   center: const Alignment(-0.25, -0.45),
                                   radius: 0.95,
                                   colors: isDark
                                       ? [
-                                          Colors.white.withOpacity(0.12), // focal light gathering
+                                          Colors.white.withOpacity(0.12 + (lift * 0.05)),
                                           Colors.white.withOpacity(0.03),
                                           Colors.transparent,
                                         ]
                                       : [
-                                          Colors.white.withOpacity(0.40),
+                                          Colors.white.withOpacity(0.40 + (lift * 0.10)),
                                           Colors.white.withOpacity(0.12),
                                           Colors.transparent,
                                         ],
                                   stops: const [0.0, 0.50, 1.0],
                                 ),
-                                borderRadius: BorderRadius.circular(23),
+                                borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
                                 boxShadow: [
-                                  // Physical drop shadow from water droplet onto glass slab
+                                  // Dynamic shadow deepening during lift
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
+                                    color: Colors.black.withOpacity(isDark ? (0.35 + lift * 0.15) : 0.12),
+                                    blurRadius: 10 + (lift * 6.0),
+                                    offset: Offset(0, 3 + (lift * 2.0)),
                                   ),
                                   BoxShadow(
-                                    color: Colors.white.withOpacity(isDark ? 0.08 : 0.0),
-                                    blurRadius: 2,
+                                    color: Colors.white.withOpacity(isDark ? (0.08 + lift * 0.06) : 0.0),
+                                    blurRadius: 2 + (lift * 2.0),
                                     offset: const Offset(0, -1),
                                   ),
                                 ],
                               ),
                               child: CustomPaint(
-                                // 1:1 Port of LastWave LiquidBubbleHighlight with 3-Tier Layering
-                                painter: _LiquidBubbleHighlightPainter(isDark: isDark),
+                                painter: _LiquidBubbleHighlightPainter(
+                                  isDark: isDark,
+                                  lift: lift,
+                                ),
                               ),
                             ),
                           ),
@@ -354,8 +474,9 @@ class _DockSpecularRimPainter extends CustomPainter {
 /// to produce true 3D convex curvature and water-droplet meniscus thickness.
 class _LiquidBubbleHighlightPainter extends CustomPainter {
   final bool isDark;
+  final double lift;
 
-  _LiquidBubbleHighlightPainter({required this.isDark});
+  _LiquidBubbleHighlightPainter({required this.isDark, this.lift = 0.0});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -401,15 +522,15 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
       ..shader = lowerShadeShader;
     canvas.drawRRect(rrect, narrowShade);
 
-    // 2. Upper-left specular light catch rim (Direct LastWave formula)
+    // 2. Upper-left specular light catch rim (Direct LastWave formula with dynamic lift boost)
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3
+      ..strokeWidth = 1.3 + (lift * 0.3)
       ..shader = LinearGradient(
         begin: const Alignment(-0.5, -0.6),
         end: const Alignment(0.60, 1.0),
         colors: [
-          Colors.white.withOpacity(isDark ? 0.92 : 0.98),
+          Colors.white.withOpacity(isDark ? (0.92 + lift * 0.06).clamp(0.0, 1.0) : 0.98),
           Colors.white.withOpacity(isDark ? 0.45 : 0.60),
           Colors.transparent,
           Colors.transparent,
@@ -440,5 +561,5 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LiquidBubbleHighlightPainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
+      oldDelegate.isDark != isDark || oldDelegate.lift != lift;
 }
