@@ -256,7 +256,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
     // 2) Under finger: Chase target with exponential liquid lag (FOLLOW_TAU = 0.05s)
     if (_isDragging) {
+      final double prevPos = _currentPosition;
       _currentPosition += (_dragTarget - _currentPosition) * (1.0 - math.exp(-dt / _kFollowTau));
+      _velocity = dt > 0.0001 ? (_currentPosition - prevPos) / dt : 0.0;
     }
 
     // 3) The lift: held for journey and released on landing (HANDOVER_START = 0.92)
@@ -372,6 +374,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     _dragStartPosition = _currentPosition;
     _travelFrom = _currentPosition;
     _dragTarget = _currentPosition;
+    _velocity = 0.0;
     _isFlat = false;
     _squashModel.start();
     _ensureTicker();
@@ -467,9 +470,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         final double pillLeft = centerX - (dynamicPillWidth / 2.0);
         final double pillTop = (_kDockHeight / 2.0) - (dynamicPillHeight / 2.0);
 
-        // BitChord Hand-off blend factors:
-        // 1. Under-tab Base Selection Fill (fades out as material comes on, blooms back in on landing)
-        final double baseFillAlpha = (isDark ? 0.16 : 0.08) * (1.0 - _material);
+        // BitChord Hand-off blend factors (Phase 6 & 7):
+        // 1. Resting Liquid Glass Meniscus (fades out as material rises, blooms back in on landing)
+        final double restingAlpha = (1.0 - _material).clamp(0.0, 1.0);
+        final double velocityDp = _velocity * _kInactiveSlotWidth;
 
         // 2. Over-tab Glass Lens (rim & shadow shed by 55% of hand-off)
         final double rimFactor = _rimOf(_glassPresence);
@@ -570,12 +574,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                     ),
 
                     // ==============================================================
-                    // LAYER 2: UNDER-TAB SELECTION FILL PILL (BitChord FlatSelectionPill)
+                    // LAYER 2: RESTING LIQUID GLASS MENISCUS (Phase 6 3-Tier Jewel Pill)
                     // Placed AT THE EXACT SAME pillLeft, pillTop, dynamicPillWidth, dynamicPillHeight!
-                    // Seamlessly dissolves as material comes on, and blooms back in on landing.
+                    // Features translucent crystal core, 0.85px specular hairline, lower inset depth shade,
+                    // and subtle contact drop shadow. Seamlessly morphs into flight lens as material rises.
                     // ZERO jumps, ZERO teleportation, ZERO disconnected cuts!
                     // ==============================================================
-                    if (baseFillAlpha > 0.002)
+                    if (restingAlpha > 0.002)
                       Positioned(
                         left: pillLeft,
                         top: pillTop,
@@ -583,8 +588,44 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         height: dynamicPillHeight,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: (isDark ? Colors.white : Colors.black).withOpacity(baseFillAlpha),
                             borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
+                            // Translucent crystal core (replaces flat 0.16 grey box)
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: isDark
+                                  ? [
+                                      Colors.white.withOpacity(0.13 * restingAlpha),
+                                      Colors.white.withOpacity(0.06 * restingAlpha),
+                                      Colors.white.withOpacity(0.08 * restingAlpha),
+                                    ]
+                                  : [
+                                      Colors.black.withOpacity(0.07 * restingAlpha),
+                                      Colors.black.withOpacity(0.03 * restingAlpha),
+                                      Colors.black.withOpacity(0.05 * restingAlpha),
+                                    ],
+                              stops: const [0.0, 0.45, 1.0],
+                            ),
+                            boxShadow: [
+                              // Resting ambient contact shadow - grounds the pill into the dock rail
+                              BoxShadow(
+                                color: Colors.black.withOpacity((isDark ? 0.22 : 0.08) * restingAlpha),
+                                blurRadius: 5.0,
+                                offset: const Offset(0, 1.5),
+                              ),
+                              if (isDark)
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.04 * restingAlpha),
+                                  blurRadius: 1.0,
+                                  offset: const Offset(0, -0.5),
+                                ),
+                            ],
+                          ),
+                          child: CustomPaint(
+                            painter: _RestingMeniscusPainter(
+                              isDark: isDark,
+                              alpha: restingAlpha,
+                            ),
                           ),
                         ),
                       ),
@@ -749,6 +790,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                 isDark: isDark,
                                 lift: _liftY,
                                 alpha: highlightAlpha,
+                                velocityDp: velocityDp,
                               ),
                             ),
                           ),
@@ -866,18 +908,18 @@ class _DockSpecularRimPainter extends CustomPainter {
       oldDelegate.isDark != isDark || oldDelegate.radius != radius;
 }
 
-/// Pure Optical Water Droplet Lens Shading (LastWave & BitChord Standard)
-/// Devoid of fake colored strokes or harsh opaque white gleams.
-/// Uses soft, feather-thin specular arcs (0.8px, 0.28 opacity) and gentle inset depth.
-class _LiquidBubbleHighlightPainter extends CustomPainter {
+/// Renders the 3-Tier Jewel Liquid Glass Meniscus for the resting active pill (Phase 6).
+/// Replaces the flat 2D grey box with:
+/// 1. Upper-left razor-sharp specular light hairline (0.85px width).
+/// 2. Lower-right gentle inset depth shade (2.0px width) creating convex meniscus curvature.
+/// 3. Lower ambient reflection floor rim (0.6px width).
+class _RestingMeniscusPainter extends CustomPainter {
   final bool isDark;
-  final double lift;
   final double alpha;
 
-  _LiquidBubbleHighlightPainter({
+  const _RestingMeniscusPainter({
     required this.isDark,
-    this.lift = 0.0,
-    this.alpha = 1.0,
+    required this.alpha,
   });
 
   @override
@@ -892,6 +934,147 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     canvas.save();
     canvas.clipRRect(rrect);
 
+    // 1. Lower-right gentle inset depth shade (convex meniscus curvature)
+    final lowerShadeShader = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Colors.transparent,
+        Colors.transparent,
+        Colors.black.withOpacity(0.015 * alpha),
+        Colors.black.withOpacity((isDark ? 0.07 : 0.04) * alpha),
+      ],
+      stops: const [0.0, 0.45, 0.75, 1.0],
+    ).createShader(rect);
+
+    final softShade = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..shader = lowerShadeShader;
+    canvas.drawRRect(rrect, softShade);
+
+    // 2. Upper-left specular light-catch hairline (LastWave 0.85px crystal edge)
+    final upperRimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.85
+      ..shader = LinearGradient(
+        begin: const Alignment(-0.6, -0.7),
+        end: const Alignment(0.6, 1.0),
+        colors: [
+          Colors.white.withOpacity((isDark ? 0.35 : 0.52) * alpha),
+          Colors.white.withOpacity((isDark ? 0.12 : 0.22) * alpha),
+          Colors.transparent,
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.32, 0.58, 1.0],
+      ).createShader(rect);
+    canvas.drawRRect(rimRRect, upperRimPaint);
+
+    // 3. Lower-right ambient reflection floor rim (subtle back-bounce light)
+    final lowerRimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.6
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.transparent,
+          Colors.transparent,
+          Colors.white.withOpacity(0.03 * alpha),
+          Colors.white.withOpacity((isDark ? 0.15 : 0.24) * alpha),
+        ],
+        stops: const [0.0, 0.65, 0.85, 1.0],
+      ).createShader(rect);
+    canvas.drawRRect(rimRRect, lowerRimPaint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _RestingMeniscusPainter oldDelegate) =>
+      oldDelegate.isDark != isDark || oldDelegate.alpha != alpha;
+}
+
+/// Pure Optical Water Droplet Lens Shading (LastWave & BitChord Standard)
+/// Featuring Phase 8 Kinematic Chromatic Aberration:
+/// Dynamically refracts prismatic dispersion flares along the motion vector
+/// during rapid flight (|v| > 250 dp/s), decaying to 0.0 at rest.
+class _LiquidBubbleHighlightPainter extends CustomPainter {
+  final bool isDark;
+  final double lift;
+  final double alpha;
+  final double velocityDp;
+
+  _LiquidBubbleHighlightPainter({
+    required this.isDark,
+    this.lift = 0.0,
+    this.alpha = 1.0,
+    this.velocityDp = 0.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0 || alpha <= 0.002) return;
+
+    final radius = Radius.circular(size.height / 2);
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+    final rimRRect = rrect.deflate(0.5);
+
+    canvas.save();
+    canvas.clipRRect(rrect);
+
+    // ==============================================================
+    // PHASE 8: KINEMATIC CHROMATIC ABERRATION (Velocity-Gated Dispersion)
+    // ==============================================================
+    final double absV = velocityDp.abs();
+    if (absV > 250.0) {
+      final double chromaticFactor = ((absV - 250.0) / 750.0).clamp(0.0, 1.0) * alpha;
+      final double vSign = velocityDp.sign;
+      final double dispersionPx = vSign * (0.85 + lift * 0.35) * chromaticFactor;
+
+      // 1. Leading edge cyan/blue prismatic refraction
+      canvas.save();
+      canvas.translate(dispersionPx, 0);
+      final leadingFlarePaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9 + (lift * 0.3)
+        ..shader = LinearGradient(
+          begin: Alignment(vSign * 0.7, -0.6),
+          end: Alignment(-vSign * 0.7, 0.8),
+          colors: [
+            const Color(0xFF60A5FA).withOpacity((isDark ? 0.24 : 0.32) * chromaticFactor),
+            const Color(0xFF38BDF8).withOpacity((isDark ? 0.08 : 0.14) * chromaticFactor),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.40, 1.0],
+        ).createShader(rect);
+      canvas.drawRRect(rimRRect, leadingFlarePaint);
+      canvas.restore();
+
+      // 2. Trailing edge amber/rose prismatic dispersion
+      canvas.save();
+      canvas.translate(-dispersionPx * 0.75, 0);
+      final trailingFlarePaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.7 + (lift * 0.2)
+        ..shader = LinearGradient(
+          begin: Alignment(-vSign * 0.7, -0.4),
+          end: Alignment(vSign * 0.7, 0.8),
+          colors: [
+            const Color(0xFFF59E0B).withOpacity((isDark ? 0.18 : 0.24) * chromaticFactor),
+            const Color(0xFFF43F5E).withOpacity((isDark ? 0.06 : 0.10) * chromaticFactor),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.35, 1.0],
+        ).createShader(rect);
+      canvas.drawRRect(rimRRect, trailingFlarePaint);
+      canvas.restore();
+    }
+
+    // ==============================================================
+    // OPTICAL WATER DROPLET HIGHLIGHTS & SHADING
+    // ==============================================================
     // 1. Subtle, gentle inset lower shade (soft depth without harsh black bevels)
     final lowerShadeShader = LinearGradient(
       begin: Alignment.topCenter,
@@ -950,5 +1133,8 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LiquidBubbleHighlightPainter oldDelegate) =>
-      oldDelegate.isDark != isDark || oldDelegate.lift != lift || oldDelegate.alpha != alpha;
+      oldDelegate.isDark != isDark ||
+      oldDelegate.lift != lift ||
+      oldDelegate.alpha != alpha ||
+      (oldDelegate.velocityDp - velocityDp).abs() > 10.0;
 }
