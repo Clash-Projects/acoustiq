@@ -6,26 +6,31 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
-/// Authentic LastWave & BitChord Liquid Sliding Glass Dock
-/// Phase 2: Fluid Jelly Physics, Acceleration Squash & Stretch,
-///          Release Jitter Fix & 7-Ray Chromatic Dispersion Meniscus.
+/// Authentic BitChord & LastWave Liquid Floating Glass Dock
+/// Phase 2 (Rework): Unclipped Floating Lens, Proportional +9dp Lift,
+///                   Pure Acceleration Squash (No Fake Wobble),
+///                   Corner-Localized Optical Glint & Flat-to-Glass Hand-off.
 ///
-/// Integrated Architecture:
-/// 1. Dual Under-damped Springs (X & Y lift):
-///    - Damping ratios 0.60 across and 0.70 down: on tap/drag down,
-///      the pill physically overshoots its raised size and rebounds (jelly pop!).
-/// 2. PillSquashModel (from liquid_glass_easy 4.3.4 & BitChord GlassSelectionPill):
-///    - Instantaneous acceleration is sampled over a 300ms window.
-///    - Conservation of volume: Width scales by (1 + dev), Height by (1 - dev).
-/// 3. Harmonic Jelly Wobble while Held:
-///    - Micro-oscillation (14 rad/s) gives the pill an organic liquid mercury
-///      fluid jiggle while held and dragged.
-/// 4. Release Jitter Fix:
-///    - Guarded target indexing and single-source Tween eliminate race conditions
-///      and mid-flight animation collisions when triggering tab callbacks.
-/// 5. 7-Ray Chromatic Dispersion Meniscus:
-///    - BitChord spectral wavelengths (Red -> Orange -> Yellow -> Green -> Cyan -> Blue -> Purple)
-///      bloom on the outer meniscus during travel and lift.
+/// Architecture Ground Truth (Derived from BitChord Source & Screenshots):
+/// 1. Unclipped Double-Layer Geometry:
+///    - Root container is an unclipped Stack (`clipBehavior: Clip.none`).
+///    - Dock rail is clipped to its 25px rounded rectangle (Layer 1).
+///    - Floating Glass Pill sits on Layer 4 OUTSIDE the dock's clip,
+///      standing 3dp to 4.5dp above and below dock boundaries with zero edge clipping.
+/// 2. Proportional Growth on Lift (PILL_GROW_HEIGHT = 9.0dp):
+///    - Resting height: 46dp, resting width: 94dp.
+///    - Lifted height: 56dp (+10dp), lifted width: 112dp (+18dp) scaled proportionally.
+/// 3. Pure Acceleration Squash (Zero Artificial Sine Wobble):
+///    - Tracks instantaneous acceleration d^2x/dt^2 via PillSquashModel.
+///    - When held still: deviation = 0.0 (calm stillness, no vibration).
+///    - When moving: volume-conserving elongation and braking squash.
+/// 4. Corner-Localized Prismatic Dispersion (No Static Neon Rainbow Border):
+///    - Dispersion intensity follows (x * y) / (W/2 * H/2).
+///    - Appears exclusively at diagonal corner radiuses where glass curves bend light.
+/// 5. BitChord Flat-to-Glass Hand-off:
+///    - At rest: Flat minimal indicator (clean, zero visual noise).
+///    - On touch: Unclips, lifts +10dp, casts 16px ambient shadow, becomes convex liquid lens.
+///    - On release: Snaps to destination tab, deflates back into dock bed, hands off to flat pill.
 class LiquidLensNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -69,7 +74,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   int _targetIndex = 0;
   int _lastHapticIndex = -1;
 
-  // Under-damped Dual Springs for Lift (ported from liquid_glass_easy)
+  // BitChord Flat-to-Glass Hand-off state
+  bool _isFlat = true;
+
+  // Under-damped Dual Springs for Lift (from liquid_glass_easy & BitChord)
   // Damping ratio 0.6 across, 0.7 down -> overshoots raised size and bounces back!
   double _liftX = 0.0;
   double _liftXVel = 0.0;
@@ -77,11 +85,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   double _liftYVel = 0.0;
   double _liftTarget = 0.0;
 
-  // Harmonic Jelly Wobble while held
-  double _wobbleTime = 0.0;
-  double _wobble = 0.0;
-
-  // Acceleration squash model
+  // Acceleration squash model (Strictly motion-driven, NO artificial sine wave)
   final _PillSquashModel _squashModel = _PillSquashModel();
 
   // Animation controller for snap transitions
@@ -125,7 +129,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   void didUpdateWidget(covariant LiquidLensNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Guard against collision: if parent echoes the destination tab we already targeted,
-    // do NOT re-trigger _animateToTab! This permanently fixes the release jitter!
+    // do NOT re-trigger _animateToTab!
     if (oldWidget.currentIndex != widget.currentIndex && !_isDragging) {
       if (_targetIndex != widget.currentIndex) {
         _targetIndex = widget.currentIndex;
@@ -169,12 +173,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       _currentPosition += (_dragTarget - _currentPosition) * (1.0 - math.exp(-dt / tau));
       _velocity = (_currentPosition - prevPos) / dt;
 
-      // Sample acceleration squash
+      // Sample pure motion acceleration squash (Zero artificial sine wave!)
       _squashModel.track(_currentPosition * _kInactiveSlotWidth, now, dt);
-
-      // Continuous harmonic jelly wobble while held
-      _wobbleTime += dt;
-      _wobble = math.sin(_wobbleTime * 14.0) * 0.024 * _liftY.clamp(0.0, 1.0);
     } else {
       // Free travel or settling
       if (_positionController.isAnimating) {
@@ -183,17 +183,16 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       } else {
         _velocity *= math.exp(-dt / 0.06);
         _squashModel.easeOut(dt);
-        _wobble *= math.exp(-dt / 0.06);
       }
     }
 
-    // Check if physics engine can sleep
+    // Check if physics engine can settle and hand-off to flat pill
     final bool liftSettled = (_liftX - _liftTarget).abs() < 0.001 &&
         (_liftY - _liftTarget).abs() < 0.001 &&
         _liftXVel.abs() < 0.005 &&
         _liftYVel.abs() < 0.005;
 
-    final bool squashSettled = _squashModel.value.abs() < 0.001 && _wobble.abs() < 0.001;
+    final bool squashSettled = _squashModel.value.abs() < 0.001;
     final bool isSettled = !_isDragging &&
         !_positionController.isAnimating &&
         liftSettled &&
@@ -205,9 +204,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       _liftXVel = 0.0;
       _liftYVel = 0.0;
       _velocity = 0.0;
-      _wobble = 0.0;
       _squashModel.stop();
       _ticker?.stop();
+
+      // Hand-off back to flat pill when resting at destination
+      if (_liftTarget == 0.0) {
+        _isFlat = true;
+      }
     }
 
     setState(() {});
@@ -241,9 +244,14 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     if ((_currentPosition - targetPos).abs() < 0.001) {
       setState(() {
         _currentPosition = targetPos;
+        _isFlat = true;
       });
       return;
     }
+
+    // Switch from flat indicator to floating glass lens during travel
+    _isFlat = false;
+    _liftTarget = 1.0;
 
     _positionAnim = Tween<double>(
       begin: _currentPosition,
@@ -255,21 +263,24 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
     _squashModel.start();
     _ensureTicker();
+
     _positionController.forward(from: 0.0).whenComplete(() {
       setState(() {
         _currentPosition = targetPos;
       });
+      // Once landed, deflate lift and hand off back to flat pill
+      _liftTarget = 0.0;
+      _ensureTicker();
     });
   }
 
   void _handleTapDown(TapDownDetails details) {
+    _isFlat = false;
     _liftTarget = 1.0;
     _ensureTicker();
   }
 
   void _handleTapUp(TapUpDetails details) {
-    _liftTarget = 0.0;
-    _ensureTicker();
     final double innerX = details.localPosition.dx - _kPaddingH;
     final int target = _positionToSlot(innerX);
     _selectTab(target);
@@ -283,6 +294,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   void _handleDragStart(DragStartDetails details) {
     _positionController.stop();
     _isDragging = true;
+    _isFlat = false;
     _liftTarget = 1.0;
     _dragStartX = details.localPosition.dx;
     _dragStartPosition = _currentPosition;
@@ -311,8 +323,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
   void _handleDragEnd(DragEndDetails details) {
     _isDragging = false;
-    _liftTarget = 0.0;
-
     final int destination = _currentPosition.round().clamp(0, _kTabCount - 1);
     _targetIndex = destination;
     _animateToTab(destination);
@@ -348,6 +358,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       }
       widget.onTabSelected(clamped);
       _animateToTab(clamped);
+    } else {
+      _liftTarget = 0.0;
+      _ensureTicker();
     }
   }
 
@@ -359,228 +372,271 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         final isDark = appState.isCurrentDark(context);
         final useGlass = appState.isLiquidGlass;
 
-        // Dynamic conservation of volume deformation (liquid_glass_easy formula)
-        // Width scales by 1 + dev, Height scales by 1 - dev
-        final double totalDeviation = (_squashModel.value + _wobble).clamp(-0.14, 0.14);
-        final double liftedW = _kActiveSlotWidth + (_liftX * 4.0);
-        final double liftedH = _kPillHeight + (_liftY * 3.0);
+        // Dynamic conservation of volume deformation (Pure acceleration, no fake sine)
+        final double deviation = _squashModel.value.clamp(-0.12, 0.12);
 
-        final double dynamicPillWidth = liftedW * (1.0 + totalDeviation);
-        final double dynamicPillHeight = liftedH * (1.0 - totalDeviation);
+        // Proportional growth on lift (+10dp height, +18dp width)
+        final double liftedW = _kActiveSlotWidth + (_liftX * 18.0);
+        final double liftedH = _kPillHeight + (_liftY * 10.0);
+
+        final double dynamicPillWidth = liftedW * (1.0 + deviation);
+        final double dynamicPillHeight = liftedH * (1.0 - deviation);
 
         // Center calculation: the distance between slot centers is identically 72.0dp!
         final double centerX = _kPaddingH + (_kActiveSlotWidth / 2.0) + (_currentPosition * _kInactiveSlotWidth);
         final double pillLeft = centerX - (dynamicPillWidth / 2.0);
+        // Centers vertically around dock height: stands 3dp above & 3dp below dock edges when lifted!
         final double pillTop = (_kDockHeight / 2.0) - (dynamicPillHeight / 2.0);
 
+        // Resting flat pill coordinates
+        final double restingCenter = _kPaddingH + (_kActiveSlotWidth / 2.0) + (widget.currentIndex * _kInactiveSlotWidth);
+        final double restingLeft = restingCenter - (_kActiveSlotWidth / 2.0);
+        final double restingTop = (_kDockHeight - _kPillHeight) / 2.0;
+
         return Center(
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: _handleTapDown,
-              onTapUp: _handleTapUp,
-              onTapCancel: _handleTapCancel,
-              onHorizontalDragStart: _handleDragStart,
-              onHorizontalDragUpdate: _handleDragUpdate,
-              onHorizontalDragEnd: _handleDragEnd,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(25),
-                child: BackdropFilter(
-                  // 14dp Gaussian optical blur
-                  filter: useGlass
-                      ? ImageFilter.blur(sigmaX: 14, sigmaY: 14)
-                      : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-                  child: CustomPaint(
-                    // WWDC25 Specular Light Catch Rim along top edge
-                    painter: _DockSpecularRimPainter(
-                      isDark: isDark,
-                      radius: 25,
-                    ),
-                    child: Container(
-                      width: _kDockWidth,
-                      height: _kDockHeight,
-                      decoration: BoxDecoration(
-                        // Physical Glass Volume Gradient
-                        gradient: useGlass
-                            ? LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: isDark
-                                    ? [
-                                        Colors.white.withOpacity(0.14),
-                                        Colors.white.withOpacity(0.04),
-                                        Colors.white.withOpacity(0.02),
-                                        Colors.white.withOpacity(0.06),
-                                      ]
-                                    : [
-                                        Colors.white.withOpacity(0.85),
-                                        Colors.white.withOpacity(0.70),
-                                        Colors.white.withOpacity(0.65),
-                                        Colors.white.withOpacity(0.78),
-                                      ],
-                                stops: const [0.0, 0.30, 0.70, 1.0],
-                              )
-                            : null,
-                        color: useGlass
-                            ? null
-                            : (isDark ? const Color(0xF012151A) : Colors.white),
+          child: SizedBox(
+            width: _kDockWidth,
+            height: _kDockHeight,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: _handleTapDown,
+                onTapUp: _handleTapUp,
+                onTapCancel: _handleTapCancel,
+                onHorizontalDragStart: _handleDragStart,
+                onHorizontalDragUpdate: _handleDragUpdate,
+                onHorizontalDragEnd: _handleDragEnd,
+                child: Stack(
+                  // UNCLIPPED ROOT CONTAINER: Floating glass lens can stand outside dock boundaries!
+                  clipBehavior: Clip.none,
+                  children: [
+                    // ==============================================================
+                    // LAYER 1: CLIPPED DOCK RAIL (Substrate, Gaussian Blur & Top Rim)
+                    // ==============================================================
+                    Positioned.fill(
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(25),
-                        boxShadow: isDark
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.25),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 5),
-                                ),
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.10),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: const Color(0x14000000),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // 1. Physical Sliding Glass Lens with Jelly Physics & Optics
-                          Positioned(
-                            left: pillLeft,
-                            top: pillTop,
-                            width: dynamicPillWidth,
-                            height: dynamicPillHeight,
+                        child: BackdropFilter(
+                          filter: useGlass
+                              ? ImageFilter.blur(sigmaX: 14, sigmaY: 14)
+                              : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                          child: CustomPaint(
+                            painter: _DockSpecularRimPainter(
+                              isDark: isDark,
+                              radius: 25,
+                            ),
                             child: Container(
                               decoration: BoxDecoration(
-                                // Convex Focal-Light Radial Gradient
-                                gradient: RadialGradient(
-                                  center: const Alignment(-0.25, -0.45),
-                                  radius: 0.95,
-                                  colors: isDark
-                                      ? [
-                                          Colors.white.withOpacity(0.12 + (_liftY * 0.05)),
-                                          Colors.white.withOpacity(0.03),
-                                          Colors.transparent,
-                                        ]
-                                      : [
-                                          Colors.white.withOpacity(0.40 + (_liftY * 0.10)),
-                                          Colors.white.withOpacity(0.12),
-                                          Colors.transparent,
-                                        ],
-                                  stops: const [0.0, 0.50, 1.0],
-                                ),
-                                borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
-                                boxShadow: [
-                                  // Dynamic shadow deepening during under-damped lift
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(isDark ? (0.35 + _liftY * 0.15) : 0.12),
-                                    blurRadius: 10 + (_liftY * 6.0),
-                                    offset: Offset(0, 3 + (_liftY * 2.0)),
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity(isDark ? (0.08 + _liftY * 0.06) : 0.0),
-                                    blurRadius: 2 + (_liftY * 2.0),
-                                    offset: const Offset(0, -1),
-                                  ),
-                                ],
-                              ),
-                              child: Stack(
-                                children: [
-                                  // LastWave 3-Tier Layered Curvature & Specular Highlight
-                                  Positioned.fill(
-                                    child: CustomPaint(
-                                      painter: _LiquidBubbleHighlightPainter(
-                                        isDark: isDark,
-                                        lift: _liftY,
-                                      ),
-                                    ),
-                                  ),
-                                  // BitChord 7-Ray Chromatic Dispersion Meniscus Flare
-                                  Positioned.fill(
-                                    child: CustomPaint(
-                                      painter: _LiquidChromaticDispersionPainter(
-                                        isDark: isDark,
-                                        lift: _liftY,
-                                        velocity: _velocity,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                gradient: useGlass
+                                    ? LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: isDark
+                                            ? [
+                                                Colors.white.withOpacity(0.14),
+                                                Colors.white.withOpacity(0.04),
+                                                Colors.white.withOpacity(0.02),
+                                                Colors.white.withOpacity(0.06),
+                                              ]
+                                            : [
+                                                Colors.white.withOpacity(0.85),
+                                                Colors.white.withOpacity(0.70),
+                                                Colors.white.withOpacity(0.65),
+                                                Colors.white.withOpacity(0.78),
+                                              ],
+                                        stops: const [0.0, 0.30, 0.70, 1.0],
+                                      )
+                                    : null,
+                                color: useGlass
+                                    ? null
+                                    : (isDark ? const Color(0xF012151A) : Colors.white),
+                                borderRadius: BorderRadius.circular(25),
+                                boxShadow: isDark
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.25),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 5),
+                                        ),
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.10),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ]
+                                    : [
+                                        BoxShadow(
+                                          color: const Color(0x14000000),
+                                          blurRadius: 14,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
                               ),
                             ),
                           ),
-
-                          // 2. Tab Items Row (High Contrast Optics)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: _kPaddingH,
-                              vertical: _kPaddingV,
-                            ),
-                            child: Row(
-                              children: List.generate(_tabs.length, (index) {
-                                final tab = _tabs[index];
-                                final isSelected = widget.currentIndex == index;
-
-                                final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
-                                final inactiveColor = isDark
-                                    ? Colors.white.withOpacity(0.78)
-                                    : AppColors.lightTextMuted;
-
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutCubic,
-                                  width: isSelected ? _kActiveSlotWidth : _kInactiveSlotWidth,
-                                  height: _kPillHeight,
-                                  child: InkWell(
-                                    onTap: () => _selectTab(index),
-                                    borderRadius: BorderRadius.circular(23),
-                                    splashColor: Colors.transparent,
-                                    highlightColor: Colors.transparent,
-                                    child: Center(
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            tab.icon,
-                                            size: isSelected ? 18.0 : 19.5,
-                                            color: isSelected ? activeColor : inactiveColor,
-                                          ),
-                                          if (isSelected) ...[
-                                            const SizedBox(width: 5),
-                                            Flexible(
-                                              child: Text(
-                                                tab.label,
-                                                style: TextStyle(
-                                                  fontFamily: 'Inter',
-                                                  fontSize: 11.0,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: -0.3,
-                                                  color: activeColor,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.visible,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+
+                    // ==============================================================
+                    // LAYER 2: FLAT RESTING PILL (BitChord FlatSelectionPill)
+                    // At rest: Clean, quiet indicator with zero neon noise!
+                    // ==============================================================
+                    if (_isFlat)
+                      Positioned(
+                        left: restingLeft,
+                        top: restingTop,
+                        width: _kActiveSlotWidth,
+                        height: _kPillHeight,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.10)
+                                : Colors.black.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(_kPillHeight / 2),
+                          ),
+                        ),
+                      ),
+
+                    // ==============================================================
+                    // LAYER 3: TAB ICONS & LABELS ROW
+                    // ==============================================================
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _kPaddingH,
+                          vertical: _kPaddingV,
+                        ),
+                        child: Row(
+                          children: List.generate(_tabs.length, (index) {
+                            final tab = _tabs[index];
+                            final isSelected = widget.currentIndex == index;
+
+                            final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
+                            final inactiveColor = isDark
+                                ? Colors.white.withOpacity(0.78)
+                                : AppColors.lightTextMuted;
+
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              width: isSelected ? _kActiveSlotWidth : _kInactiveSlotWidth,
+                              height: _kPillHeight,
+                              child: InkWell(
+                                onTap: () => _selectTab(index),
+                                borderRadius: BorderRadius.circular(23),
+                                splashColor: Colors.transparent,
+                                highlightColor: Colors.transparent,
+                                child: Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        tab.icon,
+                                        size: isSelected ? 18.0 : 19.5,
+                                        color: isSelected ? activeColor : inactiveColor,
+                                      ),
+                                      if (isSelected) ...[
+                                        const SizedBox(width: 5),
+                                        Flexible(
+                                          child: Text(
+                                            tab.label,
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 11.0,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.3,
+                                              color: activeColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.visible,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+
+                    // ==============================================================
+                    // LAYER 4: UNCLIPPED FLOATING GLASS LENS (BitChord GlassSelectionPill)
+                    // Active when lifted or moving: stands above and outside the dock!
+                    // ==============================================================
+                    if (!_isFlat)
+                      Positioned(
+                        left: pillLeft,
+                        top: pillTop,
+                        width: dynamicPillWidth,
+                        height: dynamicPillHeight,
+                        child: IgnorePointer(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              // Convex Focal-Light Radial Water Droplet Gradient
+                              gradient: RadialGradient(
+                                center: const Alignment(-0.25, -0.45),
+                                radius: 0.95,
+                                colors: isDark
+                                    ? [
+                                        Colors.white.withOpacity(0.14 + (_liftY * 0.08)),
+                                        Colors.white.withOpacity(0.04),
+                                        Colors.transparent,
+                                      ]
+                                    : [
+                                        Colors.white.withOpacity(0.45 + (_liftY * 0.12)),
+                                        Colors.white.withOpacity(0.14),
+                                        Colors.transparent,
+                                      ],
+                                stops: const [0.0, 0.50, 1.0],
+                              ),
+                              borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
+                              boxShadow: [
+                                // Deep ambient drop shadow cast on dock & background (BitChord Image 4)
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(isDark ? 0.45 : 0.15),
+                                  blurRadius: 16 + (_liftY * 4.0),
+                                  offset: Offset(0, 4 + (_liftY * 2.0)),
+                                ),
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(isDark ? 0.12 : 0.0),
+                                  blurRadius: 3,
+                                  offset: const Offset(0, -1),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                // LastWave 3-Tier Layered Curvature & Specular Highlight
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _LiquidBubbleHighlightPainter(
+                                      isDark: isDark,
+                                      lift: _liftY,
+                                    ),
+                                  ),
+                                ),
+                                // Corner-Localized Meniscus Glint (BitChord formula: no fake neon border!)
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _CornerPrismaticGlintPainter(
+                                      isDark: isDark,
+                                      lift: _liftY,
+                                      velocity: _velocity,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -647,7 +703,7 @@ class _PillSquashModel {
     double total = 0.0;
     int count = 0;
     for (int i = 1; i < velocities.length; i++) {
-      final double dt = velocities[i].time - velocities[i - 1].time;
+      final dt = velocities[i].time - velocities[i - 1].time;
       if (dt <= 0) continue;
       total += (velocities[i].v - velocities[i - 1].v) / dt;
       count++;
@@ -747,7 +803,7 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     // 2. Upper-left specular light catch rim
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3 + (lift * 0.3)
+      ..strokeWidth = 1.3 + (lift * 0.4)
       ..shader = LinearGradient(
         begin: const Alignment(-0.5, -0.6),
         end: const Alignment(0.60, 1.0),
@@ -786,15 +842,15 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
       oldDelegate.isDark != isDark || oldDelegate.lift != lift;
 }
 
-/// BitChord 7-Wavelength Chromatic Dispersion Meniscus Flare
-/// Samples the outer meniscus contour with a rainbow flare (Red -> Orange -> Yellow -> Green -> Cyan -> Blue -> Purple).
-/// Dynamically blooms in stroke width and intensity based on velocity and under-damped lift!
-class _LiquidChromaticDispersionPainter extends CustomPainter {
+/// Corner-Localized Optical Glint & Prismatic Refraction (BitChord formula)
+/// Unlike a cheap continuous neon rainbow border, dispersion intensity follows (x * y) / (W/2 * H/2).
+/// It blooms exclusively at the diagonal curved meniscus corners where light physically refracts!
+class _CornerPrismaticGlintPainter extends CustomPainter {
   final bool isDark;
   final double lift;
   final double velocity;
 
-  _LiquidChromaticDispersionPainter({
+  _CornerPrismaticGlintPainter({
     required this.isDark,
     required this.lift,
     required this.velocity,
@@ -805,46 +861,40 @@ class _LiquidChromaticDispersionPainter extends CustomPainter {
     if (size.width <= 0 || size.height <= 0) return;
 
     final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(size.height / 2)).deflate(0.5);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(size.height / 2)).deflate(0.6);
 
-    // Intensity blooms with velocity & lift
-    final double velMagnitude = velocity.abs();
-    final double intensity = (0.22 + (lift * 0.32) + (velMagnitude * 0.08)).clamp(0.18, 0.85);
+    // BitChord formula: dispersion is proportional to velocity & lift, localized diagonally
+    final double velMag = velocity.abs();
+    final double intensity = (0.15 + (lift * 0.25) + (velMag * 0.06)).clamp(0.12, 0.55);
 
-    // Orient rainbow flare with direction of travel:
-    // Leading edge catches warm spectrum (Red/Orange/Yellow)
-    // Trailing edge catches cool spectrum (Cyan/Blue/Purple)
-    final bool movingLeft = velocity < -0.05;
-    final Alignment startAlign = movingLeft ? Alignment.centerRight : Alignment.centerLeft;
-    final Alignment endAlign = movingLeft ? Alignment.centerLeft : Alignment.centerRight;
-
-    final List<Color> spectralColors = [
-      const Color(0x66AF52DE), // 7. Purple
-      const Color(0x66007AFF), // 6. Blue
-      const Color(0x5500C7BE), // 5. Cyan
-      const Color(0x4434C759), // 4. Green
-      const Color(0x55FFCC00), // 3. Yellow
-      const Color(0x55FF9500), // 2. Orange
-      const Color(0x66FF3B30), // 1. Red
-    ];
-
-    final chromaticShader = LinearGradient(
-      begin: startAlign,
-      end: endAlign,
-      colors: spectralColors.map((c) => c.withOpacity((c.opacity * intensity).clamp(0.0, 1.0))).toList(),
-      stops: const [0.0, 0.16, 0.33, 0.50, 0.66, 0.83, 1.0],
+    // Diagonal corner dispersion sweep:
+    // Glint focuses at Top-Left (~135 deg) and Bottom-Right (~315 deg) diagonal corners!
+    final cornerSweepShader = SweepGradient(
+      center: Alignment.center,
+      colors: [
+        Colors.transparent,
+        const Color(0x3300C7BE).withOpacity(intensity * 0.6), // Cyan corner glint
+        const Color(0x55FFCC00).withOpacity(intensity * 0.8), // Warm gold highlight
+        Colors.transparent,
+        Colors.transparent,
+        const Color(0x33007AFF).withOpacity(intensity * 0.5), // Cool blue meniscus
+        const Color(0x44AF52DE).withOpacity(intensity * 0.7), // Violet flare
+        Colors.transparent,
+      ],
+      stops: const [0.0, 0.12, 0.22, 0.35, 0.50, 0.62, 0.72, 0.85],
+      transform: GradientRotation(velocity > 0.05 ? 0.35 : (velocity < -0.05 ? -0.35 : 0.0)),
     ).createShader(rect);
 
-    final chromaticPaint = Paint()
+    final glintPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2 + (lift * 0.6) + (velMagnitude * 0.1).clamp(0.0, 0.8)
-      ..shader = chromaticShader;
+      ..strokeWidth = 1.0 + (lift * 0.6)
+      ..shader = cornerSweepShader;
 
-    canvas.drawRRect(rrect, chromaticPaint);
+    canvas.drawRRect(rrect, glintPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _LiquidChromaticDispersionPainter oldDelegate) =>
+  bool shouldRepaint(covariant _CornerPrismaticGlintPainter oldDelegate) =>
       oldDelegate.isDark != isDark ||
       oldDelegate.lift != lift ||
       oldDelegate.velocity != velocity;
