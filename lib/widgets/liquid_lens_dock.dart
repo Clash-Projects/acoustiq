@@ -7,23 +7,20 @@ import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
 /// Authentic BitChord & LastWave Liquid Floating Glass Dock
-/// Master Synthesis Execution:
-/// 1. True Dock Geometry (Apple HIG & BitChord 62dp standard):
-///    - Dock height upgraded from cramped 50dp -> 62dp.
-///    - Generous 54dp resting pill, 66dp lifted squircle pebble (+12dp lift).
-///    - Proportional width expansion (96dp -> 117dp), completely enclosing dock edge caps.
-/// 2. Continuous Material Hand-off Engine:
-///    - Eliminates boolean cut! Continuous `material` and `handover` blend factors.
-///    - Flat indicator smoothly melts into convex water lens on touch down (60ms).
-///    - Floating lens dissolves seamlessly into flat pill upon landing at destination.
-/// 3. Pure Motion-Driven Physics (Zero Fake Wobble):
-///    - PillSquashModel tracks pure acceleration d^2x/dt^2.
-///    - Zero vibration when held still (absolute optical stillness).
-///    - Area-conserving elongation and braking squash during travel.
-/// 4. Pure Optical Water Glass (Zero Fake Painted Chromatic Strokes):
-///    - Deleted fake sweep gradient rainbow lines.
-///    - Subtle 0.8px specular hairline light catch (0.28 opacity, not 0.98 harsh glare).
-///    - Volumetric ambient drop shadow (16px blur, 4px Y-offset) creating authentic Z-axis lift.
+/// Master Synthesis Rework:
+/// 1. Flawless Concentric End-Cap Geometry (319dp width x 62dp height):
+///    - Semicircular outer caps (31dp radius) share identical arc centers with pill (27.5dp radius + 3.5dp padding).
+///    - Left and right caps have an exact, uniform 3.5dp concentric margin (zero gaps, zero asymmetry).
+/// 2. BitChord Precision Flight Landing Hand-off (HANDOVER_START = 0.88):
+///    - Hand-off no longer waits for the pill to come to a dead stop!
+///    - Deflation and glass-to-flat dissolve trigger at 88% of travel (during landing decrescendo).
+///    - Pill lands and becomes flat in one continuous, butter-smooth 120 FPS deceleration!
+/// 3. Optical Icon Magnification (1.09x Dynamic Scale):
+///    - Active icon organically magnifies by up to +9% as the lens passes over it,
+///      simulating the physical convex magnification of thick crown glass.
+/// 4. Luminous Translucent Water Core:
+///    - Replaced murky dark tints with BitChord's 0.16 white optical luminance.
+///    - Feather-soft 0.8px specular hairline (0.28 opacity) and 16px soft ambient drop shadow.
 class LiquidLensNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -42,23 +39,23 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     with TickerProviderStateMixin {
   // Apple HIG & BitChord standard dimensions:
   // 62dp dock height provides lush vertical presence (eliminates squeezed look).
-  // 320dp dock width leaves ~35-40dp breathing margins on screen sides.
-  static const double _kDockWidth = 320.0;
+  // 319dp dock width with 3.5dp padding creates 100% mathematically concentric end-caps.
+  static const double _kDockWidth = 319.0;
   static const double _kDockHeight = 62.0;
-  static const double _kPaddingH = 4.0;
-  static const double _kPaddingV = 4.0;
+  static const double _kPaddingH = 3.5;
+  static const double _kPaddingV = 3.5;
   static const int _kTabCount = 4;
 
-  // Track allocation: 320 - 8 = 312dp inner track
+  // Track allocation: 319 - 7 = 312dp inner track
   // Active slot: 96dp (ample room for text + icon)
   // 3 Inactive slots: 72dp each (96 + 3*72 = 312dp)
   static const double _kActiveSlotWidth = 96.0;
   static const double _kInactiveSlotWidth = 72.0;
-  static const double _kPillHeight = _kDockHeight - (2 * _kPaddingV); // 54.0dp
+  static const double _kPillHeight = _kDockHeight - (2 * _kPaddingV); // 55.0dp
 
   // Dynamic growth constants on lift (BitChord proportional expansion)
-  static const double _kPillLiftGrowth = 12.0; // 54dp -> 66dp
-  static const double _kPillWidthGrowth = 21.0; // 96dp -> 117dp
+  static const double _kPillLiftGrowth = 11.0; // 55dp -> 66dp
+  static const double _kPillWidthGrowth = 19.2; // 96dp -> 115.2dp
 
   // Continuous floating position coordinates
   double _currentPosition = 0.0;
@@ -67,6 +64,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   double _dragStartPosition = 0.0;
   double _velocity = 0.0;
   bool _isDragging = false;
+
+  // Travel start coordinate for accurate travelProgress calculation
+  double _travelFrom = 0.0;
 
   // Target index guard to eliminate release jitter
   int _targetIndex = 0;
@@ -79,7 +79,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   double _handover = 1.0;
 
   // Under-damped Dual Springs for Lift (from liquid_glass_easy & BitChord)
-  // Damping ratio 0.6 across, 0.7 down -> overshoots raised size and bounces back!
   double _liftX = 0.0;
   double _liftXVel = 0.0;
   double _liftY = 0.0;
@@ -109,6 +108,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     super.initState();
     _currentPosition = widget.currentIndex.toDouble();
     _dragTarget = _currentPosition;
+    _travelFrom = _currentPosition;
     _targetIndex = widget.currentIndex;
     _lastHapticIndex = widget.currentIndex;
 
@@ -151,6 +151,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     }
   }
 
+  /// Calculates flight completion progress (0.0 at launch -> 1.0 at destination)
+  double _travelProgress() {
+    final double span = (_targetIndex.toDouble() - _travelFrom).abs();
+    if (span < 1e-4) return 1.0;
+    return (1.0 - (_targetIndex.toDouble() - _currentPosition).abs() / span).clamp(0.0, 1.0);
+  }
+
   /// One frame of fluid physics (runs at native 90Hz / 120Hz display refresh rate)
   void _onTick(Duration elapsed) {
     final double now = elapsed.inMicroseconds / 1e6;
@@ -163,20 +170,28 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
     final double prevPos = _currentPosition;
 
-    // 1. Step Under-damped Dual Springs for Lift (Semi-implicit Euler)
+    // 1. BitChord Landing Decrescendo Hand-off (HANDOVER_START = 0.88):
+    // As the pill enters the final 12% of flight, release lift during braking!
+    if (!_isDragging && _liftTarget > 0.0) {
+      if (_travelProgress() >= 0.88 || !_positionController.isAnimating) {
+        _liftTarget = 0.0;
+      }
+    }
+
+    // 2. Step Under-damped Dual Springs for Lift (Semi-implicit Euler)
     _stepLiftSprings(dt);
 
-    // 2. Material Hand-off Transition (Continuous 60ms exponential morph)
+    // 3. Material Hand-off Transition (Continuous 50ms exponential morph)
     final double materialTarget = _liftTarget > 0.0 ? 1.0 : 0.0;
-    _material += (materialTarget - _material) * (1.0 - math.exp(-dt / 0.06));
-    if ((materialTarget - _material).abs() < 0.005) _material = materialTarget;
+    _material += (materialTarget - _material) * (1.0 - math.exp(-dt / 0.05));
+    if ((materialTarget - _material).abs() < 0.004) _material = materialTarget;
 
     final double handoverTarget = _liftTarget > 0.0 ? 0.0 : 1.0;
-    final double handoverTau = handoverTarget > _handover ? 0.09 : 0.05;
+    final double handoverTau = handoverTarget > _handover ? 0.08 : 0.04;
     _handover += (handoverTarget - _handover) * (1.0 - math.exp(-dt / handoverTau));
-    if ((handoverTarget - _handover).abs() < 0.005) _handover = handoverTarget;
+    if ((handoverTarget - _handover).abs() < 0.004) _handover = handoverTarget;
 
-    // 3. Under finger: Chase target with exponential liquid lag (FOLLOW_TAU = 0.045s)
+    // 4. Under finger: Chase target with exponential liquid lag (FOLLOW_TAU = 0.045s)
     if (_isDragging) {
       const double tau = 0.045;
       _currentPosition += (_dragTarget - _currentPosition) * (1.0 - math.exp(-dt / tau));
@@ -202,8 +217,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         _liftYVel.abs() < 0.005;
 
     final bool squashSettled = _squashModel.value.abs() < 0.001;
-    final bool materialSettled = (_material - materialTarget).abs() < 0.005 &&
-        (_handover - handoverTarget).abs() < 0.005;
+    final bool materialSettled = (_material - materialTarget).abs() < 0.004 &&
+        (_handover - handoverTarget).abs() < 0.004;
 
     final bool isSettled = !_isDragging &&
         !_positionController.isAnimating &&
@@ -249,6 +264,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   void _animateToTab(int targetIndex) {
     _positionController.stop();
     _targetIndex = targetIndex;
+    _travelFrom = _currentPosition;
     final double targetPos = targetIndex.toDouble();
 
     if ((_currentPosition - targetPos).abs() < 0.001) {
@@ -276,7 +292,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       setState(() {
         _currentPosition = targetPos;
       });
-      // Once landed, deflate lift and hand off back to flat resting pill
       _liftTarget = 0.0;
       _ensureTicker();
     });
@@ -304,6 +319,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     _liftTarget = 1.0;
     _dragStartX = details.localPosition.dx;
     _dragStartPosition = _currentPosition;
+    _travelFrom = _currentPosition;
     _dragTarget = _currentPosition;
     _squashModel.start();
     _ensureTicker();
@@ -331,6 +347,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     _isDragging = false;
     final int destination = _currentPosition.round().clamp(0, _kTabCount - 1);
     _targetIndex = destination;
+    _travelFrom = _currentPosition;
     _animateToTab(destination);
 
     if (destination != widget.currentIndex) {
@@ -358,6 +375,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   void _selectTab(int targetIndex) {
     final int clamped = targetIndex.clamp(0, _kTabCount - 1);
     _targetIndex = clamped;
+    _travelFrom = _currentPosition;
     if (clamped != widget.currentIndex) {
       if (appState.hapticsEnabled) {
         HapticFeedback.selectionClick();
@@ -381,7 +399,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         // Dynamic conservation of volume deformation (Pure acceleration, no fake sine)
         final double deviation = _squashModel.value.clamp(-0.12, 0.12);
 
-        // Proportional growth on lift: 54dp -> 66dp height, 96dp -> 117dp width
+        // Proportional growth on lift: 55dp -> 66dp height, 96dp -> 115.2dp width
         final double liftedW = _kActiveSlotWidth + (_liftX * _kPillWidthGrowth);
         final double liftedH = _kPillHeight + (_liftY * _kPillLiftGrowth);
 
@@ -399,10 +417,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         final double restingLeft = restingCenter - (_kActiveSlotWidth / 2.0);
         final double restingTop = (_kDockHeight - _kPillHeight) / 2.0;
 
-        // Continuous hand-off blend factors
-        // glassPresence: 0.0 (pure flat) to 1.0 (pure floating glass lens)
+        // Continuous hand-off blend factors (BitChord standard: 0.16 white indicator in dark mode)
         final double glassPresence = (_material * (1.0 - _handover)).clamp(0.0, 1.0);
-        final double flatAlpha = ((1.0 - _material) * (isDark ? 0.10 : 0.07)).clamp(0.0, 1.0);
+        final double flatAlpha = ((1.0 - _material) * (isDark ? 0.16 : 0.08)).clamp(0.0, 1.0);
 
         return Center(
           child: SizedBox(
@@ -424,7 +441,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                   children: [
                     // ==============================================================
                     // LAYER 1: CLIPPED DOCK RAIL (Substrate, Gaussian Blur & Top Rim)
-                    // Radius: 31dp (half of 62dp height)
+                    // Radius: 31dp (semicircular cap concentric with pill's 27.5dp radius)
                     // ==============================================================
                     Positioned.fill(
                       child: ClipRRect(
@@ -446,10 +463,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                         end: Alignment.bottomCenter,
                                         colors: isDark
                                             ? [
-                                                Colors.white.withOpacity(0.14),
-                                                Colors.white.withOpacity(0.04),
-                                                Colors.white.withOpacity(0.02),
-                                                Colors.white.withOpacity(0.06),
+                                                Colors.white.withOpacity(0.16),
+                                                Colors.white.withOpacity(0.05),
+                                                Colors.white.withOpacity(0.03),
+                                                Colors.white.withOpacity(0.08),
                                               ]
                                             : [
                                                 Colors.white.withOpacity(0.85),
@@ -510,7 +527,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                       ),
 
                     // ==============================================================
-                    // LAYER 3: TAB ICONS & LABELS ROW
+                    // LAYER 3: TAB ICONS & LABELS ROW (With 1.09x Optical Magnification)
                     // ==============================================================
                     Positioned.fill(
                       child: Padding(
@@ -528,6 +545,11 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                 ? Colors.white.withOpacity(0.78)
                                 : AppColors.lightTextMuted;
 
+                            // Optical Magnification: Icon magnifies to 1.09x under the lens!
+                            final double distance = (_currentPosition - index).abs();
+                            final double proximity = (1.0 - distance).clamp(0.0, 1.0);
+                            final double iconScale = 1.0 + (0.09 * proximity);
+
                             return AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               curve: Curves.easeOutCubic,
@@ -543,10 +565,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        tab.icon,
-                                        size: isSelected ? 20.0 : 21.0,
-                                        color: isSelected ? activeColor : inactiveColor,
+                                      Transform.scale(
+                                        scale: iconScale,
+                                        child: Icon(
+                                          tab.icon,
+                                          size: isSelected ? 20.0 : 21.0,
+                                          color: isSelected ? activeColor : inactiveColor,
+                                        ),
                                       ),
                                       if (isSelected) ...[
                                         const SizedBox(width: 6),
@@ -578,7 +603,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                     // ==============================================================
                     // LAYER 4: UNCLIPPED FLOATING GLASS LENS (BitChord GlassSelectionPill)
                     // Fades in continuously with glassPresence, stands above and outside dock!
-                    // Completely devoid of fake painted rainbow strokes! Pure crystal water lens.
+                    // Pure optical water glass with 0.16 white core and feather-soft specular rim.
                     // ==============================================================
                     if (glassPresence > 0.005)
                       Positioned(
@@ -591,19 +616,19 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                             opacity: glassPresence,
                             child: Container(
                               decoration: BoxDecoration(
-                                // Soft, natural convex focal-light water droplet gradient (No harsh gleam!)
+                                // Soft, luminous water droplet gradient with pure water-clear core
                                 gradient: RadialGradient(
                                   center: const Alignment(-0.20, -0.40),
                                   radius: 0.95,
                                   colors: isDark
                                       ? [
-                                          Colors.white.withOpacity(0.09 + (_liftY * 0.05)),
-                                          Colors.white.withOpacity(0.02),
+                                          Colors.white.withOpacity(0.12 + (_liftY * 0.06)),
+                                          Colors.white.withOpacity(0.03),
                                           Colors.transparent,
                                         ]
                                       : [
-                                          Colors.white.withOpacity(0.35 + (_liftY * 0.10)),
-                                          Colors.white.withOpacity(0.08),
+                                          Colors.white.withOpacity(0.40 + (_liftY * 0.10)),
+                                          Colors.white.withOpacity(0.10),
                                           Colors.transparent,
                                         ],
                                   stops: const [0.0, 0.45, 1.0],
