@@ -1044,7 +1044,11 @@ class _FloatingLensShadowPainter extends CustomPainter {
     canvas.save();
     // CRITICAL: Clip out the interior of the lens!
     // Shadow will ONLY be drawn on pixels OUTSIDE rrect!
-    canvas.clipRRect(rrect, clipOp: ClipOp.difference);
+    final outerRect = rect.inflate(blur * 2.5 + dy + 10.0);
+    final outerPath = Path()..addRect(outerRect);
+    final innerPath = Path()..addRRect(rrect);
+    final shadowClipPath = Path.combine(PathOperation.difference, outerPath, innerPath);
+    canvas.clipPath(shadowClipPath);
 
     // 1. Broad soft ambient elevation shadow
     final ambientPaint = Paint()
