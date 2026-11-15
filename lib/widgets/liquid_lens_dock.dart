@@ -7,30 +7,23 @@ import '../models/app_settings.dart';
 import '../ui/theme/colors.dart';
 
 /// Authentic BitChord & LastWave Liquid Floating Glass Dock
-/// Phase 2 (Rework): Unclipped Floating Lens, Proportional +9dp Lift,
-///                   Pure Acceleration Squash (No Fake Wobble),
-///                   Corner-Localized Optical Glint & Flat-to-Glass Hand-off.
-///
-/// Architecture Ground Truth (Derived from BitChord Source & Screenshots):
-/// 1. Unclipped Double-Layer Geometry:
-///    - Root container is an unclipped Stack (`clipBehavior: Clip.none`).
-///    - Dock rail is clipped to its 25px rounded rectangle (Layer 1).
-///    - Floating Glass Pill sits on Layer 4 OUTSIDE the dock's clip,
-///      standing 3dp to 4.5dp above and below dock boundaries with zero edge clipping.
-/// 2. Proportional Growth on Lift (PILL_GROW_HEIGHT = 9.0dp):
-///    - Resting height: 46dp, resting width: 94dp.
-///    - Lifted height: 56dp (+10dp), lifted width: 112dp (+18dp) scaled proportionally.
-/// 3. Pure Acceleration Squash (Zero Artificial Sine Wobble):
-///    - Tracks instantaneous acceleration d^2x/dt^2 via PillSquashModel.
-///    - When held still: deviation = 0.0 (calm stillness, no vibration).
-///    - When moving: volume-conserving elongation and braking squash.
-/// 4. Corner-Localized Prismatic Dispersion (No Static Neon Rainbow Border):
-///    - Dispersion intensity follows (x * y) / (W/2 * H/2).
-///    - Appears exclusively at diagonal corner radiuses where glass curves bend light.
-/// 5. BitChord Flat-to-Glass Hand-off:
-///    - At rest: Flat minimal indicator (clean, zero visual noise).
-///    - On touch: Unclips, lifts +10dp, casts 16px ambient shadow, becomes convex liquid lens.
-///    - On release: Snaps to destination tab, deflates back into dock bed, hands off to flat pill.
+/// Master Synthesis Execution:
+/// 1. True Dock Geometry (Apple HIG & BitChord 62dp standard):
+///    - Dock height upgraded from cramped 50dp -> 62dp.
+///    - Generous 54dp resting pill, 66dp lifted squircle pebble (+12dp lift).
+///    - Proportional width expansion (96dp -> 117dp), completely enclosing dock edge caps.
+/// 2. Continuous Material Hand-off Engine:
+///    - Eliminates boolean cut! Continuous `material` and `handover` blend factors.
+///    - Flat indicator smoothly melts into convex water lens on touch down (60ms).
+///    - Floating lens dissolves seamlessly into flat pill upon landing at destination.
+/// 3. Pure Motion-Driven Physics (Zero Fake Wobble):
+///    - PillSquashModel tracks pure acceleration d^2x/dt^2.
+///    - Zero vibration when held still (absolute optical stillness).
+///    - Area-conserving elongation and braking squash during travel.
+/// 4. Pure Optical Water Glass (Zero Fake Painted Chromatic Strokes):
+///    - Deleted fake sweep gradient rainbow lines.
+///    - Subtle 0.8px specular hairline light catch (0.28 opacity, not 0.98 harsh glare).
+///    - Volumetric ambient drop shadow (16px blur, 4px Y-offset) creating authentic Z-axis lift.
 class LiquidLensNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -47,20 +40,25 @@ class LiquidLensNavBar extends StatefulWidget {
 
 class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     with TickerProviderStateMixin {
-  // Compact floating island geometry:
-  // 316dp dock width leaves ~37dp breathing room on screen sides.
-  static const double _kDockWidth = 316.0;
-  static const double _kDockHeight = 50.0;
-  static const double _kPaddingH = 3.0;
-  static const double _kPaddingV = 2.0;
+  // Apple HIG & BitChord standard dimensions:
+  // 62dp dock height provides lush vertical presence (eliminates squeezed look).
+  // 320dp dock width leaves ~35-40dp breathing margins on screen sides.
+  static const double _kDockWidth = 320.0;
+  static const double _kDockHeight = 62.0;
+  static const double _kPaddingH = 4.0;
+  static const double _kPaddingV = 4.0;
   static const int _kTabCount = 4;
 
-  // Geometry: 316 - 6 = 310dp inner track width
-  // Active slot gets 94dp (fits 10-letter words like "Duplicates" without clipping)
-  // 3 Inactive slots share remaining 216dp equally = 72dp each
-  static const double _kActiveSlotWidth = 94.0;
+  // Track allocation: 320 - 8 = 312dp inner track
+  // Active slot: 96dp (ample room for text + icon)
+  // 3 Inactive slots: 72dp each (96 + 3*72 = 312dp)
+  static const double _kActiveSlotWidth = 96.0;
   static const double _kInactiveSlotWidth = 72.0;
-  static const double _kPillHeight = _kDockHeight - (2 * _kPaddingV); // 46.0
+  static const double _kPillHeight = _kDockHeight - (2 * _kPaddingV); // 54.0dp
+
+  // Dynamic growth constants on lift (BitChord proportional expansion)
+  static const double _kPillLiftGrowth = 12.0; // 54dp -> 66dp
+  static const double _kPillWidthGrowth = 21.0; // 96dp -> 117dp
 
   // Continuous floating position coordinates
   double _currentPosition = 0.0;
@@ -74,8 +72,11 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   int _targetIndex = 0;
   int _lastHapticIndex = -1;
 
-  // BitChord Flat-to-Glass Hand-off state
-  bool _isFlat = true;
+  // Continuous Material Hand-off springs (BitChord GlassSelectionPill architecture)
+  // material: 0.0 (flat indicator) -> 1.0 (glass lens active)
+  // handover: 0.0 (fully lifted lens) -> 1.0 (landing hand-off back to flat)
+  double _material = 0.0;
+  double _handover = 1.0;
 
   // Under-damped Dual Springs for Lift (from liquid_glass_easy & BitChord)
   // Damping ratio 0.6 across, 0.7 down -> overshoots raised size and bounces back!
@@ -128,8 +129,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   @override
   void didUpdateWidget(covariant LiquidLensNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Guard against collision: if parent echoes the destination tab we already targeted,
-    // do NOT re-trigger _animateToTab!
     if (oldWidget.currentIndex != widget.currentIndex && !_isDragging) {
       if (_targetIndex != widget.currentIndex) {
         _targetIndex = widget.currentIndex;
@@ -167,7 +166,17 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     // 1. Step Under-damped Dual Springs for Lift (Semi-implicit Euler)
     _stepLiftSprings(dt);
 
-    // 2. Under finger: Chase target with exponential liquid lag (FOLLOW_TAU = 0.045s)
+    // 2. Material Hand-off Transition (Continuous 60ms exponential morph)
+    final double materialTarget = _liftTarget > 0.0 ? 1.0 : 0.0;
+    _material += (materialTarget - _material) * (1.0 - math.exp(-dt / 0.06));
+    if ((materialTarget - _material).abs() < 0.005) _material = materialTarget;
+
+    final double handoverTarget = _liftTarget > 0.0 ? 0.0 : 1.0;
+    final double handoverTau = handoverTarget > _handover ? 0.09 : 0.05;
+    _handover += (handoverTarget - _handover) * (1.0 - math.exp(-dt / handoverTau));
+    if ((handoverTarget - _handover).abs() < 0.005) _handover = handoverTarget;
+
+    // 3. Under finger: Chase target with exponential liquid lag (FOLLOW_TAU = 0.045s)
     if (_isDragging) {
       const double tau = 0.045;
       _currentPosition += (_dragTarget - _currentPosition) * (1.0 - math.exp(-dt / tau));
@@ -186,17 +195,21 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       }
     }
 
-    // Check if physics engine can settle and hand-off to flat pill
+    // Check if physics engine can settle
     final bool liftSettled = (_liftX - _liftTarget).abs() < 0.001 &&
         (_liftY - _liftTarget).abs() < 0.001 &&
         _liftXVel.abs() < 0.005 &&
         _liftYVel.abs() < 0.005;
 
     final bool squashSettled = _squashModel.value.abs() < 0.001;
+    final bool materialSettled = (_material - materialTarget).abs() < 0.005 &&
+        (_handover - handoverTarget).abs() < 0.005;
+
     final bool isSettled = !_isDragging &&
         !_positionController.isAnimating &&
         liftSettled &&
-        squashSettled;
+        squashSettled &&
+        materialSettled;
 
     if (isSettled) {
       _liftX = _liftTarget;
@@ -204,13 +217,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       _liftXVel = 0.0;
       _liftYVel = 0.0;
       _velocity = 0.0;
+      _material = materialTarget;
+      _handover = handoverTarget;
       _squashModel.stop();
       _ticker?.stop();
-
-      // Hand-off back to flat pill when resting at destination
-      if (_liftTarget == 0.0) {
-        _isFlat = true;
-      }
     }
 
     setState(() {});
@@ -244,13 +254,11 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     if ((_currentPosition - targetPos).abs() < 0.001) {
       setState(() {
         _currentPosition = targetPos;
-        _isFlat = true;
       });
       return;
     }
 
-    // Switch from flat indicator to floating glass lens during travel
-    _isFlat = false;
+    // Material turns on smoothly as spring starts travel
     _liftTarget = 1.0;
 
     _positionAnim = Tween<double>(
@@ -268,14 +276,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       setState(() {
         _currentPosition = targetPos;
       });
-      // Once landed, deflate lift and hand off back to flat pill
+      // Once landed, deflate lift and hand off back to flat resting pill
       _liftTarget = 0.0;
       _ensureTicker();
     });
   }
 
   void _handleTapDown(TapDownDetails details) {
-    _isFlat = false;
     _liftTarget = 1.0;
     _ensureTicker();
   }
@@ -294,7 +301,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   void _handleDragStart(DragStartDetails details) {
     _positionController.stop();
     _isDragging = true;
-    _isFlat = false;
     _liftTarget = 1.0;
     _dragStartX = details.localPosition.dx;
     _dragStartPosition = _currentPosition;
@@ -375,9 +381,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         // Dynamic conservation of volume deformation (Pure acceleration, no fake sine)
         final double deviation = _squashModel.value.clamp(-0.12, 0.12);
 
-        // Proportional growth on lift (+10dp height, +18dp width)
-        final double liftedW = _kActiveSlotWidth + (_liftX * 18.0);
-        final double liftedH = _kPillHeight + (_liftY * 10.0);
+        // Proportional growth on lift: 54dp -> 66dp height, 96dp -> 117dp width
+        final double liftedW = _kActiveSlotWidth + (_liftX * _kPillWidthGrowth);
+        final double liftedH = _kPillHeight + (_liftY * _kPillLiftGrowth);
 
         final double dynamicPillWidth = liftedW * (1.0 + deviation);
         final double dynamicPillHeight = liftedH * (1.0 - deviation);
@@ -385,13 +391,18 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         // Center calculation: the distance between slot centers is identically 72.0dp!
         final double centerX = _kPaddingH + (_kActiveSlotWidth / 2.0) + (_currentPosition * _kInactiveSlotWidth);
         final double pillLeft = centerX - (dynamicPillWidth / 2.0);
-        // Centers vertically around dock height: stands 3dp above & 3dp below dock edges when lifted!
+        // Centers vertically around dock height (62dp): stands 2dp above & 2dp below dock edges when lifted!
         final double pillTop = (_kDockHeight / 2.0) - (dynamicPillHeight / 2.0);
 
-        // Resting flat pill coordinates
+        // Resting flat pill coordinates (active tab slot)
         final double restingCenter = _kPaddingH + (_kActiveSlotWidth / 2.0) + (widget.currentIndex * _kInactiveSlotWidth);
         final double restingLeft = restingCenter - (_kActiveSlotWidth / 2.0);
         final double restingTop = (_kDockHeight - _kPillHeight) / 2.0;
+
+        // Continuous hand-off blend factors
+        // glassPresence: 0.0 (pure flat) to 1.0 (pure floating glass lens)
+        final double glassPresence = (_material * (1.0 - _handover)).clamp(0.0, 1.0);
+        final double flatAlpha = ((1.0 - _material) * (isDark ? 0.10 : 0.07)).clamp(0.0, 1.0);
 
         return Center(
           child: SizedBox(
@@ -413,18 +424,19 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                   children: [
                     // ==============================================================
                     // LAYER 1: CLIPPED DOCK RAIL (Substrate, Gaussian Blur & Top Rim)
+                    // Radius: 31dp (half of 62dp height)
                     // ==============================================================
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(31),
                         child: BackdropFilter(
                           filter: useGlass
-                              ? ImageFilter.blur(sigmaX: 14, sigmaY: 14)
+                              ? ImageFilter.blur(sigmaX: 16, sigmaY: 16)
                               : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                           child: CustomPaint(
                             painter: _DockSpecularRimPainter(
                               isDark: isDark,
-                              radius: 25,
+                              radius: 31,
                             ),
                             child: Container(
                               decoration: BoxDecoration(
@@ -451,13 +463,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                 color: useGlass
                                     ? null
                                     : (isDark ? const Color(0xF012151A) : Colors.white),
-                                borderRadius: BorderRadius.circular(25),
+                                borderRadius: BorderRadius.circular(31),
                                 boxShadow: isDark
                                     ? [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.25),
-                                          blurRadius: 16,
-                                          offset: const Offset(0, 5),
+                                          color: Colors.black.withOpacity(0.28),
+                                          blurRadius: 18,
+                                          offset: const Offset(0, 6),
                                         ),
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.10),
@@ -468,8 +480,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                     : [
                                         BoxShadow(
                                           color: const Color(0x14000000),
-                                          blurRadius: 14,
-                                          offset: const Offset(0, 4),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 5),
                                         ),
                                       ],
                               ),
@@ -481,9 +493,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
                     // ==============================================================
                     // LAYER 2: FLAT RESTING PILL (BitChord FlatSelectionPill)
-                    // At rest: Clean, quiet indicator with zero neon noise!
+                    // Fades out continuously as glass material blooms in on touch!
                     // ==============================================================
-                    if (_isFlat)
+                    if (flatAlpha > 0.005)
                       Positioned(
                         left: restingLeft,
                         top: restingTop,
@@ -491,9 +503,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         height: _kPillHeight,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.10)
-                                : Colors.black.withOpacity(0.06),
+                            color: (isDark ? Colors.white : Colors.black).withOpacity(flatAlpha),
                             borderRadius: BorderRadius.circular(_kPillHeight / 2),
                           ),
                         ),
@@ -525,7 +535,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                               height: _kPillHeight,
                               child: InkWell(
                                 onTap: () => _selectTab(index),
-                                borderRadius: BorderRadius.circular(23),
+                                borderRadius: BorderRadius.circular(27),
                                 splashColor: Colors.transparent,
                                 highlightColor: Colors.transparent,
                                 child: Center(
@@ -535,17 +545,17 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                     children: [
                                       Icon(
                                         tab.icon,
-                                        size: isSelected ? 18.0 : 19.5,
+                                        size: isSelected ? 20.0 : 21.0,
                                         color: isSelected ? activeColor : inactiveColor,
                                       ),
                                       if (isSelected) ...[
-                                        const SizedBox(width: 5),
+                                        const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
                                             tab.label,
                                             style: TextStyle(
                                               fontFamily: 'Inter',
-                                              fontSize: 11.0,
+                                              fontSize: 11.5,
                                               fontWeight: FontWeight.w700,
                                               letterSpacing: -0.3,
                                               color: activeColor,
@@ -567,71 +577,58 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
                     // ==============================================================
                     // LAYER 4: UNCLIPPED FLOATING GLASS LENS (BitChord GlassSelectionPill)
-                    // Active when lifted or moving: stands above and outside the dock!
+                    // Fades in continuously with glassPresence, stands above and outside dock!
+                    // Completely devoid of fake painted rainbow strokes! Pure crystal water lens.
                     // ==============================================================
-                    if (!_isFlat)
+                    if (glassPresence > 0.005)
                       Positioned(
                         left: pillLeft,
                         top: pillTop,
                         width: dynamicPillWidth,
                         height: dynamicPillHeight,
                         child: IgnorePointer(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              // Convex Focal-Light Radial Water Droplet Gradient
-                              gradient: RadialGradient(
-                                center: const Alignment(-0.25, -0.45),
-                                radius: 0.95,
-                                colors: isDark
-                                    ? [
-                                        Colors.white.withOpacity(0.14 + (_liftY * 0.08)),
-                                        Colors.white.withOpacity(0.04),
-                                        Colors.transparent,
-                                      ]
-                                    : [
-                                        Colors.white.withOpacity(0.45 + (_liftY * 0.12)),
-                                        Colors.white.withOpacity(0.14),
-                                        Colors.transparent,
-                                      ],
-                                stops: const [0.0, 0.50, 1.0],
+                          child: Opacity(
+                            opacity: glassPresence,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                // Soft, natural convex focal-light water droplet gradient (No harsh gleam!)
+                                gradient: RadialGradient(
+                                  center: const Alignment(-0.20, -0.40),
+                                  radius: 0.95,
+                                  colors: isDark
+                                      ? [
+                                          Colors.white.withOpacity(0.09 + (_liftY * 0.05)),
+                                          Colors.white.withOpacity(0.02),
+                                          Colors.transparent,
+                                        ]
+                                      : [
+                                          Colors.white.withOpacity(0.35 + (_liftY * 0.10)),
+                                          Colors.white.withOpacity(0.08),
+                                          Colors.transparent,
+                                        ],
+                                  stops: const [0.0, 0.45, 1.0],
+                                ),
+                                borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
+                                boxShadow: [
+                                  // Deep, soft ambient drop shadow cast onto dock and screen (BitChord Image 4)
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(isDark ? (0.35 + _liftY * 0.15) : 0.12),
+                                    blurRadius: 16 + (_liftY * 6.0),
+                                    offset: Offset(0, 4 + (_liftY * 2.0)),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(isDark ? 0.06 : 0.0),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, -1),
+                                  ),
+                                ],
                               ),
-                              borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
-                              boxShadow: [
-                                // Deep ambient drop shadow cast on dock & background (BitChord Image 4)
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(isDark ? 0.45 : 0.15),
-                                  blurRadius: 16 + (_liftY * 4.0),
-                                  offset: Offset(0, 4 + (_liftY * 2.0)),
+                              child: CustomPaint(
+                                painter: _LiquidBubbleHighlightPainter(
+                                  isDark: isDark,
+                                  lift: _liftY,
                                 ),
-                                BoxShadow(
-                                  color: Colors.white.withOpacity(isDark ? 0.12 : 0.0),
-                                  blurRadius: 3,
-                                  offset: const Offset(0, -1),
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              children: [
-                                // LastWave 3-Tier Layered Curvature & Specular Highlight
-                                Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _LiquidBubbleHighlightPainter(
-                                      isDark: isDark,
-                                      lift: _liftY,
-                                    ),
-                                  ),
-                                ),
-                                // Corner-Localized Meniscus Glint (BitChord formula: no fake neon border!)
-                                Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _CornerPrismaticGlintPainter(
-                                      isDark: isDark,
-                                      lift: _liftY,
-                                      velocity: _velocity,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -748,9 +745,9 @@ class _DockSpecularRimPainter extends CustomPainter {
       oldDelegate.isDark != isDark || oldDelegate.radius != radius;
 }
 
-/// 1:1 Port of LastWave LiquidBubbleHighlight:
-/// Uses 3-tier nested stroke layering (6.0dp, 3.5dp, 1.5dp) clipped to the silhouette
-/// to produce true 3D convex curvature and water-droplet meniscus thickness.
+/// Pure Optical Water Droplet Lens Shading (LastWave & BitChord Standard)
+/// Devoid of fake colored strokes or harsh opaque white gleams.
+/// Uses soft, feather-thin specular arcs (0.8px, 0.28 opacity) and gentle inset depth.
 class _LiquidBubbleHighlightPainter extends CustomPainter {
   final bool isDark;
   final double lift;
@@ -769,68 +766,56 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     canvas.save();
     canvas.clipRRect(rrect);
 
-    // 1. Layered inset lower shade bands (LastWave 3-Tier Layered Curvature)
+    // 1. Subtle, gentle inset lower shade (soft depth without harsh black bevels)
     final lowerShadeShader = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
         Colors.transparent,
         Colors.transparent,
-        Colors.black.withOpacity(0.03),
-        Colors.black.withOpacity(isDark ? 0.18 : 0.10),
+        Colors.black.withOpacity(0.02),
+        Colors.black.withOpacity(isDark ? 0.08 : 0.05),
       ],
-      stops: const [0.0, 0.45, 0.70, 1.0],
+      stops: const [0.0, 0.50, 0.75, 1.0],
     ).createShader(rect);
 
-    final broadShade = Paint()
+    final softShade = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.0
+      ..strokeWidth = 3.0
       ..shader = lowerShadeShader;
-    canvas.drawRRect(rrect, broadShade);
+    canvas.drawRRect(rrect, softShade);
 
-    final middleShade = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..shader = lowerShadeShader;
-    canvas.drawRRect(rrect, middleShade);
-
-    final narrowShade = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..shader = lowerShadeShader;
-    canvas.drawRRect(rrect, narrowShade);
-
-    // 2. Upper-left specular light catch rim
+    // 2. Upper-left soft specular light catch rim (Soft 0.8px hairline, gentle 0.28 opacity)
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3 + (lift * 0.4)
+      ..strokeWidth = 0.8 + (lift * 0.3)
       ..shader = LinearGradient(
-        begin: const Alignment(-0.5, -0.6),
+        begin: const Alignment(-0.6, -0.6),
         end: const Alignment(0.60, 1.0),
         colors: [
-          Colors.white.withOpacity(isDark ? (0.92 + lift * 0.06).clamp(0.0, 1.0) : 0.98),
-          Colors.white.withOpacity(isDark ? 0.45 : 0.60),
+          Colors.white.withOpacity(isDark ? (0.28 + lift * 0.08).clamp(0.0, 0.40) : 0.45),
+          Colors.white.withOpacity(isDark ? 0.10 : 0.18),
           Colors.transparent,
           Colors.transparent,
         ],
-        stops: const [0.0, 0.28, 0.55, 1.0],
+        stops: const [0.0, 0.30, 0.55, 1.0],
       ).createShader(rect);
     canvas.drawRRect(rimRRect, upperRimPaint);
 
-    // 3. Lower-right ambient reflection rim
+    // 3. Lower-right subtle ambient reflection rim
     final lowerRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8
+      ..strokeWidth = 0.6
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
           Colors.transparent,
           Colors.transparent,
-          Colors.white.withOpacity(0.08),
-          Colors.white.withOpacity(isDark ? 0.40 : 0.48),
+          Colors.white.withOpacity(0.04),
+          Colors.white.withOpacity(isDark ? 0.15 : 0.22),
         ],
-        stops: const [0.0, 0.60, 0.84, 1.0],
+        stops: const [0.0, 0.65, 0.85, 1.0],
       ).createShader(rect);
     canvas.drawRRect(rimRRect, lowerRimPaint);
 
@@ -840,62 +825,4 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _LiquidBubbleHighlightPainter oldDelegate) =>
       oldDelegate.isDark != isDark || oldDelegate.lift != lift;
-}
-
-/// Corner-Localized Optical Glint & Prismatic Refraction (BitChord formula)
-/// Unlike a cheap continuous neon rainbow border, dispersion intensity follows (x * y) / (W/2 * H/2).
-/// It blooms exclusively at the diagonal curved meniscus corners where light physically refracts!
-class _CornerPrismaticGlintPainter extends CustomPainter {
-  final bool isDark;
-  final double lift;
-  final double velocity;
-
-  _CornerPrismaticGlintPainter({
-    required this.isDark,
-    required this.lift,
-    required this.velocity,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-
-    final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(size.height / 2)).deflate(0.6);
-
-    // BitChord formula: dispersion is proportional to velocity & lift, localized diagonally
-    final double velMag = velocity.abs();
-    final double intensity = (0.15 + (lift * 0.25) + (velMag * 0.06)).clamp(0.12, 0.55);
-
-    // Diagonal corner dispersion sweep:
-    // Glint focuses at Top-Left (~135 deg) and Bottom-Right (~315 deg) diagonal corners!
-    final cornerSweepShader = SweepGradient(
-      center: Alignment.center,
-      colors: [
-        Colors.transparent,
-        const Color(0x3300C7BE).withOpacity(intensity * 0.6), // Cyan corner glint
-        const Color(0x55FFCC00).withOpacity(intensity * 0.8), // Warm gold highlight
-        Colors.transparent,
-        Colors.transparent,
-        const Color(0x33007AFF).withOpacity(intensity * 0.5), // Cool blue meniscus
-        const Color(0x44AF52DE).withOpacity(intensity * 0.7), // Violet flare
-        Colors.transparent,
-      ],
-      stops: const [0.0, 0.12, 0.22, 0.35, 0.50, 0.62, 0.72, 0.85],
-      transform: GradientRotation(velocity > 0.05 ? 0.35 : (velocity < -0.05 ? -0.35 : 0.0)),
-    ).createShader(rect);
-
-    final glintPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0 + (lift * 0.6)
-      ..shader = cornerSweepShader;
-
-    canvas.drawRRect(rrect, glintPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CornerPrismaticGlintPainter oldDelegate) =>
-      oldDelegate.isDark != isDark ||
-      oldDelegate.lift != lift ||
-      oldDelegate.velocity != velocity;
 }
