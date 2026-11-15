@@ -574,10 +574,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                     ),
 
                     // ==============================================================
-                    // LAYER 2: RESTING LIQUID GLASS MENISCUS (Phase 6 3-Tier Jewel Pill)
+                    // LAYER 2: RESTING LIQUID GLASS MENISCUS (LastWave Native 1:1 Parity)
                     // Placed AT THE EXACT SAME pillLeft, pillTop, dynamicPillWidth, dynamicPillHeight!
-                    // Features translucent crystal core, 0.85px specular hairline, lower inset depth shade,
-                    // and subtle contact drop shadow. Seamlessly morphs into flight lens as material rises.
+                    // Features luminous frosted core, 0.95px razor specular hairline,
+                    // and grounded contact drop shadow. Seamlessly morphs into flight lens as material rises.
                     // ZERO jumps, ZERO teleportation, ZERO disconnected cuts!
                     // ==============================================================
                     if (restingAlpha > 0.002)
@@ -589,34 +589,34 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
-                            // Translucent crystal core (replaces flat 0.16 grey box)
+                            // Luminous frosted crystal core (LastWave Native standard)
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: isDark
                                   ? [
-                                      Colors.white.withOpacity(0.13 * restingAlpha),
-                                      Colors.white.withOpacity(0.06 * restingAlpha),
-                                      Colors.white.withOpacity(0.08 * restingAlpha),
+                                      Colors.white.withOpacity(0.24 * restingAlpha),
+                                      Colors.white.withOpacity(0.10 * restingAlpha),
+                                      Colors.white.withOpacity(0.14 * restingAlpha),
                                     ]
                                   : [
+                                      Colors.black.withOpacity(0.10 * restingAlpha),
+                                      Colors.black.withOpacity(0.04 * restingAlpha),
                                       Colors.black.withOpacity(0.07 * restingAlpha),
-                                      Colors.black.withOpacity(0.03 * restingAlpha),
-                                      Colors.black.withOpacity(0.05 * restingAlpha),
                                     ],
                               stops: const [0.0, 0.45, 1.0],
                             ),
                             boxShadow: [
                               // Resting ambient contact shadow - grounds the pill into the dock rail
                               BoxShadow(
-                                color: Colors.black.withOpacity((isDark ? 0.22 : 0.08) * restingAlpha),
-                                blurRadius: 5.0,
-                                offset: const Offset(0, 1.5),
+                                color: Colors.black.withOpacity((isDark ? 0.28 : 0.10) * restingAlpha),
+                                blurRadius: 6.0,
+                                offset: const Offset(0, 2.0),
                               ),
                               if (isDark)
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.04 * restingAlpha),
-                                  blurRadius: 1.0,
+                                  color: Colors.white.withOpacity(0.08 * restingAlpha),
+                                  blurRadius: 1.5,
                                   offset: const Offset(0, -0.5),
                                 ),
                             ],
@@ -625,6 +625,29 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                             painter: _RestingMeniscusPainter(
                               isDark: isDark,
                               alpha: restingAlpha,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // ==============================================================
+                    // LAYER 2B: FLOATING LENS DROP SHADOW (Outside-Only Ambient Elevation)
+                    // Placed UNDER the tab icons so the icons are NEVER obscured by shadow!
+                    // Uses ClipOp.difference so ZERO shadow is drawn inside the lens body.
+                    // Completely eliminates the black smoky eclipse defect!
+                    // ==============================================================
+                    if (shadowAlpha > 0.002)
+                      Positioned(
+                        left: pillLeft,
+                        top: pillTop,
+                        width: dynamicPillWidth,
+                        height: dynamicPillHeight,
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            painter: _FloatingLensShadowPainter(
+                              isDark: isDark,
+                              lift: _liftY,
+                              alpha: shadowAlpha,
                             ),
                           ),
                         ),
@@ -740,10 +763,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
                     // ==============================================================
                     // LAYER 4: OVER-TAB FLOATING GLASS LENS (BitChord GlassSelectionPill)
-                    // Sits unclipped OVER the tabs. Specular hairline, water-clear core, drop shadow.
-                    // Dissolves its rim and shadow by 55% of hand-off on landing decrescendo.
+                    // Sits unclipped OVER the tabs. Specular hairline, luminous crystal core.
+                    // ZERO black shadow bleed-through. 100% water-clear optical refraction!
                     // ==============================================================
-                    if (lensGradientAlpha > 0.002 || highlightAlpha > 0.002 || shadowAlpha > 0.002)
+                    if (lensGradientAlpha > 0.002 || highlightAlpha > 0.002)
                       Positioned(
                         left: pillLeft,
                         top: pillTop,
@@ -752,38 +775,26 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         child: IgnorePointer(
                           child: Container(
                             decoration: BoxDecoration(
-                              // Soft, luminous water droplet gradient with pure water-clear core
+                              // Luminous, convex water droplet gradient with pure optical clarity
                               gradient: RadialGradient(
-                                center: const Alignment(-0.20, -0.40),
-                                radius: 0.95,
+                                center: const Alignment(-0.20, -0.35),
+                                radius: 0.90,
                                 colors: isDark
                                     ? [
-                                        Colors.white.withOpacity((0.12 + (_liftY * 0.06)) * lensGradientAlpha),
-                                        Colors.white.withOpacity(0.03 * lensGradientAlpha),
-                                        Colors.transparent,
+                                        Colors.white.withOpacity((0.26 + (_liftY * 0.12)) * lensGradientAlpha),
+                                        Colors.white.withOpacity((0.10 + (_liftY * 0.04)) * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.02 * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.08 * lensGradientAlpha),
                                       ]
                                     : [
-                                        Colors.white.withOpacity((0.40 + (_liftY * 0.10)) * lensGradientAlpha),
-                                        Colors.white.withOpacity(0.10 * lensGradientAlpha),
-                                        Colors.transparent,
+                                        Colors.white.withOpacity((0.55 + (_liftY * 0.15)) * lensGradientAlpha),
+                                        Colors.white.withOpacity((0.24 + (_liftY * 0.06)) * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.06 * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.18 * lensGradientAlpha),
                                       ],
-                                stops: const [0.0, 0.45, 1.0],
+                                stops: const [0.0, 0.40, 0.85, 1.0],
                               ),
                               borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
-                              boxShadow: [
-                                if (shadowAlpha > 0.01) ...[
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity((isDark ? (0.38 + _liftY * 0.16) : 0.14) * shadowAlpha),
-                                    blurRadius: 22 + (_liftY * 8.0),
-                                    offset: Offset(0, 5 + (_liftY * 3.0)),
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity((isDark ? 0.06 : 0.0) * shadowAlpha),
-                                    blurRadius: 2,
-                                    offset: const Offset(0, -1),
-                                  ),
-                                ],
-                              ],
                             ),
                             child: CustomPaint(
                               painter: _LiquidBubbleHighlightPainter(
@@ -909,10 +920,11 @@ class _DockSpecularRimPainter extends CustomPainter {
 }
 
 /// Renders the 3-Tier Jewel Liquid Glass Meniscus for the resting active pill (Phase 6).
-/// Replaces the flat 2D grey box with:
-/// 1. Upper-left razor-sharp specular light hairline (0.85px width).
-/// 2. Lower-right gentle inset depth shade (2.0px width) creating convex meniscus curvature.
-/// 3. Lower ambient reflection floor rim (0.6px width).
+/// Replaces the faint/washed-out box with LastWave Native crispness:
+/// 1. Upper-left razor-sharp specular light hairline (0.95px width, 0.72 peak opacity).
+/// 2. Clean outer contour definition hairline (0.5px width).
+/// 3. Lower inset depth shade (1.2px width) creating convex meniscus curvature.
+/// 4. Lower ambient reflection floor rim (0.6px width).
 class _RestingMeniscusPainter extends CustomPainter {
   final bool isDark;
   final double alpha;
@@ -934,43 +946,50 @@ class _RestingMeniscusPainter extends CustomPainter {
     canvas.save();
     canvas.clipRRect(rrect);
 
-    // 1. Lower-right gentle inset depth shade (convex meniscus curvature)
+    // 1. Lower inset depth shade (convex meniscus curvature)
     final lowerShadeShader = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
         Colors.transparent,
         Colors.transparent,
-        Colors.black.withOpacity(0.015 * alpha),
-        Colors.black.withOpacity((isDark ? 0.07 : 0.04) * alpha),
+        Colors.black.withOpacity(0.01 * alpha),
+        Colors.black.withOpacity((isDark ? 0.05 : 0.03) * alpha),
       ],
-      stops: const [0.0, 0.45, 0.75, 1.0],
+      stops: const [0.0, 0.50, 0.80, 1.0],
     ).createShader(rect);
 
     final softShade = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
+      ..strokeWidth = 1.2
       ..shader = lowerShadeShader;
     canvas.drawRRect(rrect, softShade);
 
-    // 2. Upper-left specular light-catch hairline (LastWave 0.85px crystal edge)
+    // 2. Upper-left specular light-catch hairline (LastWave 0.95px razor crystal edge)
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.85
+      ..strokeWidth = 0.95
       ..shader = LinearGradient(
-        begin: const Alignment(-0.6, -0.7),
+        begin: const Alignment(-0.6, -0.8),
         end: const Alignment(0.6, 1.0),
         colors: [
-          Colors.white.withOpacity((isDark ? 0.35 : 0.52) * alpha),
-          Colors.white.withOpacity((isDark ? 0.12 : 0.22) * alpha),
+          Colors.white.withOpacity((isDark ? 0.72 : 0.85) * alpha),
+          Colors.white.withOpacity((isDark ? 0.28 : 0.40) * alpha),
           Colors.transparent,
           Colors.transparent,
         ],
-        stops: const [0.0, 0.32, 0.58, 1.0],
+        stops: const [0.0, 0.35, 0.65, 1.0],
       ).createShader(rect);
     canvas.drawRRect(rimRRect, upperRimPaint);
 
-    // 3. Lower-right ambient reflection floor rim (subtle back-bounce light)
+    // 3. Crisp uniform contour hairline (gives punchy definition so pill is clearly visible)
+    final contourPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5
+      ..color = Colors.white.withOpacity((isDark ? 0.12 : 0.20) * alpha);
+    canvas.drawRRect(rimRRect, contourPaint);
+
+    // 4. Lower-right ambient reflection floor rim (subtle back-bounce light)
     final lowerRimPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.6
@@ -980,10 +999,10 @@ class _RestingMeniscusPainter extends CustomPainter {
         colors: [
           Colors.transparent,
           Colors.transparent,
-          Colors.white.withOpacity(0.03 * alpha),
-          Colors.white.withOpacity((isDark ? 0.15 : 0.24) * alpha),
+          Colors.white.withOpacity(0.04 * alpha),
+          Colors.white.withOpacity((isDark ? 0.20 : 0.28) * alpha),
         ],
-        stops: const [0.0, 0.65, 0.85, 1.0],
+        stops: const [0.0, 0.60, 0.85, 1.0],
       ).createShader(rect);
     canvas.drawRRect(rimRRect, lowerRimPaint);
 
@@ -995,10 +1014,62 @@ class _RestingMeniscusPainter extends CustomPainter {
       oldDelegate.isDark != isDark || oldDelegate.alpha != alpha;
 }
 
+/// Floating Lens Drop Shadow with Inverted Interior Clipping (ClipOp.difference).
+/// Strictly casts ambient elevation shadow OUTSIDE the lens perimeter.
+/// The interior of the lens is 100% un-shadowed and crystal clear,
+/// completely eliminating the dark smoky eclipse flaw!
+class _FloatingLensShadowPainter extends CustomPainter {
+  final bool isDark;
+  final double lift;
+  final double alpha;
+
+  const _FloatingLensShadowPainter({
+    required this.isDark,
+    required this.lift,
+    required this.alpha,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0 || alpha <= 0.002) return;
+
+    final radius = Radius.circular(size.height / 2);
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+
+    final double blur = 18.0 + (lift * 12.0);
+    final double dy = 4.0 + (lift * 4.0);
+    final double shadowOpacity = (isDark ? (0.36 + lift * 0.16) : 0.14) * alpha;
+
+    canvas.save();
+    // CRITICAL: Clip out the interior of the lens!
+    // Shadow will ONLY be drawn on pixels OUTSIDE rrect!
+    canvas.clipRRect(rrect, clipOp: ClipOp.difference);
+
+    // 1. Broad soft ambient elevation shadow
+    final ambientPaint = Paint()
+      ..color = Colors.black.withOpacity(shadowOpacity)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
+    canvas.drawRRect(rrect.shift(Offset(0, dy)), ambientPaint);
+
+    // 2. Tighter contact shadow for grounded depth
+    final contactPaint = Paint()
+      ..color = Colors.black.withOpacity(shadowOpacity * 0.5)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6.0 + lift * 3.0);
+    canvas.drawRRect(rrect.shift(Offset(0, dy * 0.5)), contactPaint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _FloatingLensShadowPainter oldDelegate) =>
+      oldDelegate.isDark != isDark || oldDelegate.lift != lift || oldDelegate.alpha != alpha;
+}
+
 /// Pure Optical Water Droplet Lens Shading (LastWave & BitChord Standard)
 /// Featuring Phase 8 Kinematic Chromatic Aberration:
 /// Dynamically refracts prismatic dispersion flares along the motion vector
-/// during rapid flight (|v| > 250 dp/s), decaying to 0.0 at rest.
+/// during rapid flight (|v| > 180 dp/s), decaying to 0.0 at rest.
 class _LiquidBubbleHighlightPainter extends CustomPainter {
   final bool isDark;
   final double lift;
@@ -1028,45 +1099,45 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     // PHASE 8: KINEMATIC CHROMATIC ABERRATION (Velocity-Gated Dispersion)
     // ==============================================================
     final double absV = velocityDp.abs();
-    if (absV > 250.0) {
-      final double chromaticFactor = ((absV - 250.0) / 750.0).clamp(0.0, 1.0) * alpha;
+    if (absV > 180.0) {
+      final double chromaticFactor = ((absV - 180.0) / 550.0).clamp(0.0, 1.0) * alpha;
       final double vSign = velocityDp.sign;
-      final double dispersionPx = vSign * (0.85 + lift * 0.35) * chromaticFactor;
+      final double dispersionPx = vSign * (0.90 + lift * 0.40) * chromaticFactor;
 
-      // 1. Leading edge cyan/blue prismatic refraction
+      // 1. Leading edge electric cyan/blue prismatic refraction flare
       canvas.save();
       canvas.translate(dispersionPx, 0);
       final leadingFlarePaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.9 + (lift * 0.3)
+        ..strokeWidth = 1.0 + (lift * 0.3)
         ..shader = LinearGradient(
           begin: Alignment(vSign * 0.7, -0.6),
           end: Alignment(-vSign * 0.7, 0.8),
           colors: [
-            const Color(0xFF60A5FA).withOpacity((isDark ? 0.24 : 0.32) * chromaticFactor),
-            const Color(0xFF38BDF8).withOpacity((isDark ? 0.08 : 0.14) * chromaticFactor),
+            const Color(0xFF38BDF8).withOpacity((isDark ? 0.38 : 0.45) * chromaticFactor),
+            const Color(0xFF60A5FA).withOpacity((isDark ? 0.16 : 0.22) * chromaticFactor),
             Colors.transparent,
           ],
-          stops: const [0.0, 0.40, 1.0],
+          stops: const [0.0, 0.45, 1.0],
         ).createShader(rect);
       canvas.drawRRect(rimRRect, leadingFlarePaint);
       canvas.restore();
 
-      // 2. Trailing edge amber/rose prismatic dispersion
+      // 2. Trailing edge warm amber/rose prismatic dispersion flare
       canvas.save();
       canvas.translate(-dispersionPx * 0.75, 0);
       final trailingFlarePaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.7 + (lift * 0.2)
+        ..strokeWidth = 0.8 + (lift * 0.2)
         ..shader = LinearGradient(
           begin: Alignment(-vSign * 0.7, -0.4),
           end: Alignment(vSign * 0.7, 0.8),
           colors: [
-            const Color(0xFFF59E0B).withOpacity((isDark ? 0.18 : 0.24) * chromaticFactor),
-            const Color(0xFFF43F5E).withOpacity((isDark ? 0.06 : 0.10) * chromaticFactor),
+            const Color(0xFFF59E0B).withOpacity((isDark ? 0.30 : 0.36) * chromaticFactor),
+            const Color(0xFFF43F5E).withOpacity((isDark ? 0.10 : 0.16) * chromaticFactor),
             Colors.transparent,
           ],
-          stops: const [0.0, 0.35, 1.0],
+          stops: const [0.0, 0.40, 1.0],
         ).createShader(rect);
       canvas.drawRRect(rimRRect, trailingFlarePaint);
       canvas.restore();
@@ -1075,36 +1146,36 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     // ==============================================================
     // OPTICAL WATER DROPLET HIGHLIGHTS & SHADING
     // ==============================================================
-    // 1. Subtle, gentle inset lower shade (soft depth without harsh black bevels)
+    // 1. Subtle, gentle inset lower shade (feather-thin 1.2px - zero black murkiness)
     final lowerShadeShader = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
         Colors.transparent,
         Colors.transparent,
-        Colors.black.withOpacity(0.02 * alpha),
-        Colors.black.withOpacity((isDark ? 0.08 : 0.05) * alpha),
+        Colors.black.withOpacity(0.01 * alpha),
+        Colors.black.withOpacity((isDark ? 0.04 : 0.02) * alpha),
       ],
-      stops: const [0.0, 0.50, 0.75, 1.0],
+      stops: const [0.0, 0.50, 0.78, 1.0],
     ).createShader(rect);
 
     final softShade = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
+      ..strokeWidth = 1.2
       ..shader = lowerShadeShader;
     canvas.drawRRect(rrect, softShade);
 
-    // 2. Upper-left soft specular light catch rim (Soft 0.8px hairline, gentle 0.28 opacity)
+    // 2. Upper-left gleaming specular light catch rim (Gleaming 0.95px jewel apex)
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8 + (lift * 0.3)
+      ..strokeWidth = 0.9 + (lift * 0.3)
       ..shader = LinearGradient(
         begin: const Alignment(-0.6, -0.6),
         end: const Alignment(0.60, 1.0),
         colors: [
-          Colors.white.withOpacity((isDark ? (0.28 + lift * 0.08).clamp(0.0, 0.40) : 0.45) * alpha),
-          Colors.white.withOpacity((isDark ? 0.10 : 0.18) * alpha),
-          Colors.transparent,
+          Colors.white.withOpacity((isDark ? (0.65 + lift * 0.20).clamp(0.0, 0.90) : 0.80) * alpha),
+          Colors.white.withOpacity((isDark ? 0.20 : 0.30) * alpha),
+          Colors.white.withOpacity((isDark ? 0.04 : 0.08) * alpha),
           Colors.transparent,
         ],
         stops: const [0.0, 0.30, 0.55, 1.0],
@@ -1122,7 +1193,7 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
           Colors.transparent,
           Colors.transparent,
           Colors.white.withOpacity(0.04 * alpha),
-          Colors.white.withOpacity((isDark ? 0.15 : 0.22) * alpha),
+          Colors.white.withOpacity((isDark ? 0.18 : 0.26) * alpha),
         ],
         stops: const [0.0, 0.65, 0.85, 1.0],
       ).createShader(rect);
