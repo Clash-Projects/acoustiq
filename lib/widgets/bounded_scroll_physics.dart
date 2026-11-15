@@ -3,28 +3,31 @@ import 'package:flutter/material.dart';
 
 /// Bounded Bouncing Scroll Physics for AcoustiQ
 ///
-/// Resolves Flutter's "Infinite Overscroll / Multi-Touch Ratchet" bug via a
-/// bulletproof double-lock mechanism:
+/// Resolves Flutter's "Infinite Overscroll / Multi-Touch Ratchet" bug while
+/// preserving butter-smooth spring bounce-back without any freezing/locking:
 ///
-/// 1. Low-level Pipeline Lock ([applyBoundaryConditions]):
-///    Guarantees that [ScrollPosition.pixels] can NEVER under any circumstances
-///    exceed [maxOverscroll] (default 140dp) outside [minScrollExtent] and [maxScrollExtent].
-///    Any delta attempting to move past this threshold is immediately intercepted
-///    and clamped to zero by Flutter's scroll engine.
+/// 1. User Offset Drag Lock ([applyPhysicsToUserOffset]):
+///    Correctly checks Flutter's drag offset sign (`offset < 0.0` when easing back
+///    from start, `offset > 0.0` when easing back from end). When dragging deeper into
+///    overscroll, drag deltas are progressively dampened by friction and strictly
+///    capped to zero once [maxOverscroll] (140dp) is reached. Even with multi-touch
+///    ratchet swiping, user drags cannot push the content past 140dp.
 ///
-/// 2. User Offset Drag Lock ([applyPhysicsToUserOffset]):
-///    Correctly checks Flutter's inverted drag offset sign (`offset < 0.0` when easing
-///    back from start, `offset > 0.0` when easing back from end). When the user is
-///    dragging deeper into overscroll, user motion is progressively dampened by friction
-///    and strictly capped at [maxOverscroll].
+/// 2. Zero-Freeze Ballistic Compatibility:
+///    [applyBoundaryConditions] intentionally returns `0.0`. In Flutter, returning
+///    a non-zero overscroll from [applyBoundaryConditions] signals [BallisticScrollActivity]
+///    that a rigid wall was hit, immediately calling `goIdle()` and freezing/locking
+///    the scroll view at the overscroll limit! By returning `0.0`, the spring simulation
+///    is guaranteed to complete its natural deceleration and bounce all the way back to bounds.
 ///
-/// 3. Quadratic Inversion Shield ([frictionFactor]):
+/// 3. Velocity Clamp in [createBallisticSimulation]:
+///    Clamps incoming fling velocities to avoid excessive kinetic impulses that could
+///    momentarily throw the spring past comfortable visual bounds.
+///
+/// 4. Quadratic Inversion Shield ([frictionFactor]):
 ///    Clamps [frictionFactor] input to `[0.0, 1.0]`, preventing Flutter's quadratic (1 - x)^2
 ///    formula from inverting and exponentially accelerating into outer space when overscroll
 ///    exceeds the viewport height.
-///
-/// 4. 100% Responsiveness:
-///    Easing back towards the content boundary is never restricted or delayed.
 class BoundedBouncingScrollPhysics extends BouncingScrollPhysics {
   final double maxOverscroll;
 
@@ -92,26 +95,18 @@ class BoundedBouncingScrollPhysics extends BouncingScrollPhysics {
   }
 
   @override
-  double applyBoundaryConditions(ScrollMetrics position, double value) {
-    final double hardMin = position.minScrollExtent - maxOverscroll;
-    final double hardMax = position.maxScrollExtent + maxOverscroll;
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    // Calibrate maximum velocity so high-speed flicks stay comfortably within bounds
+    final double clampedVelocity = velocity.clamp(-3000.0, 3000.0);
+    return super.createBallisticSimulation(position, clampedVelocity);
+  }
 
-    // Moving further past hardMin (underscroll)
-    if (value < position.pixels && position.pixels <= hardMin) {
-      return value - position.pixels;
-    }
-    // Moving further past hardMax (overscroll)
-    if (hardMax <= position.pixels && position.pixels < value) {
-      return value - position.pixels;
-    }
-    // Crossing hardMin boundary from inside towards outside
-    if (value < hardMin && hardMin < position.pixels) {
-      return value - hardMin;
-    }
-    // Crossing hardMax boundary from inside towards outside
-    if (position.pixels < hardMax && hardMax < value) {
-      return value - hardMax;
-    }
+  @override
+  double applyBoundaryConditions(ScrollMetrics position, double value) {
+    // MUST return 0.0 for bouncing physics!
+    // Returning non-zero here triggers BallisticScrollActivity.applyMoveTo() == false,
+    // which immediately calls delegate.goIdle() and kills the spring simulation mid-flight,
+    // permanently freezing/locking the scroll position in the overscroll state.
     return 0.0;
   }
 }
