@@ -57,6 +57,23 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   static const double _kPillLiftGrowth = 21.0; // 55dp -> 76dp (stands 7.0dp above and 7.0dp below dock rail!)
   static const double _kPillWidthGrowth = 32.0; // 96dp -> 128dp (luxurious broad liquid bubble)
 
+  // BitChord Optical Backlit Vibrancy & Saturation Multipliers (Phase 5)
+  // Boosts chrominance by 1.30x and lifts luminance (+3% in dark mode, neutral in light mode)
+  // to prevent dull cloudy substrate and let wallpaper/artwork colors shine through the glass.
+  static const List<double> _kBacklitVibrancyDarkMatrix = <double>[
+    1.2361, -0.2145, -0.0216, 0.0, 7.65,
+    -0.0639, 1.0855, -0.0216, 0.0, 7.65,
+    -0.0639, -0.2145, 1.2784, 0.0, 7.65,
+    0.0, 0.0, 0.0, 1.0, 0.0,
+  ];
+
+  static const List<double> _kBacklitVibrancyLightMatrix = <double>[
+    1.2361, -0.2145, -0.0216, 0.0, 0.0,
+    -0.0639, 1.0855, -0.0216, 0.0, 0.0,
+    -0.0639, -0.2145, 1.2784, 0.0, 0.0,
+    0.0, 0.0, 0.0, 1.0, 0.0,
+  ];
+
   // BitChord Physics Springs & Decay Constants
   static const double _kTravelStiffness = 280.0;
   static const double _kTravelDamping = 31.4;
@@ -487,7 +504,12 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         borderRadius: BorderRadius.circular(31),
                         child: BackdropFilter(
                           filter: useGlass
-                              ? ImageFilter.blur(sigmaX: 16, sigmaY: 16)
+                              ? ImageFilter.compose(
+                                  outer: ColorFilter.matrix(
+                                    isDark ? _kBacklitVibrancyDarkMatrix : _kBacklitVibrancyLightMatrix,
+                                  ),
+                                  inner: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                                )
                               : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                           child: CustomPaint(
                             painter: _DockSpecularRimPainter(
