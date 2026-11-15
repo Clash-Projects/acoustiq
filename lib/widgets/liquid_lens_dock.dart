@@ -589,20 +589,20 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
-                            // Luminous frosted crystal core (LastWave Native standard)
+                            // Ultra-clear crystal core (LastWave Native standard)
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: isDark
                                   ? [
-                                      Colors.white.withOpacity(0.24 * restingAlpha),
-                                      Colors.white.withOpacity(0.10 * restingAlpha),
-                                      Colors.white.withOpacity(0.14 * restingAlpha),
+                                      Colors.white.withOpacity(0.17 * restingAlpha),
+                                      Colors.white.withOpacity(0.08 * restingAlpha),
+                                      Colors.white.withOpacity(0.11 * restingAlpha),
                                     ]
                                   : [
-                                      Colors.black.withOpacity(0.10 * restingAlpha),
-                                      Colors.black.withOpacity(0.04 * restingAlpha),
-                                      Colors.black.withOpacity(0.07 * restingAlpha),
+                                      Colors.black.withOpacity(0.08 * restingAlpha),
+                                      Colors.black.withOpacity(0.03 * restingAlpha),
+                                      Colors.black.withOpacity(0.05 * restingAlpha),
                                     ],
                               stops: const [0.0, 0.45, 1.0],
                             ),
@@ -775,24 +775,24 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         child: IgnorePointer(
                           child: Container(
                             decoration: BoxDecoration(
-                              // Luminous, convex water droplet gradient with pure optical clarity
+                              // Silky, convex optical water gradient with natural smooth falloff
                               gradient: RadialGradient(
-                                center: const Alignment(-0.20, -0.35),
-                                radius: 0.90,
+                                center: const Alignment(-0.15, -0.40),
+                                radius: 1.15,
                                 colors: isDark
                                     ? [
-                                        Colors.white.withOpacity((0.26 + (_liftY * 0.12)) * lensGradientAlpha),
-                                        Colors.white.withOpacity((0.10 + (_liftY * 0.04)) * lensGradientAlpha),
+                                        Colors.white.withOpacity((0.16 + (_liftY * 0.05)) * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.06 * lensGradientAlpha),
                                         Colors.white.withOpacity(0.02 * lensGradientAlpha),
-                                        Colors.white.withOpacity(0.08 * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.07 * lensGradientAlpha),
                                       ]
                                     : [
-                                        Colors.white.withOpacity((0.55 + (_liftY * 0.15)) * lensGradientAlpha),
-                                        Colors.white.withOpacity((0.24 + (_liftY * 0.06)) * lensGradientAlpha),
-                                        Colors.white.withOpacity(0.06 * lensGradientAlpha),
+                                        Colors.white.withOpacity((0.45 + (_liftY * 0.10)) * lensGradientAlpha),
                                         Colors.white.withOpacity(0.18 * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.05 * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.15 * lensGradientAlpha),
                                       ],
-                                stops: const [0.0, 0.40, 0.85, 1.0],
+                                stops: const [0.0, 0.45, 0.80, 1.0],
                               ),
                               borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
                             ),
@@ -920,11 +920,10 @@ class _DockSpecularRimPainter extends CustomPainter {
 }
 
 /// Renders the 3-Tier Jewel Liquid Glass Meniscus for the resting active pill (Phase 6).
-/// Replaces the faint/washed-out box with LastWave Native crispness:
+/// LastWave Native Pure Directional Lighting (Zero fake 360-degree vector strokes):
 /// 1. Upper-left razor-sharp specular light hairline (0.95px width, 0.72 peak opacity).
-/// 2. Clean outer contour definition hairline (0.5px width).
-/// 3. Lower inset depth shade (1.2px width) creating convex meniscus curvature.
-/// 4. Lower ambient reflection floor rim (0.6px width).
+/// 2. Lower inset depth shade (1.2px width) creating convex meniscus curvature.
+/// 3. Lower ambient reflection floor rim (0.6px width catching subtle substrate light).
 class _RestingMeniscusPainter extends CustomPainter {
   final bool isDark;
   final double alpha;
@@ -982,14 +981,7 @@ class _RestingMeniscusPainter extends CustomPainter {
       ).createShader(rect);
     canvas.drawRRect(rimRRect, upperRimPaint);
 
-    // 3. Crisp uniform contour hairline (gives punchy definition so pill is clearly visible)
-    final contourPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5
-      ..color = Colors.white.withOpacity((isDark ? 0.12 : 0.20) * alpha);
-    canvas.drawRRect(rimRRect, contourPaint);
-
-    // 4. Lower-right ambient reflection floor rim (subtle back-bounce light)
+    // 3. Lower-right ambient reflection floor rim (subtle back-bounce light)
     final lowerRimPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.6
