@@ -36,7 +36,7 @@ class LiquidLensNavBar extends StatefulWidget {
 }
 
 class _LiquidLensNavBarState extends State<LiquidLensNavBar>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   // Apple HIG & BitChord standard dimensions:
   // 62dp dock height provides lush vertical presence (eliminates squeezed look).
   // 319dp dock width with 3.5dp padding creates 100% mathematically concentric end-caps.
@@ -57,28 +57,54 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   static const double _kPillLiftGrowth = 11.0; // 55dp -> 66dp
   static const double _kPillWidthGrowth = 19.2; // 96dp -> 115.2dp
 
+  // BitChord Physics Springs & Decay Constants
+  static const double _kTravelStiffness = 280.0;
+  static const double _kTravelDamping = 31.4;
+
+  static const double _kLiftStiffness = 250.0;
+  static const double _kLiftDampingX = 19.0;
+  static const double _kLiftDampingY = 22.1;
+
+  static const double _kMaterialStiffness = 1000.0;
+  static const double _kMaterialDamping = 63.3;
+
+  static const double _kHandoverStart = 0.92;
+  static const double _kHandoverTau = 0.09;
+  static const double _kGlassReturnTau = 0.05;
+  static const double _kFollowTau = 0.05;
+  static const double _kSignTau = 0.25;
+
   // Continuous floating position coordinates
   double _currentPosition = 0.0;
+  double _velocity = 0.0;
+  double _travelTarget = 0.0;
+  double _travelFrom = 0.0;
+  double _travelSign = 0.0;
+  double _travelSignEased = 0.0;
+  bool _travelActive = false;
+
+  // Drag coordinates
   double _dragTarget = 0.0;
   double _dragStartX = 0.0;
   double _dragStartPosition = 0.0;
-  double _velocity = 0.0;
   bool _isDragging = false;
 
-  // Travel start coordinate for accurate travelProgress calculation
-  double _travelFrom = 0.0;
-
-  // Target index guard to eliminate release jitter
+  // Target index guard
   int _targetIndex = 0;
   int _lastHapticIndex = -1;
 
   // Continuous Material Hand-off springs (BitChord GlassSelectionPill architecture)
-  // material: 0.0 (flat indicator) -> 1.0 (glass lens active)
-  // handover: 0.0 (fully lifted lens) -> 1.0 (landing hand-off back to flat)
+  // _material: 0.0 (flat indicator) -> 1.0 (glass lens active)
   double _material = 0.0;
-  double _handover = 1.0;
+  double _materialPos = 0.0;
+  double _materialVel = 0.0;
 
-  // Under-damped Dual Springs for Lift (from liquid_glass_easy & BitChord)
+  // _handover: 0.0 (fully lifted lens) -> 1.0 (landing hand-off back to flat)
+  double _handover = 1.0;
+  double _glassPresence = 0.0;
+  bool _isFlat = true;
+
+  // Under-damped Dual Springs for Lift
   double _liftX = 0.0;
   double _liftXVel = 0.0;
   double _liftY = 0.0;
@@ -87,10 +113,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
   // Acceleration squash model (Strictly motion-driven, NO artificial sine wave)
   final _PillSquashModel _squashModel = _PillSquashModel();
-
-  // Animation controller for snap transitions
-  late final AnimationController _positionController;
-  Animation<double>? _positionAnim;
 
   // Dedicated high-frequency ticker for fluid physics
   Ticker? _ticker;
@@ -108,20 +130,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     super.initState();
     _currentPosition = widget.currentIndex.toDouble();
     _dragTarget = _currentPosition;
+    _travelTarget = _currentPosition;
     _travelFrom = _currentPosition;
     _targetIndex = widget.currentIndex;
     _lastHapticIndex = widget.currentIndex;
-
-    _positionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 320),
-    )..addListener(() {
-        if (!_isDragging && _positionAnim != null) {
-          setState(() {
-            _currentPosition = _positionAnim!.value;
-          });
-        }
-      });
 
     _ticker = createTicker(_onTick);
   }
@@ -131,7 +143,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex && !_isDragging) {
       if (_targetIndex != widget.currentIndex) {
-        _targetIndex = widget.currentIndex;
         _animateToTab(widget.currentIndex);
       }
     }
@@ -140,7 +151,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   @override
   void dispose() {
     _ticker?.dispose();
-    _positionController.dispose();
     super.dispose();
   }
 
@@ -153,9 +163,46 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
   /// Calculates flight completion progress (0.0 at launch -> 1.0 at destination)
   double _travelProgress() {
-    final double span = (_targetIndex.toDouble() - _travelFrom).abs();
-    if (span < 1e-4) return 1.0;
-    return (1.0 - (_targetIndex.toDouble() - _currentPosition).abs() / span).clamp(0.0, 1.0);
+    final double span = (_travelTarget - _travelFrom).abs();
+    if (span < 1e-6) return 1.0;
+    return (1.0 - (_travelTarget - _currentPosition).abs() / span).clamp(0.0, 1.0);
+  }
+
+  /// Semi-implicit Euler in 1/240 s substeps for unconditionally stable physics
+  static ({double pos, double vel}) _springStep(
+    double x,
+    double vel,
+    double target,
+    double dt,
+    double stiffness,
+    double damping,
+  ) {
+    double t = dt;
+    double px = x;
+    double pv = vel;
+    while (t > 0) {
+      final double step = t > (1.0 / 240.0) ? (1.0 / 240.0) : t;
+      final double accel = -stiffness * (px - target) - damping * pv;
+      pv += accel * step;
+      px += pv * step;
+      t -= step;
+    }
+    return (pos: px, vel: pv);
+  }
+
+  static ({double pos, double vel}) _stepLift(
+    double x,
+    double vel,
+    double target,
+    double dt,
+    double stiffness,
+    double damping,
+  ) {
+    final r = _springStep(x, vel, target, dt, stiffness, damping);
+    if ((r.pos - target).abs() < 0.0008 && r.vel.abs() < 0.01) {
+      return (pos: target, vel: 0.0);
+    }
+    return r;
   }
 
   /// One frame of fluid physics (runs at native 90Hz / 120Hz display refresh rate)
@@ -168,137 +215,119 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     final double dt = (now - _lastTickSeconds).clamp(0.001, 0.033);
     _lastTickSeconds = now;
 
-    final double prevPos = _currentPosition;
-
-    // 1. BitChord Landing Decrescendo Hand-off (HANDOVER_START = 0.88):
-    // As the pill enters the final 12% of flight, release lift during braking!
-    if (!_isDragging && _liftTarget > 0.0) {
-      if (_travelProgress() >= 0.88 || !_positionController.isAnimating) {
-        _liftTarget = 0.0;
+    // 1) Travel Spring (BitChord: 280 stiffness, 31.4 damping)
+    bool travelSettled = true;
+    if (_travelActive) {
+      final r = _springStep(
+        _currentPosition,
+        _velocity,
+        _travelTarget,
+        dt,
+        _kTravelStiffness,
+        _kTravelDamping,
+      );
+      _currentPosition = r.pos;
+      _velocity = r.vel;
+      travelSettled = (_currentPosition - _travelTarget).abs() < 0.003 && _velocity.abs() < 0.05;
+      if (travelSettled) {
+        _currentPosition = _travelTarget;
+        _velocity = 0.0;
       }
     }
 
-    // 2. Step Under-damped Dual Springs for Lift (Semi-implicit Euler)
-    _stepLiftSprings(dt);
-
-    // 3. Material Hand-off Transition (Continuous 50ms exponential morph)
-    final double materialTarget = _liftTarget > 0.0 ? 1.0 : 0.0;
-    _material += (materialTarget - _material) * (1.0 - math.exp(-dt / 0.05));
-    if ((materialTarget - _material).abs() < 0.004) _material = materialTarget;
-
-    final double handoverTarget = _liftTarget > 0.0 ? 0.0 : 1.0;
-    final double handoverTau = handoverTarget > _handover ? 0.08 : 0.04;
-    _handover += (handoverTarget - _handover) * (1.0 - math.exp(-dt / handoverTau));
-    if ((handoverTarget - _handover).abs() < 0.004) _handover = handoverTarget;
-
-    // 4. Under finger: Chase target with exponential liquid lag (FOLLOW_TAU = 0.045s)
+    // 2) Under finger: Chase target with exponential liquid lag (FOLLOW_TAU = 0.05s)
     if (_isDragging) {
-      const double tau = 0.045;
-      _currentPosition += (_dragTarget - _currentPosition) * (1.0 - math.exp(-dt / tau));
-      _velocity = (_currentPosition - prevPos) / dt;
-
-      // Sample pure motion acceleration squash (Zero artificial sine wave!)
-      _squashModel.track(_currentPosition * _kInactiveSlotWidth, now, dt);
-    } else {
-      // Free travel or settling
-      if (_positionController.isAnimating) {
-        _velocity = (_currentPosition - prevPos) / dt;
-        _squashModel.track(_currentPosition * _kInactiveSlotWidth, now, dt);
-      } else {
-        _velocity *= math.exp(-dt / 0.06);
-        _squashModel.easeOut(dt);
-      }
+      _currentPosition += (_dragTarget - _currentPosition) * (1.0 - math.exp(-dt / _kFollowTau));
     }
 
-    // Check if physics engine can settle
-    final bool liftSettled = (_liftX - _liftTarget).abs() < 0.001 &&
-        (_liftY - _liftTarget).abs() < 0.001 &&
-        _liftXVel.abs() < 0.005 &&
-        _liftYVel.abs() < 0.005;
+    // 3) The lift: held for journey and released on landing (HANDOVER_START = 0.92)
+    if (!_isDragging && (travelSettled || _travelProgress() >= _kHandoverStart)) {
+      _liftTarget = 0.0;
+    }
 
-    final bool squashSettled = _squashModel.value.abs() < 0.001;
-    final bool materialSettled = (_material - materialTarget).abs() < 0.004 &&
-        (_handover - handoverTarget).abs() < 0.004;
+    final rX = _stepLift(_liftX, _liftXVel, _liftTarget, dt, _kLiftStiffness, _kLiftDampingX);
+    _liftX = rX.pos;
+    _liftXVel = rX.vel;
 
-    final bool isSettled = !_isDragging &&
-        !_positionController.isAnimating &&
+    final rY = _stepLift(_liftY, _liftYVel, _liftTarget, dt, _kLiftStiffness, _kLiftDampingY);
+    _liftY = rY.pos;
+    _liftYVel = rY.vel;
+
+    final rMat = _stepLift(_materialPos, _materialVel, _liftTarget, dt, _kMaterialStiffness, _kMaterialDamping);
+    _materialPos = rMat.pos;
+    _materialVel = rMat.vel;
+    _material = _materialPos.clamp(0.0, 1.0);
+
+    final bool liftSettled = _liftTarget == 0.0 && _liftX == 0.0 && _liftY == 0.0 && _materialPos == 0.0;
+
+    // 4) Deflation outlives the spring that carried the pill there
+    if (_travelActive && travelSettled && liftSettled && !_isDragging) {
+      _travelActive = false;
+    }
+
+    // 5) Sample pill acceleration for volume-conserving squash & stretch
+    final double stepDp = _kInactiveSlotWidth;
+    if (!_squashModel.isTracking) _squashModel.start();
+    double squash = _squashModel.track(_currentPosition * stepDp, now, dt);
+
+    if (_travelSignEased == 0.0) {
+      _travelSignEased = _travelSign;
+    } else if (_travelSignEased != _travelSign) {
+      _travelSignEased += (_travelSign - _travelSignEased) * (1.0 - math.exp(-dt / _kSignTau));
+      if ((_travelSign - _travelSignEased).abs() < 0.01) _travelSignEased = _travelSign;
+    }
+    // Keep force magnitude and take sign from travel direction (BitChord exact)
+    final double key = _travelSignEased;
+    if (key != 0.0) {
+      squash = squash * (1.0 - key.abs()) - key * squash.abs();
+    }
+
+    // 6) Hand-off rides the same landing as deflation (HANDOVER_TAU = 0.09s)
+    final double handoverTarget = _liftTarget > 0.0 ? 0.0 : 1.0;
+    final double tau = handoverTarget > _handover ? _kHandoverTau : _kGlassReturnTau;
+    _handover += (handoverTarget - _handover) * (1.0 - math.exp(-dt / tau));
+    if ((handoverTarget - _handover).abs() < 0.002) _handover = handoverTarget;
+
+    _glassPresence = (1.0 - _handover).clamp(0.0, 1.0);
+
+    final bool settled = !_travelActive &&
+        !_isDragging &&
         liftSettled &&
-        squashSettled &&
-        materialSettled;
+        _squashModel.value.abs() < 0.0005 &&
+        _handover >= 1.0;
 
-    if (isSettled) {
-      _liftX = _liftTarget;
-      _liftY = _liftTarget;
-      _liftXVel = 0.0;
-      _liftYVel = 0.0;
-      _velocity = 0.0;
-      _material = materialTarget;
-      _handover = handoverTarget;
+    if (settled) {
       _squashModel.stop();
+      _travelSign = 0.0;
+      _travelSignEased = 0.0;
+      _isFlat = true;
+      _currentPosition = _targetIndex.toDouble();
+      _velocity = 0.0;
       _ticker?.stop();
     }
 
     setState(() {});
   }
 
-  /// Semi-implicit Euler integration for independent X & Y under-damped lift springs
-  void _stepLiftSprings(double dt) {
-    double t = dt;
-    while (t > 0) {
-      final double step = t > (1.0 / 240.0) ? (1.0 / 240.0) : t;
-
-      // X-axis: stiffness 250, damping 19.0 (damping ratio 0.60 -> bouncy overshoot)
-      final double accelX = -250.0 * (_liftX - _liftTarget) - 19.0 * _liftXVel;
-      _liftXVel += accelX * step;
-      _liftX += _liftXVel * step;
-
-      // Y-axis: stiffness 250, damping 22.1 (damping ratio 0.70 -> slightly tighter bounce)
-      final double accelY = -250.0 * (_liftY - _liftTarget) - 22.1 * _liftYVel;
-      _liftYVel += accelY * step;
-      _liftY += _liftYVel * step;
-
-      t -= step;
-    }
-  }
-
   void _animateToTab(int targetIndex) {
-    _positionController.stop();
-    _targetIndex = targetIndex;
-    _travelFrom = _currentPosition;
-    final double targetPos = targetIndex.toDouble();
-
-    if ((_currentPosition - targetPos).abs() < 0.001) {
-      setState(() {
-        _currentPosition = targetPos;
-      });
+    if (targetIndex == _targetIndex && (_currentPosition - targetIndex.toDouble()).abs() < 0.001) {
       return;
     }
-
-    // Material turns on smoothly as spring starts travel
+    _targetIndex = targetIndex;
+    _travelActive = true;
     _liftTarget = 1.0;
-
-    _positionAnim = Tween<double>(
-      begin: _currentPosition,
-      end: targetPos,
-    ).animate(CurvedAnimation(
-      parent: _positionController,
-      curve: Curves.easeOutCubic,
-    ));
-
+    _travelFrom = _currentPosition;
+    _travelTarget = targetIndex.toDouble();
+    final double span = _travelTarget - _travelFrom;
+    _travelSign = span.abs() < 1e-6 ? 0.0 : span.sign;
+    _isFlat = false;
     _squashModel.start();
     _ensureTicker();
-
-    _positionController.forward(from: 0.0).whenComplete(() {
-      setState(() {
-        _currentPosition = targetPos;
-      });
-      _liftTarget = 0.0;
-      _ensureTicker();
-    });
   }
 
   void _handleTapDown(TapDownDetails details) {
     _liftTarget = 1.0;
+    _isFlat = false;
     _ensureTicker();
   }
 
@@ -314,13 +343,15 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   }
 
   void _handleDragStart(DragStartDetails details) {
-    _positionController.stop();
     _isDragging = true;
+    _travelActive = false;
     _liftTarget = 1.0;
+    _travelSign = 0.0;
     _dragStartX = details.localPosition.dx;
     _dragStartPosition = _currentPosition;
     _travelFrom = _currentPosition;
     _dragTarget = _currentPosition;
+    _isFlat = false;
     _squashModel.start();
     _ensureTicker();
   }
@@ -344,11 +375,15 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   }
 
   void _handleDragEnd(DragEndDetails details) {
+    if (!_isDragging) return;
     _isDragging = false;
     final int destination = _currentPosition.round().clamp(0, _kTabCount - 1);
     _targetIndex = destination;
+    _travelActive = true;
     _travelFrom = _currentPosition;
-    _animateToTab(destination);
+    _travelTarget = destination.toDouble();
+    final double span = _travelTarget - _travelFrom;
+    _travelSign = span.abs() < 1e-6 ? 0.0 : span.sign;
 
     if (destination != widget.currentIndex) {
       if (appState.hapticsEnabled) {
@@ -363,7 +398,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     if (innerX < 0) return 0;
     double accumulated = 0.0;
     for (int i = 0; i < _kTabCount; i++) {
-      final double width = (i == widget.currentIndex) ? _kActiveSlotWidth : _kInactiveSlotWidth;
+      final double width = (i == _targetIndex) ? _kActiveSlotWidth : _kInactiveSlotWidth;
       if (innerX >= accumulated && innerX < accumulated + width) {
         return i;
       }
@@ -374,8 +409,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
   void _selectTab(int targetIndex) {
     final int clamped = targetIndex.clamp(0, _kTabCount - 1);
-    _targetIndex = clamped;
-    _travelFrom = _currentPosition;
     if (clamped != widget.currentIndex) {
       if (appState.hapticsEnabled) {
         HapticFeedback.selectionClick();
@@ -383,10 +416,11 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       widget.onTabSelected(clamped);
       _animateToTab(clamped);
     } else {
-      _liftTarget = 0.0;
-      _ensureTicker();
+      _animateToTab(clamped);
     }
   }
+
+  double _rimOf(double presence) => ((presence - 0.45) / 0.55).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -406,20 +440,20 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
         final double dynamicPillWidth = liftedW * (1.0 + deviation);
         final double dynamicPillHeight = liftedH * (1.0 - deviation);
 
-        // Center calculation: the distance between slot centers is identically 72.0dp!
+        // Continuous track center: 72dp distance between slot centers
         final double centerX = _kPaddingH + (_kActiveSlotWidth / 2.0) + (_currentPosition * _kInactiveSlotWidth);
         final double pillLeft = centerX - (dynamicPillWidth / 2.0);
-        // Centers vertically around dock height (62dp): stands 2dp above & 2dp below dock edges when lifted!
         final double pillTop = (_kDockHeight / 2.0) - (dynamicPillHeight / 2.0);
 
-        // Resting flat pill coordinates (active tab slot)
-        final double restingCenter = _kPaddingH + (_kActiveSlotWidth / 2.0) + (widget.currentIndex * _kInactiveSlotWidth);
-        final double restingLeft = restingCenter - (_kActiveSlotWidth / 2.0);
-        final double restingTop = (_kDockHeight - _kPillHeight) / 2.0;
+        // BitChord Hand-off blend factors:
+        // 1. Under-tab Base Selection Fill (fades out as material comes on, blooms back in on landing)
+        final double baseFillAlpha = (isDark ? 0.16 : 0.08) * (1.0 - _material);
 
-        // Continuous hand-off blend factors (BitChord standard: 0.16 white indicator in dark mode)
-        final double glassPresence = (_material * (1.0 - _handover)).clamp(0.0, 1.0);
-        final double flatAlpha = ((1.0 - _material) * (isDark ? 0.16 : 0.08)).clamp(0.0, 1.0);
+        // 2. Over-tab Glass Lens (rim & shadow shed by 55% of hand-off)
+        final double rimFactor = _rimOf(_glassPresence);
+        final double highlightAlpha = (_material * rimFactor).clamp(0.0, 1.0);
+        final double shadowAlpha = (_material * rimFactor).clamp(0.0, 1.0);
+        final double lensGradientAlpha = (_material * _glassPresence).clamp(0.0, 1.0);
 
         return Center(
           child: SizedBox(
@@ -436,7 +470,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                 onHorizontalDragUpdate: _handleDragUpdate,
                 onHorizontalDragEnd: _handleDragEnd,
                 child: Stack(
-                  // UNCLIPPED ROOT CONTAINER: Floating glass lens can stand outside dock boundaries!
+                  // UNCLIPPED ROOT CONTAINER: Floating glass lens stands outside dock boundaries!
                   clipBehavior: Clip.none,
                   children: [
                     // ==============================================================
@@ -509,25 +543,28 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                     ),
 
                     // ==============================================================
-                    // LAYER 2: FLAT RESTING PILL (BitChord FlatSelectionPill)
-                    // Fades out continuously as glass material blooms in on touch!
+                    // LAYER 2: UNDER-TAB SELECTION FILL PILL (BitChord FlatSelectionPill)
+                    // Placed AT THE EXACT SAME pillLeft, pillTop, dynamicPillWidth, dynamicPillHeight!
+                    // Seamlessly dissolves as material comes on, and blooms back in on landing.
+                    // ZERO jumps, ZERO teleportation, ZERO disconnected cuts!
                     // ==============================================================
-                    if (flatAlpha > 0.005)
+                    if (baseFillAlpha > 0.002)
                       Positioned(
-                        left: restingLeft,
-                        top: restingTop,
-                        width: _kActiveSlotWidth,
-                        height: _kPillHeight,
+                        left: pillLeft,
+                        top: pillTop,
+                        width: dynamicPillWidth,
+                        height: dynamicPillHeight,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: (isDark ? Colors.white : Colors.black).withOpacity(flatAlpha),
-                            borderRadius: BorderRadius.circular(_kPillHeight / 2),
+                            color: (isDark ? Colors.white : Colors.black).withOpacity(baseFillAlpha),
+                            borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
                           ),
                         ),
                       ),
 
                     // ==============================================================
-                    // LAYER 3: TAB ICONS & LABELS ROW (With 1.09x Optical Magnification)
+                    // LAYER 3: TAB ICONS & LABELS ROW (Continuous Proximity Interpolation)
+                    // Slot widths interpolate smoothly with _currentPosition. Total width is ALWAYS 312dp!
                     // ==============================================================
                     Positioned.fill(
                       child: Padding(
@@ -538,22 +575,27 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         child: Row(
                           children: List.generate(_tabs.length, (index) {
                             final tab = _tabs[index];
-                            final isSelected = widget.currentIndex == index;
+                            final double distance = (_currentPosition - index).abs();
+                            final double proximity = (1.0 - distance).clamp(0.0, 1.0);
+
+                            // Smooth continuous slot width interpolation: sum is ALWAYS 312dp!
+                            final double slotWidth = _kInactiveSlotWidth + (proximity * (_kActiveSlotWidth - _kInactiveSlotWidth));
+
+                            // Optical Magnification: Icon magnifies to 1.09x under the lens!
+                            final double iconScale = 1.0 + (0.09 * proximity);
 
                             final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
                             final inactiveColor = isDark
                                 ? Colors.white.withOpacity(0.78)
                                 : AppColors.lightTextMuted;
 
-                            // Optical Magnification: Icon magnifies to 1.09x under the lens!
-                            final double distance = (_currentPosition - index).abs();
-                            final double proximity = (1.0 - distance).clamp(0.0, 1.0);
-                            final double iconScale = 1.0 + (0.09 * proximity);
+                            final Color tabColor = Color.lerp(inactiveColor, activeColor, proximity)!;
 
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeOutCubic,
-                              width: isSelected ? _kActiveSlotWidth : _kInactiveSlotWidth,
+                            // Label text fades in gracefully only when slot has expanded enough
+                            final double textOpacity = ((proximity - 0.45) / 0.55).clamp(0.0, 1.0);
+
+                            return SizedBox(
+                              width: slotWidth,
                               height: _kPillHeight,
                               child: InkWell(
                                 onTap: () => _selectTab(index),
@@ -569,13 +611,14 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                         scale: iconScale,
                                         child: Icon(
                                           tab.icon,
-                                          size: isSelected ? 20.0 : 21.0,
-                                          color: isSelected ? activeColor : inactiveColor,
+                                          size: 20.0,
+                                          color: tabColor,
                                         ),
                                       ),
-                                      if (isSelected) ...[
+                                      if (textOpacity > 0.01) ...[
                                         const SizedBox(width: 6),
-                                        Flexible(
+                                        Opacity(
+                                          opacity: textOpacity,
                                           child: Text(
                                             tab.label,
                                             style: TextStyle(
@@ -583,10 +626,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                               fontSize: 11.5,
                                               fontWeight: FontWeight.w700,
                                               letterSpacing: -0.3,
-                                              color: activeColor,
+                                              color: tabColor,
                                             ),
                                             maxLines: 1,
-                                            overflow: TextOverflow.visible,
+                                            overflow: TextOverflow.clip,
                                           ),
                                         ),
                                       ],
@@ -601,58 +644,57 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                     ),
 
                     // ==============================================================
-                    // LAYER 4: UNCLIPPED FLOATING GLASS LENS (BitChord GlassSelectionPill)
-                    // Fades in continuously with glassPresence, stands above and outside dock!
-                    // Pure optical water glass with 0.16 white core and feather-soft specular rim.
+                    // LAYER 4: OVER-TAB FLOATING GLASS LENS (BitChord GlassSelectionPill)
+                    // Sits unclipped OVER the tabs. Specular hairline, water-clear core, drop shadow.
+                    // Dissolves its rim and shadow by 55% of hand-off on landing decrescendo.
                     // ==============================================================
-                    if (glassPresence > 0.005)
+                    if (lensGradientAlpha > 0.002 || highlightAlpha > 0.002 || shadowAlpha > 0.002)
                       Positioned(
                         left: pillLeft,
                         top: pillTop,
                         width: dynamicPillWidth,
                         height: dynamicPillHeight,
                         child: IgnorePointer(
-                          child: Opacity(
-                            opacity: glassPresence,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                // Soft, luminous water droplet gradient with pure water-clear core
-                                gradient: RadialGradient(
-                                  center: const Alignment(-0.20, -0.40),
-                                  radius: 0.95,
-                                  colors: isDark
-                                      ? [
-                                          Colors.white.withOpacity(0.12 + (_liftY * 0.06)),
-                                          Colors.white.withOpacity(0.03),
-                                          Colors.transparent,
-                                        ]
-                                      : [
-                                          Colors.white.withOpacity(0.40 + (_liftY * 0.10)),
-                                          Colors.white.withOpacity(0.10),
-                                          Colors.transparent,
-                                        ],
-                                  stops: const [0.0, 0.45, 1.0],
-                                ),
-                                borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
-                                boxShadow: [
-                                  // Deep, soft ambient drop shadow cast onto dock and screen (BitChord Image 4)
+                          child: Container(
+                            decoration: BoxDecoration(
+                              // Soft, luminous water droplet gradient with pure water-clear core
+                              gradient: RadialGradient(
+                                center: const Alignment(-0.20, -0.40),
+                                radius: 0.95,
+                                colors: isDark
+                                    ? [
+                                        Colors.white.withOpacity((0.12 + (_liftY * 0.06)) * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.03 * lensGradientAlpha),
+                                        Colors.transparent,
+                                      ]
+                                    : [
+                                        Colors.white.withOpacity((0.40 + (_liftY * 0.10)) * lensGradientAlpha),
+                                        Colors.white.withOpacity(0.10 * lensGradientAlpha),
+                                        Colors.transparent,
+                                      ],
+                                stops: const [0.0, 0.45, 1.0],
+                              ),
+                              borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
+                              boxShadow: [
+                                if (shadowAlpha > 0.01) ...[
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(isDark ? (0.35 + _liftY * 0.15) : 0.12),
+                                    color: Colors.black.withOpacity((isDark ? (0.35 + _liftY * 0.15) : 0.12) * shadowAlpha),
                                     blurRadius: 16 + (_liftY * 6.0),
                                     offset: Offset(0, 4 + (_liftY * 2.0)),
                                   ),
                                   BoxShadow(
-                                    color: Colors.white.withOpacity(isDark ? 0.06 : 0.0),
+                                    color: Colors.white.withOpacity((isDark ? 0.06 : 0.0) * shadowAlpha),
                                     blurRadius: 2,
                                     offset: const Offset(0, -1),
                                   ),
                                 ],
-                              ),
-                              child: CustomPaint(
-                                painter: _LiquidBubbleHighlightPainter(
-                                  isDark: isDark,
-                                  lift: _liftY,
-                                ),
+                              ],
+                            ),
+                            child: CustomPaint(
+                              painter: _LiquidBubbleHighlightPainter(
+                                isDark: isDark,
+                                lift: _liftY,
+                                alpha: highlightAlpha,
                               ),
                             ),
                           ),
@@ -776,12 +818,17 @@ class _DockSpecularRimPainter extends CustomPainter {
 class _LiquidBubbleHighlightPainter extends CustomPainter {
   final bool isDark;
   final double lift;
+  final double alpha;
 
-  _LiquidBubbleHighlightPainter({required this.isDark, this.lift = 0.0});
+  _LiquidBubbleHighlightPainter({
+    required this.isDark,
+    this.lift = 0.0,
+    this.alpha = 1.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
+    if (size.width <= 0 || size.height <= 0 || alpha <= 0.002) return;
 
     final radius = Radius.circular(size.height / 2);
     final rect = Offset.zero & size;
@@ -798,8 +845,8 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
       colors: [
         Colors.transparent,
         Colors.transparent,
-        Colors.black.withOpacity(0.02),
-        Colors.black.withOpacity(isDark ? 0.08 : 0.05),
+        Colors.black.withOpacity(0.02 * alpha),
+        Colors.black.withOpacity((isDark ? 0.08 : 0.05) * alpha),
       ],
       stops: const [0.0, 0.50, 0.75, 1.0],
     ).createShader(rect);
@@ -818,8 +865,8 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
         begin: const Alignment(-0.6, -0.6),
         end: const Alignment(0.60, 1.0),
         colors: [
-          Colors.white.withOpacity(isDark ? (0.28 + lift * 0.08).clamp(0.0, 0.40) : 0.45),
-          Colors.white.withOpacity(isDark ? 0.10 : 0.18),
+          Colors.white.withOpacity((isDark ? (0.28 + lift * 0.08).clamp(0.0, 0.40) : 0.45) * alpha),
+          Colors.white.withOpacity((isDark ? 0.10 : 0.18) * alpha),
           Colors.transparent,
           Colors.transparent,
         ],
@@ -837,8 +884,8 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
         colors: [
           Colors.transparent,
           Colors.transparent,
-          Colors.white.withOpacity(0.04),
-          Colors.white.withOpacity(isDark ? 0.15 : 0.22),
+          Colors.white.withOpacity(0.04 * alpha),
+          Colors.white.withOpacity((isDark ? 0.15 : 0.22) * alpha),
         ],
         stops: const [0.0, 0.65, 0.85, 1.0],
       ).createShader(rect);
@@ -849,5 +896,5 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LiquidBubbleHighlightPainter oldDelegate) =>
-      oldDelegate.isDark != isDark || oldDelegate.lift != lift;
+      oldDelegate.isDark != isDark || oldDelegate.lift != lift || oldDelegate.alpha != alpha;
 }
