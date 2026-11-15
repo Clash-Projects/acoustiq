@@ -17,6 +17,7 @@ import '../widgets/luminous_feedback.dart';
 import '../widgets/dev_lab_sheet.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/app_glass_dialog.dart';
+import '../widgets/bounded_scroll_physics.dart';
 import 'settings_screen.dart';
 
 /// 1:1 Port of LastWave Studio-Grade Audio Inspector Architecture
@@ -212,7 +213,7 @@ class _InspectScreenState extends State<InspectScreen> {
                 const SizedBox(height: 12),
                 Expanded(
                   child: ListView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: const BoundedBouncingScrollPhysics(),
                     children: [
                       if (recent.isNotEmpty) ...[
                         Padding(
@@ -456,7 +457,7 @@ class _InspectScreenState extends State<InspectScreen> {
             child: SingleChildScrollView(
               // 96dp bottom padding: content glides behind the liquid glass dock!
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-              physics: const BouncingScrollPhysics(),
+              physics: const BoundedBouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -1608,7 +1609,7 @@ class _InspectScreenState extends State<InspectScreen> {
                       borderless: false,
                       padding: const EdgeInsets.all(14),
                       child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                        physics: const BoundedBouncingScrollPhysics(),
                         child: SelectableText(
                           rawLyrics,
                           style: TextStyle(

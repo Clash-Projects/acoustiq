@@ -9,6 +9,7 @@ import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
 import 'audio_preview_bar.dart';
+import 'bounded_scroll_physics.dart';
 
 /// Shows an Apple WWDC25 Frosted Glass modal bottom sheet displaying
 /// embedded Vorbis FLAC lyrics with LastWave-grade dynamic audio auto-scrolling.
@@ -443,7 +444,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                                 },
                                 child: ListView.builder(
                                   controller: _scrollController,
-                                  physics: const BouncingScrollPhysics(),
+                                  physics: const BoundedBouncingScrollPhysics(),
                                   padding: const EdgeInsets.symmetric(vertical: 24),
                                   itemCount: _parsedLines.length,
                                   itemBuilder: (context, index) {
@@ -534,7 +535,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                                 ),
                               )
                             : SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
+                                physics: const BoundedBouncingScrollPhysics(),
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 child: SelectableText(
                                   rawLyrics,

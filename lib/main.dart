@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -10,6 +11,7 @@ import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 import 'ui/theme/colors.dart';
 import 'widgets/ambient_wallpaper.dart';
+import 'widgets/bounded_scroll_physics.dart';
 import 'widgets/liquid_lens_dock.dart';
 
 void main() async {
@@ -175,11 +177,19 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-/// Universal Mouse, Touch & Trackpad Scroll Behavior
+/// Universal Mouse, Touch & Trackpad Scroll Behavior with Multi-Touch Protection
 /// Enables fluid mouse click-and-drag scrolling, mouse wheel navigation,
-/// and stylus gestures across Android devices, emulators, DeX, and desktop.
+/// stylus gestures, and enforces BoundedBouncingScrollPhysics globally.
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
+
+  @override
+  MultitouchDragStrategy get multitouchDragStrategy =>
+      MultitouchDragStrategy.latestPointer;
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BoundedBouncingScrollPhysics();
 
   @override
   Set<PointerDeviceKind> get dragDevices => {

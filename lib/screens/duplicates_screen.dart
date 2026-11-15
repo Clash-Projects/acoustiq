@@ -11,6 +11,7 @@ import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/app_glass_dialog.dart';
+import '../widgets/bounded_scroll_physics.dart';
 
 /// 1:1 Port of LastWave Native's Connected Group Architecture for Duplicate Track Management
 ///
@@ -537,7 +538,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
           body: SafeArea(
             bottom: false,
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const BoundedBouncingScrollPhysics(),
               slivers: [
                 // Top Header
                 SliverToBoxAdapter(

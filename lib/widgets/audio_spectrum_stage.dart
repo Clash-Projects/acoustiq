@@ -9,6 +9,7 @@ import 'glass_surface.dart';
 import 'app_snack_bar.dart';
 import 'app_glass_dialog.dart';
 import 'animated_status_badge.dart';
+import 'bounded_scroll_physics.dart';
 
 /// Studio Audio Authenticity Stage (Speedometer Gauge + Waveform Hybrid Switcher)
 ///
@@ -1013,7 +1014,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     Color activeAccent,
   ) {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1201,7 +1202,7 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     Color activeAccent,
   ) {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

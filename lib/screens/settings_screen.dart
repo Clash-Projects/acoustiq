@@ -17,6 +17,7 @@ import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/dev_lab_sheet.dart';
+import '../widgets/bounded_scroll_physics.dart';
 
 /// 1:1 Port of LastWave Native's Settings Architecture (Appearance & Visuals)
 ///
@@ -247,7 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SingleChildScrollView(
       key: const ValueKey('master_settings_hub'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-      physics: const BouncingScrollPhysics(),
+      physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -619,7 +620,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SingleChildScrollView(
       key: const ValueKey('subpage_appearance'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-      physics: const BouncingScrollPhysics(),
+      physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1031,7 +1032,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SingleChildScrollView(
       key: const ValueKey('subpage_audio_engine'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-      physics: const BouncingScrollPhysics(),
+      physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1333,7 +1334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SingleChildScrollView(
       key: const ValueKey('subpage_library_storage'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-      physics: const BouncingScrollPhysics(),
+      physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1459,7 +1460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SingleChildScrollView(
       key: const ValueKey('subpage_about_diagnostics'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-      physics: const BouncingScrollPhysics(),
+      physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

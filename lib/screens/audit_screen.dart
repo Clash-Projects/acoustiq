@@ -12,6 +12,7 @@ import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/animated_status_badge.dart';
+import '../widgets/bounded_scroll_physics.dart';
 import 'settings_screen.dart';
 
 /// 1:1 Port of LastWave Native's Borderless AMOLED Track List Stage for FLAC Audio Auditing
@@ -456,7 +457,7 @@ class _AuditScreenState extends State<AuditScreen> {
           body: SafeArea(
             bottom: false,
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const BoundedBouncingScrollPhysics(),
               slivers: [
                 // 1. Top Header with Settings Gear Button (Phase 2.4)
                 SliverToBoxAdapter(
@@ -505,7 +506,7 @@ class _AuditScreenState extends State<AuditScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
+                        physics: const BoundedBouncingScrollPhysics(),
                         child: Row(
                           children: [
                             _buildFilterPill('All (${tracks.length})', 'all', isDark, activeAccent),

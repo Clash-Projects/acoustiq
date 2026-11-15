@@ -11,6 +11,7 @@ import 'luminous_feedback.dart';
 import 'app_glass_dialog.dart';
 import 'app_snack_bar.dart';
 import 'lyrics_viewer_sheet.dart';
+import 'bounded_scroll_physics.dart';
 
 /// Shows the AcoustiQ Developer Laboratory & QA Sandbox
 void showDevLabSheet(BuildContext context) {
@@ -150,7 +151,7 @@ class DevLabSheet extends StatelessWidget {
                   // Scrollable QA Tools Body
                   Expanded(
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const BoundedBouncingScrollPhysics(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
