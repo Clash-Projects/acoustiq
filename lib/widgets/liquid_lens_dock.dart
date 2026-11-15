@@ -53,9 +53,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   static const double _kInactiveSlotWidth = 72.0;
   static const double _kPillHeight = _kDockHeight - (2 * _kPaddingV); // 55.0dp
 
-  // Dynamic growth constants on lift (BitChord proportional expansion)
-  static const double _kPillLiftGrowth = 11.0; // 55dp -> 66dp
-  static const double _kPillWidthGrowth = 19.2; // 96dp -> 115.2dp
+  // Dynamic growth constants on lift (BitChord generous 3D floating expansion)
+  static const double _kPillLiftGrowth = 21.0; // 55dp -> 76dp (stands 7.0dp above and 7.0dp below dock rail!)
+  static const double _kPillWidthGrowth = 32.0; // 96dp -> 128dp (luxurious broad liquid bubble)
 
   // BitChord Physics Springs & Decay Constants
   static const double _kTravelStiffness = 280.0;
@@ -89,7 +89,8 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   double _dragStartPosition = 0.0;
   bool _isDragging = false;
 
-  // Target index guard
+  // Target index and departing active index guards (Strict Active-Tab Labeling)
+  int _activeFromIndex = 0;
   int _targetIndex = 0;
   int _lastHapticIndex = -1;
 
@@ -132,6 +133,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     _dragTarget = _currentPosition;
     _travelTarget = _currentPosition;
     _travelFrom = _currentPosition;
+    _activeFromIndex = widget.currentIndex;
     _targetIndex = widget.currentIndex;
     _lastHapticIndex = widget.currentIndex;
 
@@ -302,6 +304,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       _travelSignEased = 0.0;
       _isFlat = true;
       _currentPosition = _targetIndex.toDouble();
+      _activeFromIndex = _targetIndex;
       _velocity = 0.0;
       _ticker?.stop();
     }
@@ -313,6 +316,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     if (targetIndex == _targetIndex && (_currentPosition - targetIndex.toDouble()).abs() < 0.001) {
       return;
     }
+    _activeFromIndex = _targetIndex;
     _targetIndex = targetIndex;
     _travelActive = true;
     _liftTarget = 1.0;
@@ -378,6 +382,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     if (!_isDragging) return;
     _isDragging = false;
     final int destination = _currentPosition.round().clamp(0, _kTabCount - 1);
+    _activeFromIndex = _targetIndex;
     _targetIndex = destination;
     _travelActive = true;
     _travelFrom = _currentPosition;
@@ -563,8 +568,10 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                       ),
 
                     // ==============================================================
-                    // LAYER 3: TAB ICONS & LABELS ROW (Continuous Proximity Interpolation)
-                    // Slot widths interpolate smoothly with _currentPosition. Total width is ALWAYS 312dp!
+                    // LAYER 3: TAB ICONS & LABELS ROW (Strict Active Tab Labeling)
+                    // Inactive tabs NEVER show their text label! Text label strictly belongs
+                    // to the active/selected tab. Slots interpolate smoothly between departing
+                    // and arriving active tabs. Sum is ALWAYS 312dp!
                     // ==============================================================
                     Positioned.fill(
                       child: Padding(
@@ -575,13 +582,39 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         child: Row(
                           children: List.generate(_tabs.length, (index) {
                             final tab = _tabs[index];
-                            final double distance = (_currentPosition - index).abs();
-                            final double proximity = (1.0 - distance).clamp(0.0, 1.0);
 
-                            // Smooth continuous slot width interpolation: sum is ALWAYS 312dp!
-                            final double slotWidth = _kInactiveSlotWidth + (proximity * (_kActiveSlotWidth - _kInactiveSlotWidth));
+                            // Progress of travel (0.0 at launch -> 1.0 at destination)
+                            final double progress = _travelProgress();
+
+                            double slotWidth = _kInactiveSlotWidth; // default 72.0
+                            double textOpacity = 0.0;
+
+                            if (_activeFromIndex == _targetIndex) {
+                              // Settled state: strictly the selected active tab shows text
+                              if (index == _targetIndex) {
+                                slotWidth = _kActiveSlotWidth;
+                                textOpacity = 1.0;
+                              }
+                            } else {
+                              // In transition between _activeFromIndex and _targetIndex:
+                              if (index == _activeFromIndex) {
+                                // Departing active tab: shrinks to 72dp, label fades out in first half of travel
+                                slotWidth = _kInactiveSlotWidth + (1.0 - progress) * (_kActiveSlotWidth - _kInactiveSlotWidth);
+                                textOpacity = (1.0 - progress * 2.0).clamp(0.0, 1.0);
+                              } else if (index == _targetIndex) {
+                                // Arriving target tab: expands to 96dp, label blooms in in second half of travel
+                                slotWidth = _kInactiveSlotWidth + progress * (_kActiveSlotWidth - _kInactiveSlotWidth);
+                                textOpacity = ((progress - 0.5) * 2.0).clamp(0.0, 1.0);
+                              } else {
+                                // All other intermediate tabs: STRICTLY 72dp, ZERO label!
+                                slotWidth = _kInactiveSlotWidth;
+                                textOpacity = 0.0;
+                              }
+                            }
 
                             // Optical Magnification: Icon magnifies to 1.09x under the lens!
+                            final double distance = (_currentPosition - index).abs();
+                            final double proximity = (1.0 - distance).clamp(0.0, 1.0);
                             final double iconScale = 1.0 + (0.09 * proximity);
 
                             final activeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
@@ -589,10 +622,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                 ? Colors.white.withOpacity(0.78)
                                 : AppColors.lightTextMuted;
 
-                            final Color tabColor = Color.lerp(inactiveColor, activeColor, proximity)!;
-
-                            // Label text fades in gracefully only when slot has expanded enough
-                            final double textOpacity = ((proximity - 0.45) / 0.55).clamp(0.0, 1.0);
+                            final Color tabColor = (index == _targetIndex || (index == _activeFromIndex && textOpacity > 0.05))
+                                ? Color.lerp(inactiveColor, activeColor, textOpacity)!
+                                : inactiveColor;
 
                             return SizedBox(
                               width: slotWidth,
@@ -678,9 +710,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                               boxShadow: [
                                 if (shadowAlpha > 0.01) ...[
                                   BoxShadow(
-                                    color: Colors.black.withOpacity((isDark ? (0.35 + _liftY * 0.15) : 0.12) * shadowAlpha),
-                                    blurRadius: 16 + (_liftY * 6.0),
-                                    offset: Offset(0, 4 + (_liftY * 2.0)),
+                                    color: Colors.black.withOpacity((isDark ? (0.38 + _liftY * 0.16) : 0.14) * shadowAlpha),
+                                    blurRadius: 22 + (_liftY * 8.0),
+                                    offset: Offset(0, 5 + (_liftY * 3.0)),
                                   ),
                                   BoxShadow(
                                     color: Colors.white.withOpacity((isDark ? 0.06 : 0.0) * shadowAlpha),
