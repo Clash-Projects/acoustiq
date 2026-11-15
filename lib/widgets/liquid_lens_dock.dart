@@ -964,7 +964,47 @@ class _RestingMeniscusPainter extends CustomPainter {
       ..shader = lowerShadeShader;
     canvas.drawRRect(rrect, softShade);
 
-    // 2. Upper-left specular light-catch hairline (LastWave 0.95px razor crystal edge)
+    // 2. Corner-localized resting chromatic dispersion (BitChord 7-wavelength glint)
+    final double restingDispersion = (isDark ? 0.30 : 0.24) * alpha;
+    final restingDispersionPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..shader = SweepGradient(
+        center: Alignment.center,
+        colors: [
+          Colors.transparent,
+          const Color(0xFFFBBF24).withOpacity(0.55 * restingDispersion), // Gold
+          const Color(0xFFF97316).withOpacity(0.60 * restingDispersion), // Orange
+          const Color(0xFFEF4444).withOpacity(0.40 * restingDispersion), // Crimson
+          Colors.transparent,
+          const Color(0xFF06B6D4).withOpacity(0.45 * restingDispersion), // Cyan
+          const Color(0xFF3B82F6).withOpacity(0.55 * restingDispersion), // Azure Blue
+          const Color(0xFF8B5CF6).withOpacity(0.40 * restingDispersion), // Violet
+          Colors.transparent,
+          const Color(0xFFEF4444).withOpacity(0.40 * restingDispersion), // Crimson
+          const Color(0xFFF97316).withOpacity(0.55 * restingDispersion), // Orange
+          const Color(0xFFFBBF24).withOpacity(0.60 * restingDispersion), // Gold
+          Colors.transparent,
+          const Color(0xFF8B5CF6).withOpacity(0.40 * restingDispersion), // Violet
+          const Color(0xFF3B82F6).withOpacity(0.55 * restingDispersion), // Azure Blue
+          const Color(0xFF06B6D4).withOpacity(0.45 * restingDispersion), // Cyan
+          Colors.transparent,
+        ],
+        stops: const [
+          0.00,
+          0.09, 0.14, 0.18,
+          0.25,
+          0.33, 0.38, 0.42,
+          0.50,
+          0.58, 0.63, 0.67,
+          0.75,
+          0.83, 0.88, 0.92,
+          1.00,
+        ],
+      ).createShader(rect);
+    canvas.drawRRect(rimRRect, restingDispersionPaint);
+
+    // 3. Upper-left specular light-catch hairline (LastWave 0.95px razor crystal edge)
     final upperRimPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.95
@@ -1063,9 +1103,10 @@ class _FloatingLensShadowPainter extends CustomPainter {
 }
 
 /// Pure Optical Water Droplet Lens Shading (LastWave & BitChord Standard)
-/// Featuring Phase 8 Kinematic Chromatic Aberration:
-/// Dynamically refracts prismatic dispersion flares along the motion vector
-/// during rapid flight (|v| > 180 dp/s), decaying to 0.0 at rest.
+/// Featuring Kinematic Chromatic Aberration Prismatic Dispersion Flares:
+/// Ports BitChord's exact corner-localized 7-wavelength dispersion formula:
+/// dispersionIntensity = chromaticAberration * ((centeredCoord.x * centeredCoord.y) / (halfSize.x * halfSize.y))
+/// Combines physical resting optical dispersion with kinematic velocity boost and Doppler channel shear.
 class _LiquidBubbleHighlightPainter extends CustomPainter {
   final bool isDark;
   final double lift;
@@ -1089,51 +1130,161 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
     final rimRRect = rrect.deflate(0.5);
 
     canvas.save();
-    canvas.clipRRect(rrect);
+    // Allow prismatic flares to softly bloom slightly past outer boundary
+    canvas.clipRRect(rrect.inflate(3.5));
 
     // ==============================================================
-    // PHASE 8: KINEMATIC CHROMATIC ABERRATION (Velocity-Gated Dispersion)
+    // KINEMATIC CHROMATIC ABERRATION PRISMATIC DISPERSION FLARES
     // ==============================================================
     final double absV = velocityDp.abs();
-    if (absV > 180.0) {
-      final double chromaticFactor = ((absV - 180.0) / 550.0).clamp(0.0, 1.0) * alpha;
-      final double vSign = velocityDp.sign;
-      final double dispersionPx = vSign * (0.90 + lift * 0.40) * chromaticFactor;
+    final double vSign = velocityDp == 0.0 ? 0.0 : velocityDp.sign;
 
-      // 1. Leading edge electric cyan/blue prismatic refraction flare
+    // 1. Physical dispersion intensity:
+    // Base optical dispersion from thick curved glass when lifted:
+    final double baseDispersion = 0.28 + (lift * 0.38);
+    // Dynamic kinematic velocity boost (scales smoothly with speed):
+    final double kinematicBoost = (absV / 450.0).clamp(0.0, 0.55);
+    final double chromaticFactor = ((baseDispersion + kinematicBoost) * alpha).clamp(0.0, 1.0);
+
+    // 2. Kinematic Doppler lateral displacement (pixels):
+    // Channels physically separate along the motion vector:
+    final double dispOffsetPx = vSign * (0.80 + lift * 0.40) * (absV / 380.0).clamp(0.0, 1.6);
+
+    final double flareIntensity = (isDark ? 0.88 : 0.72) * chromaticFactor;
+
+    // --------------------------------------------------------------
+    // PASS 1: KINEMATIC PRISMATIC FLARE AURA / BLOOM (Glow Layer)
+    // Soft ambient rainbow aura radiating from the curved corner bevels
+    // --------------------------------------------------------------
+    final auraPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5 + (lift * 1.2)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 2.8 + lift * 1.5)
+      ..shader = SweepGradient(
+        center: Alignment.center,
+        colors: [
+          Colors.transparent,
+          const Color(0xFFFBBF24).withOpacity(0.42 * flareIntensity), // Solar Yellow
+          const Color(0xFFF97316).withOpacity(0.48 * flareIntensity), // Vivid Orange
+          const Color(0xFFEF4444).withOpacity(0.38 * flareIntensity), // Prismatic Crimson
+          Colors.transparent,
+          const Color(0xFF06B6D4).withOpacity(0.40 * flareIntensity), // Electric Cyan
+          const Color(0xFF3B82F6).withOpacity(0.48 * flareIntensity), // Royal Azure
+          const Color(0xFF8B5CF6).withOpacity(0.40 * flareIntensity), // Deep Violet
+          Colors.transparent,
+          const Color(0xFFEF4444).withOpacity(0.38 * flareIntensity), // Prismatic Crimson
+          const Color(0xFFF97316).withOpacity(0.48 * flareIntensity), // Vivid Orange
+          const Color(0xFFFBBF24).withOpacity(0.42 * flareIntensity), // Solar Yellow
+          Colors.transparent,
+          const Color(0xFF8B5CF6).withOpacity(0.40 * flareIntensity), // Deep Violet
+          const Color(0xFF3B82F6).withOpacity(0.48 * flareIntensity), // Royal Azure
+          const Color(0xFF06B6D4).withOpacity(0.40 * flareIntensity), // Electric Cyan
+          Colors.transparent,
+        ],
+        stops: const [
+          0.00,
+          0.09, 0.14, 0.18,
+          0.25,
+          0.33, 0.38, 0.42,
+          0.50,
+          0.58, 0.63, 0.67,
+          0.75,
+          0.83, 0.88, 0.92,
+          1.00,
+        ],
+      ).createShader(rect);
+    canvas.drawRRect(rimRRect, auraPaint);
+
+    // --------------------------------------------------------------
+    // PASS 2: CORNER-LOCALIZED 7-WAVELENGTH RAZOR BEVEL STROKE
+    // Razor-sharp optical dispersion hairline with physical Doppler shear
+    // --------------------------------------------------------------
+    canvas.save();
+    if (dispOffsetPx.abs() > 0.05) {
+      canvas.translate(dispOffsetPx, 0);
+    }
+
+    final dispersionStrokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.15 + (lift * 0.35)
+      ..shader = SweepGradient(
+        center: Alignment.center,
+        colors: [
+          Colors.transparent,
+          const Color(0xFFFDE047).withOpacity(0.78 * flareIntensity), // Yellow Gold
+          const Color(0xFFFB923C).withOpacity(0.82 * flareIntensity), // Orange
+          const Color(0xFFF43F5E).withOpacity(0.68 * flareIntensity), // Rose Crimson
+          Colors.transparent,
+          const Color(0xFF38BDF8).withOpacity(0.72 * flareIntensity), // Cyan
+          const Color(0xFF6366F1).withOpacity(0.82 * flareIntensity), // Indigo Azure
+          const Color(0xFFA855F7).withOpacity(0.68 * flareIntensity), // Violet
+          Colors.transparent,
+          const Color(0xFFF43F5E).withOpacity(0.68 * flareIntensity), // Rose Crimson
+          const Color(0xFFFB923C).withOpacity(0.82 * flareIntensity), // Orange
+          const Color(0xFFFDE047).withOpacity(0.78 * flareIntensity), // Yellow Gold
+          Colors.transparent,
+          const Color(0xFFA855F7).withOpacity(0.68 * flareIntensity), // Violet
+          const Color(0xFF6366F1).withOpacity(0.82 * flareIntensity), // Indigo Azure
+          const Color(0xFF38BDF8).withOpacity(0.72 * flareIntensity), // Cyan
+          Colors.transparent,
+        ],
+        stops: const [
+          0.00,
+          0.08, 0.13, 0.18,
+          0.25,
+          0.32, 0.37, 0.42,
+          0.50,
+          0.58, 0.63, 0.68,
+          0.75,
+          0.82, 0.87, 0.92,
+          1.00,
+        ],
+      ).createShader(rect);
+    canvas.drawRRect(rimRRect, dispersionStrokePaint);
+    canvas.restore();
+
+    // --------------------------------------------------------------
+    // PASS 3: KINEMATIC LEADING & TRAILING EDGE VELOCITY FLARES
+    // When moving rapidly (|v| > 45 dp/s), Doppler compression causes
+    // leading edge cyan/blue flare burst and trailing warm amber trail
+    // --------------------------------------------------------------
+    if (absV > 45.0) {
+      final double velFactor = ((absV - 45.0) / 450.0).clamp(0.0, 1.0) * alpha;
+
+      // Leading edge prismatic compression flare
       canvas.save();
-      canvas.translate(dispersionPx, 0);
+      canvas.translate(dispOffsetPx * 1.2, 0);
       final leadingFlarePaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0 + (lift * 0.3)
+        ..strokeWidth = 1.3 + (lift * 0.4)
         ..shader = LinearGradient(
-          begin: Alignment(vSign * 0.7, -0.6),
-          end: Alignment(-vSign * 0.7, 0.8),
+          begin: Alignment(vSign * 0.8, -0.5),
+          end: Alignment(-vSign * 0.8, 0.5),
           colors: [
-            const Color(0xFF38BDF8).withOpacity((isDark ? 0.38 : 0.45) * chromaticFactor),
-            const Color(0xFF60A5FA).withOpacity((isDark ? 0.16 : 0.22) * chromaticFactor),
+            const Color(0xFF38BDF8).withOpacity((isDark ? 0.62 : 0.52) * velFactor),
+            const Color(0xFF818CF8).withOpacity((isDark ? 0.38 : 0.32) * velFactor),
             Colors.transparent,
           ],
-          stops: const [0.0, 0.45, 1.0],
+          stops: const [0.0, 0.35, 1.0],
         ).createShader(rect);
       canvas.drawRRect(rimRRect, leadingFlarePaint);
       canvas.restore();
 
-      // 2. Trailing edge warm amber/rose prismatic dispersion flare
+      // Trailing edge prismatic dispersion drag
       canvas.save();
-      canvas.translate(-dispersionPx * 0.75, 0);
+      canvas.translate(-dispOffsetPx * 0.8, 0);
       final trailingFlarePaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.8 + (lift * 0.2)
+        ..strokeWidth = 1.0 + (lift * 0.3)
         ..shader = LinearGradient(
-          begin: Alignment(-vSign * 0.7, -0.4),
-          end: Alignment(vSign * 0.7, 0.8),
+          begin: Alignment(-vSign * 0.8, -0.3),
+          end: Alignment(vSign * 0.8, 0.6),
           colors: [
-            const Color(0xFFF59E0B).withOpacity((isDark ? 0.30 : 0.36) * chromaticFactor),
-            const Color(0xFFF43F5E).withOpacity((isDark ? 0.10 : 0.16) * chromaticFactor),
+            const Color(0xFFFB923C).withOpacity((isDark ? 0.52 : 0.42) * velFactor),
+            const Color(0xFFF43F5E).withOpacity((isDark ? 0.28 : 0.22) * velFactor),
             Colors.transparent,
           ],
-          stops: const [0.0, 0.40, 1.0],
+          stops: const [0.0, 0.30, 1.0],
         ).createShader(rect);
       canvas.drawRRect(rimRRect, trailingFlarePaint);
       canvas.restore();
@@ -1203,5 +1354,5 @@ class _LiquidBubbleHighlightPainter extends CustomPainter {
       oldDelegate.isDark != isDark ||
       oldDelegate.lift != lift ||
       oldDelegate.alpha != alpha ||
-      (oldDelegate.velocityDp - velocityDp).abs() > 10.0;
+      (oldDelegate.velocityDp - velocityDp).abs() > 4.0;
 }
