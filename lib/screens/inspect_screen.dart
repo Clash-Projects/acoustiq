@@ -998,6 +998,7 @@ class _InspectScreenState extends State<InspectScreen> {
         final isDark = appState.isCurrentDark(context);
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
+        final activeAccent = appState.getAccentColor(context);
 
         showAppGlassDialog(
           context: context,
@@ -1083,15 +1084,93 @@ class _InspectScreenState extends State<InspectScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline_rounded, size: 14, color: activeAccent),
+                              const SizedBox(width: 6),
+                              Text(
+                                'WHAT DOES AUDIO INTEGRITY MEAN?',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: activeAccent,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '• Zero Bit-Rot: Digital audio files can suffer flipped bits from degraded storage, faulty SD cards, or partial downloads.\n'
+                            '• Studio Fingerprint: During FLAC master creation, the studio encoder computes an unalterable 128-bit MD5 signature of all raw PCM audio samples.\n'
+                            '• Bit-Perfect Guarantee: AcoustiQ verified this file matches the studio master bit-for-bit.',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11.5,
+                              color: subTextColor,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 )
-              : Text(
-                  'The audio encoder did not write an MD5 verification checksum into this file when it was created.',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    color: subTextColor,
-                    height: 1.4,
+              : Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 14, color: AppColors.suspiciousAmber),
+                          const SizedBox(width: 6),
+                          Text(
+                            'NO CHECKSUM STORED',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: AppColors.suspiciousAmber,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'The encoder that created this file omitted the optional MD5 checksum block. The audio will still play normally, but cannot be cryptographically verified against the studio master.',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11.5,
+                          color: subTextColor,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
           confirmLabel: 'Done',

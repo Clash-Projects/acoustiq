@@ -250,7 +250,73 @@ class MainActivity: FlutterActivity() {
                         }
                     }
                 }
+                "getAppCacheSize" -> {
+                    thread(name = "CacheSizeThread") {
+                        try {
+                            var totalBytes = 0L
+                            cacheDir?.let { totalBytes += getDirSize(it) }
+                            codeCacheDir?.let { totalBytes += getDirSize(it) }
+                            externalCacheDir?.let { totalBytes += getDirSize(it) }
+                            externalCacheDirs?.forEach { dir ->
+                                if (dir != null && dir != externalCacheDir) {
+                                    totalBytes += getDirSize(dir)
+                                }
+                            }
+                            runOnUiThread {
+                                result.success(totalBytes)
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread {
+                                result.error("CACHE_SIZE_ERROR", e.localizedMessage, null)
+                            }
+                        }
+                    }
+                }
+                "clearAppCache" -> {
+                    thread(name = "ClearCacheThread") {
+                        try {
+                            cacheDir?.let { deleteContents(it) }
+                            codeCacheDir?.let { deleteContents(it) }
+                            externalCacheDir?.let { deleteContents(it) }
+                            externalCacheDirs?.forEach { dir ->
+                                if (dir != null && dir != externalCacheDir) {
+                                    deleteContents(dir)
+                                }
+                            }
+                            runOnUiThread {
+                                result.success(true)
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread {
+                                result.error("CLEAR_CACHE_ERROR", e.localizedMessage, null)
+                            }
+                        }
+                    }
+                }
                 else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun getDirSize(dir: File): Long {
+        var size = 0L
+        if (!dir.exists()) return 0L
+        val files = dir.listFiles() ?: return 0L
+        for (f in files) {
+            size += if (f.isDirectory) getDirSize(f) else f.length()
+        }
+        return size
+    }
+
+    private fun deleteContents(dir: File) {
+        if (!dir.exists()) return
+        val files = dir.listFiles() ?: return
+        for (f in files) {
+            if (f.isDirectory) {
+                deleteContents(f)
+                f.delete()
+            } else {
+                f.delete()
             }
         }
     }

@@ -50,22 +50,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _calculateCacheSize() async {
     try {
-      final tempDir = await getTemporaryDirectory();
       int totalBytes = 0;
-      if (tempDir.existsSync()) {
-        await for (final entity in tempDir.list(recursive: true, followLinks: false)) {
-          if (entity is File) {
-            try {
-              totalBytes += await entity.length();
-            } catch (_) {}
-          }
+      try {
+        const channel = MethodChannel('flac_toolkit/audio_decoder');
+        final bytes = await channel.invokeMethod<int>('getAppCacheSize');
+        if (bytes != null) totalBytes = bytes;
+      } catch (_) {
+        // Fallback: Dart direct scan of cacheDir & code_cache
+        final tempDir = await getTemporaryDirectory();
+        if (tempDir.existsSync()) {
+          totalBytes += await _getDirSize(tempDir);
+        }
+        final codeCache = Directory('${tempDir.parent.path}/code_cache');
+        if (codeCache.existsSync()) {
+          totalBytes += await _getDirSize(codeCache);
         }
       }
+
       final sizeText = totalBytes < 1024
           ? '$totalBytes B'
           : (totalBytes < 1024 * 1024
               ? '${(totalBytes / 1024).toStringAsFixed(1)} KB'
-              : '${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB');
+              : '${(totalBytes / (1024 * 1024)).toStringAsFixed(2)} MB');
 
       if (mounted) {
         setState(() {
@@ -81,22 +87,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<int> _getDirSize(Directory dir) async {
+    int bytes = 0;
+    try {
+      await for (final entity in dir.list(recursive: true, followLinks: false)) {
+        if (entity is File) {
+          try {
+            bytes += await entity.length();
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    return bytes;
+  }
+
   Future<void> _clearLibraryCache(BuildContext context) async {
     if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
 
     try {
-      // 1. Purge disk temp files (decoded PCM chunks, spectrogram cache, audio previews)
-      final tempDir = await getTemporaryDirectory();
-      if (tempDir.existsSync()) {
-        final entities = tempDir.listSync(recursive: false, followLinks: false);
-        for (final entity in entities) {
-          try {
-            if (entity is File) {
-              await entity.delete();
-            } else if (entity is Directory) {
-              await entity.delete(recursive: true);
-            }
-          } catch (_) {}
+      // 1. Purge native Android cacheDir, codeCacheDir & externalCacheDir
+      try {
+        const channel = MethodChannel('flac_toolkit/audio_decoder');
+        await channel.invokeMethod('clearAppCache');
+      } catch (_) {
+        // Fallback: Dart deletion of tempDir
+        final tempDir = await getTemporaryDirectory();
+        if (tempDir.existsSync()) {
+          final entities = tempDir.listSync(recursive: false, followLinks: false);
+          for (final entity in entities) {
+            try {
+              if (entity is File) await entity.delete();
+              if (entity is Directory) await entity.delete(recursive: true);
+            } catch (_) {}
+          }
         }
       }
 
@@ -107,17 +130,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // 3. Clear in-memory audited FLAC list & reset library path
       appState.setSharedLibrary([], '');
 
-      // 4. Update UI cache size
-      if (mounted) {
-        setState(() {
-          _cacheSizeText = '0.0 KB';
-        });
-      }
+      // 4. Recalculate cache size
+      await _calculateCacheSize();
 
       if (context.mounted) {
         showThemedSnackBar(
           context,
-          'Library & temporary cache cleared (0.0 KB)',
+          'Library & audio cache cleared ($_cacheSizeText)',
           icon: Icons.delete_sweep_rounded,
           accentColor: AppColors.genuineEmerald,
         );

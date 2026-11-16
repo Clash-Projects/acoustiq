@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,9 +39,25 @@ jobs:
         run: |
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk dist/FLAC-Toolkit-v1.1.0-build${{ github.run_number }}.apk
+          cp build/app/outputs/flutter-apk/app-release.apk dist/AcoustiQ-Latest.apk
 
-      - name: Upload APK Artifact
+      - name: Upload APK Artifact (1-Day Retention)
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: FLAC-Toolkit-v1.1.0-build${{ github.run_number }}-APK
           path: dist/*.apk
+          retention-days: 1
+
+      - name: Publish to GitHub Releases (Quota-Free Direct Download)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "AcoustiQ Nightly Build"
+          body: |
+            Automated latest build from commit ${{ github.sha }}.
+            Download `AcoustiQ-Latest.apk` directly below.
+          files: dist/*.apk
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
