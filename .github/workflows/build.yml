@@ -22,6 +22,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set up Gradle Cache
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -38,16 +41,7 @@ jobs:
       - name: Prepare Named APK
         run: |
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/FLAC-Toolkit-v1.1.0-build${{ github.run_number }}.apk
-          cp build/app/outputs/flutter-apk/app-release.apk dist/AcoustiQ-Latest.apk
-
-      - name: Upload APK Artifact (1-Day Retention)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: FLAC-Toolkit-v1.1.0-build${{ github.run_number }}-APK
-          path: dist/*.apk
-          retention-days: 1
+          cp build/app/outputs/flutter-apk/app-release.apk dist/AcoustiQ-v1.1.0-build${{ github.run_number }}.apk
 
       - name: Publish to GitHub Releases (Quota-Free Direct Download)
         uses: softprops/action-gh-release@v2
@@ -55,9 +49,9 @@ jobs:
           tag_name: nightly
           name: "AcoustiQ Nightly Build"
           body: |
-            Automated latest build from commit ${{ github.sha }}.
-            Download `AcoustiQ-Latest.apk` directly below.
-          files: dist/*.apk
+            Automated latest build #${{ github.run_number }} from commit ${{ github.sha }}.
+            Download the APK below.
+          files: dist/AcoustiQ-v1.1.0-build${{ github.run_number }}.apk
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
