@@ -57,6 +57,7 @@ class AcoustiQApp extends StatelessWidget {
               : (appState.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.system),
           theme: ThemeData(
             fontFamily: 'Inter',
+            textTheme: ThemeData.light().textTheme.apply(fontFamily: 'Inter'),
             brightness: Brightness.light,
             scaffoldBackgroundColor: AppColors.lightCanvas,
             colorScheme: const ColorScheme.light(
@@ -67,6 +68,7 @@ class AcoustiQApp extends StatelessWidget {
           ),
           darkTheme: ThemeData(
             fontFamily: 'Inter',
+            textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'Inter'),
             brightness: Brightness.dark,
             scaffoldBackgroundColor: bg,
             colorScheme: ColorScheme.dark(

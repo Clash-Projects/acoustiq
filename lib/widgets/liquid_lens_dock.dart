@@ -447,15 +447,12 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
   double _rimOf(double presence) => ((presence - 0.45) / 0.55).clamp(0.0, 1.0);
 
-  /// Monolithic crisp icon under liquid lens with 1.09x optical magnification.
-  Widget _buildRefractedIcon(IconData iconData, Color tabColor, double chromaticDelta, double iconScale) {
-    return Transform.scale(
-      scale: iconScale,
-      child: Icon(
-        iconData,
-        size: 20.0,
-        color: tabColor,
-      ),
+  /// Monolithic crisp icon under liquid lens (stable 1.0x scale, zero choppiness).
+  Widget _buildRefractedIcon(IconData iconData, Color tabColor, double chromaticDelta) {
+    return Icon(
+      iconData,
+      size: 20.0,
+      color: tabColor,
     );
   }
 
@@ -710,11 +707,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                               }
                             }
 
-                            // Optical Magnification: Icon magnifies to 1.09x under the lens!
                             final double diff = _currentPosition - index;
                             final double distance = diff.abs();
                             final double proximity = (1.0 - distance).clamp(0.0, 1.0);
-                            final double iconScale = 1.0 + (0.09 * proximity);
 
                             // True Optical Refraction: Chromatic channel separation occurs on the glyphs
                             // under the curved lens bevel (BitChord AGSL standard: content.eval(coord ± disp))
@@ -748,7 +743,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                         tab.icon,
                                         tabColor,
                                         chromaticDelta,
-                                        iconScale,
                                       ),
                                       if (textOpacity > 0.01) ...[
                                         const SizedBox(width: 6),

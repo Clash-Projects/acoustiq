@@ -1050,15 +1050,79 @@ class _InspectScreenState extends State<InspectScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Text(
-                      'STUDIO FILE SIGNATURE',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: subTextColor,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'STUDIO FILE SIGNATURE',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: subTextColor,
+                          ),
+                        ),
+                        Tooltip(
+                          message: 'WHAT DOES AUDIO INTEGRITY MEAN?\n\n'
+                              '• Zero Bit-Rot: Digital audio files can suffer flipped bits from degraded storage, faulty SD cards, or partial downloads.\n'
+                              '• Studio Fingerprint: During FLAC master creation, the studio encoder computes an unalterable 128-bit MD5 signature of all raw PCM audio samples.\n'
+                              '• Bit-Perfect Guarantee: AcoustiQ verified this file matches the studio master bit-for-bit.',
+                          triggerMode: TooltipTriggerMode.tap,
+                          showDuration: const Duration(seconds: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFA1E222A) : const Color(0xFAF4F6FA),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isDark ? const Color(0x35FFFFFF) : const Color(0x20000000),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.35),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          textStyle: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11.5,
+                            height: 1.45,
+                            color: textColor,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: activeAccent.withOpacity(isDark ? 0.18 : 0.10),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: activeAccent.withOpacity(isDark ? 0.40 : 0.25),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.help_outline_rounded, size: 12, color: activeAccent),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'What is this?',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: activeAccent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Container(
@@ -1080,51 +1144,6 @@ class _InspectScreenState extends State<InspectScreen> {
                           letterSpacing: 0.5,
                           color: textColor,
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.info_outline_rounded, size: 14, color: activeAccent),
-                              const SizedBox(width: 6),
-                              Text(
-                                'WHAT DOES AUDIO INTEGRITY MEAN?',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.8,
-                                  color: activeAccent,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '• Zero Bit-Rot: Digital audio files can suffer flipped bits from degraded storage, faulty SD cards, or partial downloads.\n'
-                            '• Studio Fingerprint: During FLAC master creation, the studio encoder computes an unalterable 128-bit MD5 signature of all raw PCM audio samples.\n'
-                            '• Bit-Perfect Guarantee: AcoustiQ verified this file matches the studio master bit-for-bit.',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11.5,
-                              color: subTextColor,
-                              height: 1.45,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],
