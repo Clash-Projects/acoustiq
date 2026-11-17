@@ -168,7 +168,7 @@ class _AuditScreenState extends State<AuditScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Forensic Audio Audit',
+                            'Library Audio Audit',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -178,7 +178,7 @@ class _AuditScreenState extends State<AuditScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${flacFiles.length} FLAC tracks detected in folder',
+                            '${flacFiles.length} songs detected in folder',
                             style: TextStyle(
                               fontSize: 12,
                               color: subTextColor,
@@ -198,8 +198,8 @@ class _AuditScreenState extends State<AuditScreen> {
                       ? 'All Tracks Already Audited'
                       : 'Estimated Time: ~$estTimeStr',
                   subtitle: cachedCount > 0
-                      ? '$cachedCount verified in cache • $neededAuditCount tracks need deep analysis (~1.5s/track)'
-                      : '$neededAuditCount tracks to analyze (~1.5s per track)',
+                      ? '$cachedCount already checked • $neededAuditCount songs to verify (~1.5s per song)'
+                      : '$neededAuditCount songs to analyze (~1.5s per song)',
                   isDark: isDark,
                   textColor: textColor,
                   subTextColor: subTextColor,
@@ -209,8 +209,8 @@ class _AuditScreenState extends State<AuditScreen> {
                 _buildBriefingRow(
                   icon: Icons.graphic_eq_rounded,
                   iconColor: AppColors.genuineEmerald,
-                  title: 'Nyquist Cutoff & Frequency Verification',
-                  subtitle: 'Decodes PCM audio via hardware MediaCodec & runs 2048-point Fast Fourier Transform (FFT) to catch MP3 transcodes & fake upscales.',
+                  title: 'Lossless Quality Check',
+                  subtitle: 'Checks real audio frequencies to catch fake FLACs and compressed MP3 upscales.',
                   isDark: isDark,
                   textColor: textColor,
                   subTextColor: subTextColor,
@@ -220,8 +220,8 @@ class _AuditScreenState extends State<AuditScreen> {
                 _buildBriefingRow(
                   icon: Icons.bolt_rounded,
                   iconColor: AppColors.suspiciousAmber,
-                  title: 'Permanent Storage Cache',
-                  subtitle: 'Audited results are saved to device. Subsequent app launches will restore all tracks in 0.01 seconds.',
+                  title: 'Saved to Device',
+                  subtitle: 'Scans only once. Next time, your library results open instantly.',
                   isDark: isDark,
                   textColor: textColor,
                   subTextColor: subTextColor,
@@ -285,7 +285,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Start Deep Audit',
+                                  'Start Audit',
                                   style: TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.w700,
@@ -1068,8 +1068,9 @@ class _AuditScreenState extends State<AuditScreen> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
+                              key: ValueKey('audit_hero_continuous_spinner'),
                               strokeWidth: 2.2,
-                              color: AppColors.genuineEmerald,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.genuineEmerald),
                             ),
                           ),
                         )
@@ -1085,46 +1086,36 @@ class _AuditScreenState extends State<AuditScreen> {
             if (_isScanning) ...[
               const SizedBox(height: 16),
 
-              // Studio Progress Meter Header
+              // Studio Progress Header (Clean, Matte, Zero Neon Glow)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: activeAccent,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: activeAccent.withOpacity(0.8),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
+                      Icon(
+                        Icons.graphic_eq_rounded,
+                        size: 15,
+                        color: activeAccent,
                       ),
-                      const SizedBox(width: 7),
+                      const SizedBox(width: 6),
                       Text(
-                        'DSP SPECTRAL AUDIT',
+                        'AUDITING LIBRARY',
                         style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
                           color: activeAccent,
                         ),
                       ),
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                      color: activeAccent.withOpacity(isDark ? 0.16 : 0.10),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: activeAccent.withOpacity(0.35),
+                        color: activeAccent.withOpacity(0.25),
                         width: 0.8,
                       ),
                     ),
@@ -1132,7 +1123,7 @@ class _AuditScreenState extends State<AuditScreen> {
                       '$_scannedCount / $_totalFiles • ${_totalFiles > 0 ? ((_scannedCount / _totalFiles) * 100).toInt() : 0}%',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
-                        fontSize: 11,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                         color: activeAccent,
                       ),
@@ -1140,60 +1131,55 @@ class _AuditScreenState extends State<AuditScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 9),
 
-              // AcoustiQ Dual-Glow Rounded Progress Bar
+              // Option 1: Apple Precision Matte Capsule Progress Bar (0 blur / 0 glow)
               LayoutBuilder(
                 builder: (context, constraints) {
                   final progress = _totalFiles > 0
                       ? (_scannedCount / _totalFiles).clamp(0.0, 1.0)
-                      : 0.05;
-                  return Stack(
-                    children: [
-                      Container(
-                        height: 7,
-                        width: constraints.maxWidth,
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x30FFFFFF) : const Color(0x20000000),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                      : 0.04;
+                  return Container(
+                    height: 5,
+                    width: constraints.maxWidth,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x18FFFFFF) : const Color(0x12000000),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark ? const Color(0x15FFFFFF) : const Color(0x0E000000),
+                        width: 0.5,
                       ),
-                      Container(
-                        height: 7,
-                        width: constraints.maxWidth * progress,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              activeAccent.withOpacity(0.7),
-                              activeAccent,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: activeAccent.withOpacity(0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      height: 5,
+                      width: constraints.maxWidth * progress,
+                      decoration: BoxDecoration(
+                        color: activeAccent,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ],
+                    ),
                   );
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 11),
 
-              // Progress Footer Bar: Hardware note + Cancel Action
+              // Progress Footer: Plain English + Cancel Action
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.bolt_rounded, size: 14, color: activeAccent),
-                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.insights_outlined,
+                        size: 13,
+                        color: subTextColor,
+                      ),
+                      const SizedBox(width: 5),
                       Text(
-                        'MediaCodec + 2048-pt FFT',
+                        'Checking audio frequencies',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -1211,10 +1197,10 @@ class _AuditScreenState extends State<AuditScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.12),
+                        color: AppColors.fakeCoral.withOpacity(isDark ? 0.16 : 0.10),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: AppColors.fakeCoral.withOpacity(0.40),
+                          color: AppColors.fakeCoral.withOpacity(0.35),
                           width: 0.8,
                         ),
                       ),
@@ -1747,7 +1733,7 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Analyzing studio spectrum & Nyquist cutoff...',
+                    'Analyzing audio quality & spectrum...',
                     style: TextStyle(
                       fontSize: 11,
                       fontStyle: FontStyle.italic,

@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
@@ -87,6 +88,23 @@ class AudioDspEngine {
       );
     }
 
+    // Run heavy FFT & Welch PSD computation in a background isolate to keep UI 60 FPS
+    return await Isolate.run(() => _computeDspAnalysis(
+      rawSamples: rawSamples,
+      sampleRate: sampleRate,
+      statedBitDepth: statedBitDepth,
+      isFake24: isFake24,
+      nyquistKhz: nyquistKhz,
+    ));
+  }
+
+  static DspAnalysisResult _computeDspAnalysis({
+    required List<double> rawSamples,
+    required int sampleRate,
+    required int statedBitDepth,
+    required bool isFake24,
+    required double nyquistKhz,
+  }) {
     // 2. High-Density STFT Time-Frequency Slices & True Welch Average PSD
     final numSlices = rawSamples.length ~/ _fftSize;
     final int halfSize = _fftSize ~/ 2;
