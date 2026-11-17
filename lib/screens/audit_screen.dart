@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
+import '../services/audio_playback_service.dart';
 import '../services/flac_parser.dart';
 import '../ui/theme/colors.dart';
 import '../widgets/audio_spectrum_stage.dart';
@@ -11,6 +14,8 @@ import '../widgets/glass_surface.dart';
 import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
+import '../widgets/app_glass_dialog.dart';
+import '../widgets/audio_preview_bar.dart';
 import '../widgets/animated_status_badge.dart';
 import '../widgets/bounded_scroll_physics.dart';
 
@@ -736,12 +741,339 @@ class _AuditScreenState extends State<AuditScreen> {
     );
   }
 
+  void _showExportReportSheet(List<FlacInfo> tracks) {
+    final isDark = appState.isCurrentDark(context);
+    final textColor = appState.getTextColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+    final activeAccent = appState.getAccentColor(context);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return GlassSurface(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          style: GlassStyle.frosted,
+          borderless: false,
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(Icons.summarize_rounded, color: activeAccent, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Export Audit Report',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${tracks.length} tracks • Saved to Downloads folder',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: subTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Option 1: CSV Spreadsheet
+              LuminousFeedback(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportCsvReport(tracks);
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: GlassSurface(
+                  borderRadius: BorderRadius.circular(16),
+                  style: GlassStyle.clear,
+                  borderless: false,
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.table_chart_rounded, color: AppColors.genuineEmerald, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Spreadsheet Table (CSV)',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Formatted table with cutoff kHz, purity score & audio MD5. Opens in Excel & Sheets.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: subTextColor,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Option 2: Technical JSON Report
+              LuminousFeedback(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportJsonReport(tracks);
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: GlassSurface(
+                  borderRadius: BorderRadius.circular(16),
+                  style: GlassStyle.clear,
+                  borderless: false,
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.data_object_rounded, color: Color(0xFF38BDF8), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Technical JSON Report',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Machine-readable JSON log with duration, sample rates, brickwall slope & verdicts.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: subTextColor,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _exportCsvReport(List<FlacInfo> tracks) async {
+    try {
+      final downloadDir = Directory('/storage/emulated/0/Download');
+      if (!downloadDir.existsSync()) downloadDir.createSync(recursive: true);
+
+      final now = DateTime.now();
+      final ts = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+      final fileName = 'AcoustiQ_Audit_$ts.csv';
+      final file = File(p.join(downloadDir.path, fileName));
+
+      final buffer = StringBuffer();
+      buffer.writeln('"Index","Title","Artist","Album","File Name","File Path","Size (MB)","Duration","Bit Depth","Sample Rate (Hz)","Bitrate (kbps)","Purity Score (%)","Status","Cutoff (kHz)","Brickwall Drop (dB)","Audio MD5","Verdict"');
+
+      for (int i = 0; i < tracks.length; i++) {
+        final t = tracks[i];
+        String sanitize(String s) => s.replaceAll('"', '""');
+        buffer.writeln(
+          '${i + 1},'
+          '"${sanitize(t.title)}",'
+          '"${sanitize(t.artist)}",'
+          '"${sanitize(t.album)}",'
+          '"${sanitize(t.fileName)}",'
+          '"${sanitize(t.filePath)}",'
+          '${t.fileSizeMb.toStringAsFixed(1)},'
+          '"${t.durationStr}",'
+          '${t.bitDepth},'
+          '${t.sampleRate},'
+          '${t.bitrateKbps},'
+          '${t.score},'
+          '"${t.status}",'
+          '${t.cutoffKhz.toStringAsFixed(1)},'
+          '${t.slopeDropDb.toStringAsFixed(1)},'
+          '"${t.audioMd5 ?? "N/A"}",'
+          '"${sanitize(t.verdict)}"',
+        );
+      }
+
+      await file.writeAsString(buffer.toString(), flush: true);
+
+      // Rescan with Android MediaStore
+      try {
+        const channel = MethodChannel('flac_toolkit/audio_decoder');
+        await channel.invokeMethod('rescanMediaFile', {'filePath': file.path});
+      } catch (_) {}
+
+      if (mounted) {
+        if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+        showThemedSnackBar(
+          context,
+          'Spreadsheet saved to Downloads: $fileName',
+          icon: Icons.table_chart_rounded,
+          accentColor: AppColors.genuineEmerald,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showThemedSnackBar(context, 'Export failed: $e', icon: Icons.error_outline_rounded);
+      }
+    }
+  }
+
+  Future<void> _exportJsonReport(List<FlacInfo> tracks) async {
+    try {
+      final downloadDir = Directory('/storage/emulated/0/Download');
+      if (!downloadDir.existsSync()) downloadDir.createSync(recursive: true);
+
+      final now = DateTime.now();
+      final ts = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+      final fileName = 'AcoustiQ_Audit_$ts.json';
+      final file = File(p.join(downloadDir.path, fileName));
+
+      final genuineCount = tracks.where((t) => t.status == 'genuine').length;
+      final suspiciousCount = tracks.where((t) => t.status == 'suspicious').length;
+      final fakeCount = tracks.where((t) => t.status == 'fake').length;
+      final avgScore = tracks.isNotEmpty
+          ? (tracks.map((t) => t.score).reduce((a, b) => a + b) / tracks.length).round()
+          : 0;
+
+      final Map<String, dynamic> report = {
+        'generator': 'AcoustiQ FLAC Audio Toolkit',
+        'exportTimestamp': now.toIso8601String(),
+        'totalTracks': tracks.length,
+        'summary': {
+          'genuine': genuineCount,
+          'suspicious': suspiciousCount,
+          'fake': fakeCount,
+          'averageScore': avgScore,
+        },
+        'tracks': tracks.map((t) => {
+          'title': t.title,
+          'artist': t.artist,
+          'album': t.album,
+          'fileName': t.fileName,
+          'filePath': t.filePath,
+          'fileSizeMb': t.fileSizeMb,
+          'durationSec': t.durationSec,
+          'durationFormatted': t.durationStr,
+          'bitDepth': t.bitDepth,
+          'sampleRate': t.sampleRate,
+          'bitrateKbps': t.bitrateKbps,
+          'score': t.score,
+          'status': t.status,
+          'cutoffKhz': t.cutoffKhz,
+          'slopeDropDb': t.slopeDropDb,
+          'audioMd5': t.audioMd5,
+          'isFake24': t.isFake24,
+          'verdict': t.verdict,
+        }).toList(),
+      };
+
+      const encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString(encoder.convert(report), flush: true);
+
+      // Rescan with Android MediaStore
+      try {
+        const channel = MethodChannel('flac_toolkit/audio_decoder');
+        await channel.invokeMethod('rescanMediaFile', {'filePath': file.path});
+      } catch (_) {}
+
+      if (mounted) {
+        if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+        showThemedSnackBar(
+          context,
+          'JSON report saved to Downloads: $fileName',
+          icon: Icons.data_object_rounded,
+          accentColor: const Color(0xFF38BDF8),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showThemedSnackBar(context, 'Export failed: $e', icon: Icons.error_outline_rounded);
+      }
+    }
+  }
+
   void _openTrackDetail(FlacInfo track) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _TrackDetailModal(track: track),
+      builder: (ctx) => _TrackDetailModal(
+        track: track,
+        parentContext: context,
+      ),
     );
   }
 
@@ -811,6 +1143,32 @@ class _AuditScreenState extends State<AuditScreen> {
                             color: textColor,
                           ),
                         ),
+                        if (tracks.isNotEmpty)
+                          LuminousFeedback(
+                            onTap: () => _showExportReportSheet(tracks),
+                            borderRadius: BorderRadius.circular(12),
+                            child: GlassSurface(
+                              borderRadius: BorderRadius.circular(12),
+                              style: GlassStyle.clear,
+                              borderless: false,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.ios_share_rounded, size: 15, color: activeAccent),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Export',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: activeAccent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -1558,8 +1916,12 @@ class _TrackCoverThumbnailState extends State<_TrackCoverThumbnail> {
 /// Features Apple WWDC25 Frosted Glass Substrate with real Gaussian blur & specular rim.
 class _TrackDetailModal extends StatefulWidget {
   final FlacInfo track;
+  final BuildContext? parentContext;
 
-  const _TrackDetailModal({required this.track});
+  const _TrackDetailModal({
+    required this.track,
+    this.parentContext,
+  });
 
   @override
   State<_TrackDetailModal> createState() => _TrackDetailModalState();
@@ -1603,6 +1965,113 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
   }
 
   @override
+  void dispose() {
+    if (AudioPlaybackService.instance.isPlaying) {
+      AudioPlaybackService.instance.stop();
+    }
+    super.dispose();
+  }
+
+  Future<void> _quarantineTrack(BuildContext ctx, FlacInfo track) async {
+    showAppGlassDialog(
+      context: ctx,
+      title: 'Move to Quarantine?',
+      icon: Icons.shield_outlined,
+      iconColor: AppColors.suspiciousAmber,
+      content: 'This will move "${track.fileName}" to AcoustiQ_Quarantine with a .nomedia file.\n\nIt will be hidden from music players (Poweramp, Spotify, YouTube Music) without being permanently deleted.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Quarantine',
+      onConfirm: () async {
+        try {
+          final oldFile = File(track.filePath);
+          final quarantineDir = Directory('/storage/emulated/0/Music/AcoustiQ_Quarantine');
+          if (!quarantineDir.existsSync()) {
+            quarantineDir.createSync(recursive: true);
+          }
+          final nomedia = File(p.join(quarantineDir.path, '.nomedia'));
+          if (!nomedia.existsSync()) {
+            nomedia.createSync();
+          }
+          final targetPath = p.join(quarantineDir.path, p.basename(track.filePath));
+          try {
+            await oldFile.rename(targetPath);
+          } catch (_) {
+            await oldFile.copy(targetPath);
+            await oldFile.delete();
+          }
+
+          // Rescan both old and new paths in Android MediaStore
+          try {
+            const channel = MethodChannel('flac_toolkit/audio_decoder');
+            await channel.invokeMethod('rescanMediaFile', {'filePath': track.filePath});
+            await channel.invokeMethod('rescanMediaFile', {'filePath': targetPath});
+          } catch (_) {}
+
+          appState.removeTrackFromLibrary(track.filePath);
+          if (ctx.mounted) {
+            Navigator.pop(ctx);
+          }
+          final targetContext = widget.parentContext ?? ctx;
+          if (targetContext.mounted) {
+            showThemedSnackBar(
+              targetContext,
+              'Track moved to Quarantine • Excluded from music players',
+              icon: Icons.shield_rounded,
+              accentColor: AppColors.suspiciousAmber,
+            );
+          }
+        } catch (e) {
+          if (ctx.mounted) {
+            showThemedSnackBar(ctx, 'Quarantine failed: $e', icon: Icons.error_outline_rounded);
+          }
+        }
+      },
+    );
+  }
+
+  Future<void> _deleteTrack(BuildContext ctx, FlacInfo track) async {
+    showAppGlassDialog(
+      context: ctx,
+      title: track.status == 'fake' ? 'Delete Fake FLAC?' : 'Delete Audio File?',
+      icon: Icons.delete_outline_rounded,
+      iconColor: AppColors.fakeCoral,
+      isDestructive: true,
+      content: 'This will permanently delete:\n${track.fileName}\n(${track.fileSizeMb.toStringAsFixed(1)} MB)\n\nThis cannot be undone. Android MediaStore will be updated immediately.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Delete',
+      onConfirm: () async {
+        try {
+          try {
+            const channel = MethodChannel('flac_toolkit/audio_decoder');
+            await channel.invokeMethod('deleteMediaFile', {'filePath': track.filePath});
+          } catch (_) {
+            final f = File(track.filePath);
+            if (f.existsSync()) f.deleteSync();
+          }
+
+          appState.removeTrackFromLibrary(track.filePath);
+          if (ctx.mounted) {
+            Navigator.pop(ctx);
+          }
+          final targetContext = widget.parentContext ?? ctx;
+          if (targetContext.mounted) {
+            showThemedSnackBar(
+              targetContext,
+              'Track permanently deleted & MediaStore refreshed',
+              icon: Icons.delete_sweep_rounded,
+              accentColor: AppColors.fakeCoral,
+            );
+          }
+        } catch (e) {
+          if (ctx.mounted) {
+            showThemedSnackBar(ctx, 'Delete failed: $e', icon: Icons.error_outline_rounded);
+          }
+        }
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final track = _track;
     final isDark = appState.isCurrentDark(context);
@@ -1630,229 +2099,396 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
       style: GlassStyle.frosted,
       borderless: false, // Refined WWDC25 top specular rim
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Drag Handle
-          Center(
-            child: Container(
-              width: 38,
-              height: 4.5,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // 1. Header: Artwork + Title + Artist + Verified Seal (No Truncation)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.88,
+        ),
+        child: SingleChildScrollView(
+          physics: const BoundedBouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: isDark
-                      ? AppColors.softElevation(elevation: 3.0)
-                      : AppColors.lightSoftElevation(elevation: 3.0),
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x40FFFFFF) : const Color(0x40000000),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: _coverBytes != null
-                    ? Image.memory(_coverBytes!, fit: BoxFit.cover)
-                    : Icon(Icons.album_rounded, size: 32, color: statusColor),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              const SizedBox(height: 18),
+
+              // 1. Header: Artwork + Title + Artist + Verified Seal (No Truncation)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: isDark
+                          ? AppColors.softElevation(elevation: 3.0)
+                          : AppColors.lightSoftElevation(elevation: 3.0),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: _coverBytes != null
+                        ? Image.memory(_coverBytes!, fit: BoxFit.cover)
+                        : Icon(Icons.album_rounded, size: 32, color: statusColor),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            track.title.isNotEmpty ? track.title : track.fileName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                              height: 1.25,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                track.title.isNotEmpty ? track.title : track.fileName,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                  height: 1.25,
+                                ),
+                                maxLines: 2,
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            maxLines: 2,
-                            softWrap: true,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            const SizedBox(width: 8),
+                            AnimatedStatusBadge(
+                              status: track.status,
+                              color: track.status == 'genuine'
+                                  ? AppColors.genuineEmerald
+                                  : (track.status == 'suspicious' ? const Color(0xFFFFB300) : const Color(0xFFFF3D3D)),
+                              size: 24,
+                              animatePulse: true,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        AnimatedStatusBadge(
-                          status: track.status,
-                          color: track.status == 'genuine'
-                              ? AppColors.genuineEmerald
-                              : (track.status == 'suspicious' ? const Color(0xFFFFB300) : const Color(0xFFFF3D3D)),
-                          size: 24,
-                          animatePulse: true,
+                        const SizedBox(height: 3),
+                        Text(
+                          track.artist.isNotEmpty ? '${track.artist} • ${track.album}' : 'Unknown Artist',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: subTextColor,
+                          ),
+                          maxLines: 2,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      track.artist.isNotEmpty ? '${track.artist} • ${track.album}' : 'Unknown Artist',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: subTextColor,
-                      ),
-                      maxLines: 2,
-                      softWrap: true,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-
-          if (_isAnalyzingDsp)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.8,
-                      color: AppColors.genuineEmerald,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Analyzing audio quality & spectrum...',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontStyle: FontStyle.italic,
-                      color: subTextColor,
                     ),
                   ),
                 ],
               ),
-            ),
 
-          // 2. Hybrid Forensic Audio Engine (Speedometer + Waveform Switcher)
-          AudioSpectrumStage(
-            score: track.score,
-            cutoffKhz: track.cutoffKhz,
-            maxKhz: track.maxKhz,
-            spectrumBands: track.spectrumBands,
-            spectrogramMatrix: track.spectrogramMatrix,
-            status: track.status,
-            shortBadge: track.shortBadge,
-            statusColor: statusColor,
-            sampleRate: track.sampleRate,
-            bitDepth: track.bitDepth,
-            verdict: track.verdict,
-            height: 140,
-          ),
+              const SizedBox(height: 16),
 
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 4),
-            child: Text(
-              track.verdict,
-              style: TextStyle(
-                fontSize: 11.5,
-                height: 1.35,
-                color: subTextColor,
-              ),
-              maxLines: 3,
-              softWrap: true,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 4. Quick Specs in Clear Glass (WWDC25 Clear Glass)
-          Row(
-            children: [
-              _buildModalSpecTile('${track.bitDepth}-bit', 'Depth', isDark),
-              const SizedBox(width: 6),
-              _buildModalSpecTile('${(track.sampleRate / 1000).toStringAsFixed(1)}k', 'Sampling', isDark),
-              const SizedBox(width: 6),
-              _buildModalSpecTile('${track.bitrateKbps}k', 'Bitrate', isDark),
-              const SizedBox(width: 6),
-              _buildModalSpecTile('${track.fileSizeMb.toStringAsFixed(1)}MB', 'Size', isDark),
-            ],
-          ),
-
-          if (track.hasLyrics) ...[
-            const SizedBox(height: 10),
-            LuminousFeedback(
-              onTap: () {
-                Navigator.pop(context);
-                showLyricsViewerSheet(context, track);
-              },
-              borderRadius: BorderRadius.circular(14),
-              child: GlassSurface(
-                borderRadius: BorderRadius.circular(14),
-                style: GlassStyle.clear,
-                borderless: false,
-                tintColor: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: const Row(
-                  children: [
-                    Icon(Icons.lyrics_rounded, size: 18, color: Color(0xFF38BDF8)),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Integrated Lyrics Present • Tap to View',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF38BDF8),
+              if (_isAnalyzingDsp)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.8,
+                          color: AppColors.genuineEmerald,
                         ),
                       ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF38BDF8)),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        'Analyzing audio quality & spectrum...',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // 2. Hybrid Forensic Audio Engine (Speedometer + Waveform Switcher)
+              AudioSpectrumStage(
+                score: track.score,
+                cutoffKhz: track.cutoffKhz,
+                maxKhz: track.maxKhz,
+                spectrumBands: track.spectrumBands,
+                spectrogramMatrix: track.spectrogramMatrix,
+                status: track.status,
+                shortBadge: track.shortBadge,
+                statusColor: statusColor,
+                sampleRate: track.sampleRate,
+                bitDepth: track.bitDepth,
+                verdict: track.verdict,
+                height: 140,
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Text(
+                  track.verdict,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.35,
+                    color: subTextColor,
+                  ),
+                  maxLines: 3,
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ),
-          ],
 
-          const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-          // 5. File Location Row
-          GlassSurface(
-            borderRadius: BorderRadius.circular(14),
-            style: GlassStyle.clear,
-            borderless: false,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Icon(Icons.folder_open_rounded, size: 18, color: subTextColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    track.filePath,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: subTextColor,
+              // 3. Lossless Audio Preview Bar (Forensic Listening)
+              AudioPreviewBar(
+                filePath: track.filePath,
+                title: track.title.isNotEmpty ? track.title : track.fileName,
+              ),
+
+              const SizedBox(height: 12),
+
+              // 4. Quick Specs in Clear Glass (WWDC25 Clear Glass)
+              Row(
+                children: [
+                  _buildModalSpecTile('${track.bitDepth}-bit', 'Depth', isDark),
+                  const SizedBox(width: 6),
+                  _buildModalSpecTile('${(track.sampleRate / 1000).toStringAsFixed(1)}k', 'Sampling', isDark),
+                  const SizedBox(width: 6),
+                  _buildModalSpecTile('${track.bitrateKbps}k', 'Bitrate', isDark),
+                  const SizedBox(width: 6),
+                  _buildModalSpecTile('${track.fileSizeMb.toStringAsFixed(1)}MB', 'Size', isDark),
+                ],
+              ),
+
+              if (track.hasLyrics) ...[
+                const SizedBox(height: 10),
+                LuminousFeedback(
+                  onTap: () {
+                    Navigator.pop(context);
+                    showLyricsViewerSheet(context, track);
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: GlassSurface(
+                    borderRadius: BorderRadius.circular(14),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    tintColor: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.lyrics_rounded, size: 18, color: Color(0xFF38BDF8)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Integrated Lyrics Present • Tap to View',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF38BDF8),
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF38BDF8)),
+                      ],
                     ),
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
-            ),
+
+              const SizedBox(height: 10),
+
+              // 5. File Location Row
+              GlassSurface(
+                borderRadius: BorderRadius.circular(14),
+                style: GlassStyle.clear,
+                borderless: false,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.folder_open_rounded, size: 18, color: subTextColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        track.filePath,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: subTextColor,
+                        ),
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // 6. Actionable Controls: Quarantine & Delete Actions
+              if (track.status == 'fake' || track.status == 'suspicious') ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: (track.status == 'fake' ? AppColors.fakeCoral : AppColors.suspiciousAmber).withOpacity(isDark ? 0.14 : 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: (track.status == 'fake' ? AppColors.fakeCoral : AppColors.suspiciousAmber).withOpacity(0.35),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            track.status == 'fake' ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+                            size: 16,
+                            color: track.status == 'fake' ? AppColors.fakeCoral : AppColors.suspiciousAmber,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            track.status == 'fake' ? 'Fake Lossless Track' : 'Suspicious Track',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: track.status == 'fake' ? AppColors.fakeCoral : AppColors.suspiciousAmber,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        track.status == 'fake'
+                            ? 'This file contains compressed audio upscaled to FLAC. You can isolate it in quarantine or permanently delete it.'
+                            : 'This file has premature frequency cutoffs. You can isolate it in quarantine or delete it.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.3,
+                          color: subTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: LuminousFeedback(
+                              onTap: () => _quarantineTrack(context, track),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.suspiciousAmber.withOpacity(isDark ? 0.20 : 0.14),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.suspiciousAmber.withOpacity(0.40),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.shield_outlined, size: 15, color: AppColors.suspiciousAmber),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Quarantine',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.suspiciousAmber,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: LuminousFeedback(
+                              onTap: () => _deleteTrack(context, track),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.14),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.fakeCoral.withOpacity(0.40),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.delete_outline_rounded, size: 15, color: AppColors.fakeCoral),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Delete File',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.fakeCoral,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                LuminousFeedback(
+                  onTap: () => _deleteTrack(context, track),
+                  borderRadius: BorderRadius.circular(12),
+                  child: GlassSurface(
+                    borderRadius: BorderRadius.circular(12),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline_rounded, size: 15, color: subTextColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Delete Track from Storage',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: subTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
