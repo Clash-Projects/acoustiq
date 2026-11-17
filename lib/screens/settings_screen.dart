@@ -37,15 +37,48 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   int? _activeSubPageIndex; // null = Master Hub, 0 = Appearance, 1 = Audio Engine, 2 = Library, 3 = About
   static int _devTapCount = 0;
   String _cacheSizeText = 'Calculating...';
+  bool _isRefreshingCache = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _calculateCacheSize();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _calculateCacheSize();
+    }
+  }
+
+  Future<void> _manualRefreshCache() async {
+    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+    setState(() {
+      _isRefreshingCache = true;
+    });
+    await _calculateCacheSize();
+    if (mounted) {
+      setState(() {
+        _isRefreshingCache = false;
+      });
+      showThemedSnackBar(
+        context,
+        'Cache updated: $_cacheSizeText',
+        icon: Icons.sync_rounded,
+      );
+    }
   }
 
   Future<void> _calculateCacheSize() async {
@@ -1440,25 +1473,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: 'Purge decoded PCM chunks, image buffers & in-memory library',
                 position: position,
                 danger: true,
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isDark ? const Color(0x25FFFFFF) : const Color(0x18000000),
-                      width: 0.8,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    LuminousFeedback(
+                      onTap: _manualRefreshCache,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark ? const Color(0x22FFFFFF) : const Color(0x14000000),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: AnimatedRotation(
+                          turns: _isRefreshingCache ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 500),
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            size: 16,
+                            color: subTextColor,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    _cacheSizeText,
-                    style: TextStyle(
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark ? const Color(0x25FFFFFF) : const Color(0x18000000),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        _cacheSizeText,
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 onTap: () => _clearLibraryCache(context),
               );

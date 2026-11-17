@@ -447,53 +447,14 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
   double _rimOf(double presence) => ((presence - 0.45) / 0.55).clamp(0.0, 1.0);
 
-  /// True Optical Glyph Refraction (BitChord AGSL standard: content.eval(coord ± disp))
-  /// Splits icon glyphs into red-orange and cyan-azure subpixel fringes strictly when
-  /// passing through the curved bevel of the moving/lifted lens.
+  /// Monolithic crisp icon under liquid lens with 1.09x optical magnification.
   Widget _buildRefractedIcon(IconData iconData, Color tabColor, double chromaticDelta, double iconScale) {
-    if (chromaticDelta.abs() < 0.12) {
-      return Transform.scale(
-        scale: iconScale,
-        child: Icon(
-          iconData,
-          size: 20.0,
-          color: tabColor,
-        ),
-      );
-    }
-
-    final double intensity = (chromaticDelta.abs() / 1.6).clamp(0.0, 0.70);
-
     return Transform.scale(
       scale: iconScale,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Red-Orange chromatic channel fringe (positive displacement along motion vector)
-          Transform.translate(
-            offset: Offset(chromaticDelta, 0),
-            child: Icon(
-              iconData,
-              size: 20.0,
-              color: const Color(0xFFF97316).withOpacity(0.50 * intensity),
-            ),
-          ),
-          // Electric Cyan chromatic channel fringe (negative displacement along motion vector)
-          Transform.translate(
-            offset: Offset(-chromaticDelta * 0.85, 0),
-            child: Icon(
-              iconData,
-              size: 20.0,
-              color: const Color(0xFF38BDF8).withOpacity(0.55 * intensity),
-            ),
-          ),
-          // Core achromatic icon body
-          Icon(
-            iconData,
-            size: 20.0,
-            color: tabColor,
-          ),
-        ],
+      child: Icon(
+        iconData,
+        size: 20.0,
+        color: tabColor,
       ),
     );
   }
