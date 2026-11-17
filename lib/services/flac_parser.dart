@@ -172,10 +172,9 @@ class FlacParser {
       await raf.close();
       raf = null;
 
-      // Fast Metadata Scan: skip heavy DSP analysis to scan libraries in seconds
+      // Fast Metadata Scan: provides clean metadata without premature genuine verdicts
       if (!deepDsp) {
         final nyquistKhz = sampleRate / 2000.0;
-        final provScore = bitDepth >= 24 ? 96 : 90;
         return FlacInfo(
           filePath: filePath,
           fileName: fileName,
@@ -194,9 +193,9 @@ class FlacParser {
           cutoffKhz: nyquistKhz,
           maxKhz: nyquistKhz,
           slopeDropDb: 0.0,
-          score: provScore,
-          verdict: 'Lossless metadata verified • $bitDepth-bit / ${(sampleRate / 1000).toStringAsFixed(1)}kHz',
-          status: 'genuine',
+          score: 0,
+          verdict: 'Pending Forensic Audit • Tap to analyze',
+          status: 'untested',
           isFake24: false,
           spectrumBands: const [],
           spectrogramMatrix: const [],

@@ -35,7 +35,8 @@ class _AuditScreenState extends State<AuditScreen> {
   bool _cancelRequested = false;
   int _scannedCount = 0;
   int _totalFiles = 0;
-  String _filter = 'all'; // 'all', 'genuine', 'suspicious', 'fake'
+  String _currentAuditingFileName = '';
+  String _filter = 'all'; // 'all', 'genuine', 'suspicious', 'fake', 'untested'
 
   @override
   void initState() {
@@ -57,39 +58,23 @@ class _AuditScreenState extends State<AuditScreen> {
       return;
     }
 
-    setState(() {
-      _isScanning = true;
-      _cancelRequested = false;
-      _scannedCount = 0;
-      _totalFiles = 0;
-    });
-
-    final List<FlacInfo> newTracks = [];
-
+    // Fast preliminary file discovery (<25ms)
+    final List<File> flacFiles = [];
     try {
-      final List<File> flacFiles = [];
-
       await for (final entity in dir.list(recursive: true, followLinks: false)) {
-        if (_cancelRequested) break;
         if (entity is File && entity.path.toLowerCase().endsWith('.flac')) {
           flacFiles.add(entity);
         }
       }
-
-      if (_cancelRequested) {
-        if (mounted) {
-          setState(() => _isScanning = false);
-          showThemedSnackBar(
-            context,
-            'Scan cancelled',
-            icon: Icons.cancel_outlined,
-            accentColor: AppColors.suspiciousAmber,
-          );
-        }
-        return;
+    } catch (e) {
+      if (mounted) {
+        showThemedSnackBar(context, 'Folder read error: $e');
       }
+      return;
+    }
 
-      if (flacFiles.isEmpty && mounted) {
+    if (flacFiles.isEmpty) {
+      if (mounted) {
         showThemedSnackBar(
           context,
           'No .flac files found in $dirPath',
@@ -97,54 +82,375 @@ class _AuditScreenState extends State<AuditScreen> {
           accentColor: AppColors.suspiciousAmber,
         );
       }
+      return;
+    }
 
-      if (mounted) {
-        setState(() {
-          _totalFiles = flacFiles.length;
-        });
-      }
+    // Check how many tracks are already deeply audited in cache
+    final cachedMap = {
+      for (final t in appState.sharedLibrary)
+        if (t.status != 'untested' && t.spectrumBands.isNotEmpty) t.filePath: true
+    };
+    int cachedCount = 0;
+    for (final f in flacFiles) {
+      if (cachedMap[f.path] == true) cachedCount++;
+    }
 
+    if (!mounted) return;
+    await _showAuditBriefingDialog(
+      dirPath: dirPath,
+      flacFiles: flacFiles,
+      cachedCount: cachedCount,
+    );
+  }
+
+  Future<void> _showAuditBriefingDialog({
+    required String dirPath,
+    required List<File> flacFiles,
+    required int cachedCount,
+  }) async {
+    final neededAuditCount = flacFiles.length - cachedCount;
+    final estSeconds = (neededAuditCount * 1.5).round();
+    final estTimeStr = estSeconds < 60
+        ? '${estSeconds}s'
+        : '${estSeconds ~/ 60}m ${estSeconds % 60}s';
+
+    final isDark = appState.isCurrentDark(context);
+    final textColor = appState.getTextColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+    final activeAccent = appState.getAccentColor(context);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return GlassSurface(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          style: GlassStyle.frosted,
+          borderless: false,
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: activeAccent.withOpacity(isDark ? 0.22 : 0.14),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: activeAccent.withOpacity(0.40),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(Icons.biotech_rounded, color: activeAccent, size: 26),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Forensic Audio Audit',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${flacFiles.length} FLAC tracks detected in folder',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: subTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                _buildBriefingRow(
+                  icon: Icons.timer_outlined,
+                  iconColor: const Color(0xFF38BDF8),
+                  title: neededAuditCount == 0
+                      ? 'All Tracks Already Audited'
+                      : 'Estimated Time: ~$estTimeStr',
+                  subtitle: cachedCount > 0
+                      ? '$cachedCount verified in cache • $neededAuditCount tracks need deep analysis (~1.5s/track)'
+                      : '$neededAuditCount tracks to analyze (~1.5s per track)',
+                  isDark: isDark,
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                ),
+                const SizedBox(height: 8),
+
+                _buildBriefingRow(
+                  icon: Icons.graphic_eq_rounded,
+                  iconColor: AppColors.genuineEmerald,
+                  title: 'Nyquist Cutoff & Frequency Verification',
+                  subtitle: 'Decodes PCM audio via hardware MediaCodec & runs 2048-point Fast Fourier Transform (FFT) to catch MP3 transcodes & fake upscales.',
+                  isDark: isDark,
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                ),
+                const SizedBox(height: 8),
+
+                _buildBriefingRow(
+                  icon: Icons.bolt_rounded,
+                  iconColor: AppColors.suspiciousAmber,
+                  title: 'Permanent Storage Cache',
+                  subtitle: 'Audited results are saved to device. Subsequent app launches will restore all tracks in 0.01 seconds.',
+                  isDark: isDark,
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                ),
+                const SizedBox(height: 22),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: LuminousFeedback(
+                        onTap: () => Navigator.pop(ctx),
+                        borderRadius: BorderRadius.circular(16),
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(16),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          child: Center(
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: LuminousFeedback(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _executeDeepAudit(dirPath, flacFiles);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: activeAccent,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: activeAccent.withOpacity(0.35),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.rocket_launch_rounded,
+                                  size: 18,
+                                  color: AppColors.getOnAccentColor(activeAccent, isDark: isDark),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Start Deep Audit',
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.getOnAccentColor(activeAccent, isDark: isDark),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBriefingRow({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool isDark,
+    required Color textColor,
+    required Color subTextColor,
+  }) {
+    return GlassSurface(
+      borderRadius: BorderRadius.circular(16),
+      style: GlassStyle.clear,
+      borderless: false,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(isDark ? 0.20 : 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.3,
+                    color: subTextColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _executeDeepAudit(String dirPath, List<File> flacFiles) async {
+    setState(() {
+      _isScanning = true;
+      _cancelRequested = false;
+      _scannedCount = 0;
+      _totalFiles = flacFiles.length;
+      _currentAuditingFileName = '';
+    });
+
+    final Map<String, FlacInfo> existingCacheMap = {
+      for (final t in appState.sharedLibrary) t.filePath: t
+    };
+
+    final List<FlacInfo> results = [];
+
+    try {
       for (final file in flacFiles) {
         if (_cancelRequested) break;
+
+        final cached = existingCacheMap[file.path];
+        // If file was already deep-audited previously, reuse cached result!
+        if (cached != null && cached.status != 'untested' && cached.spectrumBands.isNotEmpty) {
+          results.add(cached);
+          if (mounted) {
+            setState(() {
+              _scannedCount++;
+              _currentAuditingFileName = cached.fileName;
+            });
+            appState.setSharedLibraryLive(List.from(results), dirPath);
+          }
+          continue;
+        }
+
+        if (mounted) {
+          setState(() {
+            _currentAuditingFileName = file.path.split('/').last;
+          });
+        }
+
+        // Deep forensic DSP analysis
         final info = await FlacParser.analyzeFile(
           file.path,
-          deepDsp: false,
-          readCoverBytes: false,
+          deepDsp: true,
+          readCoverBytes: false, // RAM protected
         );
-        newTracks.add(info);
+        results.add(info);
+
         if (mounted) {
           setState(() {
             _scannedCount++;
           });
+          appState.setSharedLibraryLive(List.from(results), dirPath);
         }
       }
 
-      if (newTracks.isNotEmpty) {
-        appState.setSharedLibrary(newTracks, dirPath);
+      if (results.isNotEmpty) {
+        appState.setSharedLibrary(results, dirPath);
       }
 
       if (mounted) {
+        final fakeCount = results.where((t) => t.status == 'fake').length;
+        final genuineCount = results.where((t) => t.status == 'genuine').length;
+        if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
         showThemedSnackBar(
           context,
           _cancelRequested
-              ? 'Scan cancelled • Audited ${newTracks.length} of $_totalFiles tracks'
-              : 'Audited ${newTracks.length} FLAC tracks successfully',
-          icon: _cancelRequested ? Icons.info_outline_rounded : Icons.verified_rounded,
-          accentColor: _cancelRequested ? AppColors.suspiciousAmber : AppColors.genuineEmerald,
+              ? 'Audit paused • ${results.length} of $_totalFiles tracks verified'
+              : 'Audit complete • $genuineCount genuine, $fakeCount fake caught',
+          icon: _cancelRequested ? Icons.pause_circle_outline_rounded : Icons.verified_rounded,
+          accentColor: fakeCount > 0 ? AppColors.fakeCoral : AppColors.genuineEmerald,
         );
       }
     } catch (e) {
       if (mounted) {
         showThemedSnackBar(
           context,
-          'Scan error: $e',
+          'Audit error: $e',
           icon: Icons.error_outline_rounded,
           accentColor: AppColors.fakeCoral,
         );
       }
     } finally {
       if (mounted) {
-        setState(() => _isScanning = false);
+        setState(() {
+          _isScanning = false;
+          _currentAuditingFileName = '';
+        });
       }
     }
   }
@@ -445,6 +751,9 @@ class _AuditScreenState extends State<AuditScreen> {
         return AppColors.genuineEmerald;
       case 'suspicious':
         return AppColors.suspiciousAmber;
+      case 'untested':
+      case 'pending':
+        return const Color(0xFF94A3B8);
       default:
         return AppColors.fakeCoral;
     }
@@ -462,17 +771,21 @@ class _AuditScreenState extends State<AuditScreen> {
         final tracks = appState.sharedLibrary;
         final filteredTracks = _filter == 'all'
             ? tracks
-            : tracks.where((t) => t.status == _filter).toList();
+            : (_filter == 'untested'
+                ? tracks.where((t) => t.status == 'untested' || t.status == 'pending').toList()
+                : tracks.where((t) => t.status == _filter).toList());
 
         final genuineCount = tracks.where((t) => t.status == 'genuine').length;
         final suspiciousCount = tracks.where((t) => t.status == 'suspicious').length;
         final fakeCount = tracks.where((t) => t.status == 'fake').length;
+        final untestedCount = tracks.where((t) => t.status == 'untested' || t.status == 'pending').length;
+        final auditedTracks = tracks.where((t) => t.status != 'untested' && t.status != 'pending');
         final activeAccent = appState.getAccentColor(context);
 
         int averageScore = 0;
-        if (tracks.isNotEmpty) {
-          final total = tracks.fold<int>(0, (sum, item) => sum + item.score);
-          averageScore = (total / tracks.length).round();
+        if (auditedTracks.isNotEmpty) {
+          final total = auditedTracks.fold<int>(0, (sum, item) => sum + item.score);
+          averageScore = (total / auditedTracks.length).round();
         }
 
         return Scaffold(
@@ -512,6 +825,7 @@ class _AuditScreenState extends State<AuditScreen> {
                       genuineCount: genuineCount,
                       suspiciousCount: suspiciousCount,
                       fakeCount: fakeCount,
+                      untestedCount: untestedCount,
                       averageScore: averageScore,
                       isDark: isDark,
                       textColor: textColor,
@@ -538,6 +852,10 @@ class _AuditScreenState extends State<AuditScreen> {
                             _buildFilterPill('Suspicious ($suspiciousCount)', 'suspicious', isDark, activeAccent),
                             const SizedBox(width: 8),
                             _buildFilterPill('Fake ($fakeCount)', 'fake', isDark, activeAccent),
+                            if (untestedCount > 0) ...[
+                              const SizedBox(width: 8),
+                              _buildFilterPill('Untested ($untestedCount)', 'untested', isDark, const Color(0xFF94A3B8)),
+                            ],
                           ],
                         ),
                       ),
@@ -669,6 +987,7 @@ class _AuditScreenState extends State<AuditScreen> {
     required int genuineCount,
     required int suspiciousCount,
     required int fakeCount,
+    required int untestedCount,
     required int averageScore,
     required bool isDark,
     required Color textColor,
@@ -721,12 +1040,12 @@ class _AuditScreenState extends State<AuditScreen> {
                       const SizedBox(height: 3),
                       Text(
                         _isScanning
-                            ? 'Scanning folder... $_scannedCount of $_totalFiles tracks'
+                            ? 'Auditing: ${_currentAuditingFileName.isNotEmpty ? _currentAuditingFileName : "Initializing..."}'
                             : (appState.lastScannedFolder != null
                                 ? 'Source: ${appState.lastScannedFolder!.split('/').last}'
                                 : 'Tap to scan folder and audit entire library'),
-                        maxLines: 2,
-                        softWrap: true,
+                        maxLines: 1,
+                        softWrap: false,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
@@ -764,29 +1083,124 @@ class _AuditScreenState extends State<AuditScreen> {
             ),
 
             if (_isScanning) ...[
-              const SizedBox(height: 14),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: _totalFiles > 0 ? _scannedCount / _totalFiles : null,
-                  backgroundColor: isDark ? const Color(0x30FFFFFF) : const Color(0x20000000),
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.genuineEmerald),
-                  minHeight: 4,
-                ),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+
+              // Studio Progress Meter Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _totalFiles > 0
-                        ? '${((_scannedCount / _totalFiles) * 100).toInt()}% complete'
-                        : 'Discovering tracks...',
-                    style: TextStyle(
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 11,
-                      color: subTextColor,
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: activeAccent,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: activeAccent.withOpacity(0.8),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        'DSP SPECTRAL AUDIT',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: activeAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: activeAccent.withOpacity(0.35),
+                        width: 0.8,
+                      ),
                     ),
+                    child: Text(
+                      '$_scannedCount / $_totalFiles • ${_totalFiles > 0 ? ((_scannedCount / _totalFiles) * 100).toInt() : 0}%',
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: activeAccent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // AcoustiQ Dual-Glow Rounded Progress Bar
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final progress = _totalFiles > 0
+                      ? (_scannedCount / _totalFiles).clamp(0.0, 1.0)
+                      : 0.05;
+                  return Stack(
+                    children: [
+                      Container(
+                        height: 7,
+                        width: constraints.maxWidth,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x30FFFFFF) : const Color(0x20000000),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      Container(
+                        height: 7,
+                        width: constraints.maxWidth * progress,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              activeAccent.withOpacity(0.7),
+                              activeAccent,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: activeAccent.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+
+              // Progress Footer Bar: Hardware note + Cancel Action
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.bolt_rounded, size: 14, color: activeAccent),
+                      const SizedBox(width: 4),
+                      Text(
+                        'MediaCodec + 2048-pt FFT',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
                   ),
                   LuminousFeedback(
                     onTap: () {
@@ -810,7 +1224,7 @@ class _AuditScreenState extends State<AuditScreen> {
                           Icon(Icons.close_rounded, size: 13, color: AppColors.fakeCoral),
                           SizedBox(width: 4),
                           Text(
-                            'Cancel Scan',
+                            'Cancel Audit',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -1033,10 +1447,10 @@ class _AuditScreenState extends State<AuditScreen> {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      '${track.score}%',
+                      track.status == 'untested' ? 'UNTESTED' : '${track.score}%',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
-                        fontSize: 13,
+                        fontSize: track.status == 'untested' ? 10.5 : 13,
                         fontWeight: FontWeight.w800,
                         color: statusColor,
                       ),
@@ -1185,8 +1599,8 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
       });
     }
 
-    // If fast metadata scanned (no spectrum bands yet), trigger Deep DSP analysis on-demand
-    if (_track.spectrumBands.isEmpty && _track.error == null) {
+    // If fast metadata scanned (no spectrum bands yet) or untested, trigger Deep DSP analysis on-demand
+    if ((_track.spectrumBands.isEmpty || _track.status == 'untested') && _track.error == null) {
       _isAnalyzingDsp = true;
       FlacParser.analyzeFile(_track.filePath, deepDsp: true, readCoverBytes: false).then((fullTrack) {
         if (mounted && fullTrack.error == null) {
@@ -1216,6 +1630,10 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
         break;
       case 'suspicious':
         statusColor = AppColors.suspiciousAmber;
+        break;
+      case 'untested':
+      case 'pending':
+        statusColor = const Color(0xFF94A3B8);
         break;
       default:
         statusColor = AppColors.fakeCoral;

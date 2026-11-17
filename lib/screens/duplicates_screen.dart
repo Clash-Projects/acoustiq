@@ -104,14 +104,23 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         });
       }
 
+      final Map<String, FlacInfo> existingCacheMap = {
+        for (final t in appState.sharedLibrary) t.filePath: t
+      };
+
       for (final file in flacFiles) {
         if (_cancelRequested) break;
-        final info = await FlacParser.analyzeFile(
-          file.path,
-          deepDsp: false,
-          readCoverBytes: false,
-        );
-        tracks.add(info);
+        final cached = existingCacheMap[file.path];
+        if (cached != null) {
+          tracks.add(cached);
+        } else {
+          final info = await FlacParser.analyzeFile(
+            file.path,
+            deepDsp: false,
+            readCoverBytes: false,
+          );
+          tracks.add(info);
+        }
         if (mounted) {
           setState(() {
             _scannedCount++;
@@ -1103,12 +1112,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${item.info.score}% purity',
+                              item.info.status == 'untested' ? 'UNTESTED' : '${item.info.score}% purity',
                               style: TextStyle(
                                 fontFamily: 'JetBrainsMono',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: textColor,
+                                color: item.info.status == 'untested' ? subTextColor : textColor,
                               ),
                             ),
                           ],

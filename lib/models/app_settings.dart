@@ -365,6 +365,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSharedLibraryLive(List<FlacInfo> tracks, String folder) {
+    _sharedLibrary = tracks;
+    _lastScannedFolder = folder;
+    notifyListeners();
+  }
+
   void updateTrackInLibrary(FlacInfo updated) {
     final idx = _sharedLibrary.indexWhere((t) => t.filePath == updated.filePath);
     if (idx != -1) {

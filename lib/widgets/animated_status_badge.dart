@@ -64,6 +64,9 @@ class _AnimatedStatusBadgeState extends State<AnimatedStatusBadge>
         return Icons.verified_rounded;
       case 'suspicious':
         return Icons.warning_amber_rounded;
+      case 'untested':
+      case 'pending':
+        return Icons.hourglass_empty_rounded;
       case 'fake':
       default:
         return Icons.cancel_rounded;
