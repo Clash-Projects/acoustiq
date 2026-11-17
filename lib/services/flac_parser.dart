@@ -37,6 +37,7 @@ class FlacParser {
       int bitDepth = 16;
       int totalSamples = 0;
       bool hasStreamInfo = false;
+      String? audioMd5;
 
       final Map<String, String> tags = {};
       bool hasCover = false;
@@ -63,6 +64,15 @@ class FlacParser {
                 (data[16] << 8) |
                 data[17];
             hasStreamInfo = true;
+
+            // FLAC STREAMINFO bytes 18..33: 16-byte raw audio MD5 checksum
+            if (data.length >= 34) {
+              final md5Bytes = data.sublist(18, 34);
+              final hex = md5Bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('').toLowerCase();
+              if (!hex.split('').every((c) => c == '0')) {
+                audioMd5 = hex;
+              }
+            }
           }
         } else if (blockType == 4) {
           // METADATA_BLOCK_VORBIS_COMMENT
@@ -193,6 +203,7 @@ class FlacParser {
         spectrogramMatrix: dspResult.spectrogramMatrix,
         hasLyrics: hasLyrics,
         lyricsText: lyrics,
+        audioMd5: audioMd5,
       );
     } catch (e) {
       return FlacInfo.withError(filePath, fileName, 'Read error: $e');

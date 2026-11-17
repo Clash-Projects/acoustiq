@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
+import '../services/duplicate_detector.dart';
 import '../ui/theme/colors.dart';
 import '../ui/theme/shape.dart';
 import '../widgets/expressive_group.dart';
@@ -26,38 +28,6 @@ class DuplicatesScreen extends StatefulWidget {
 
   @override
   State<DuplicatesScreen> createState() => _DuplicatesScreenState();
-}
-
-class DuplicateItem {
-  final FlacInfo info;
-  final bool isBest;
-  final String reason;
-
-  DuplicateItem({required this.info, required this.isBest, required this.reason});
-}
-
-class DuplicateGroup {
-  final String key;
-  final String title;
-  final String artist;
-  final List<DuplicateItem> items;
-
-  DuplicateGroup({
-    required this.key,
-    required this.title,
-    required this.artist,
-    required this.items,
-  });
-
-  double get wastedMb {
-    if (items.length <= 1) return 0.0;
-    final best = items.firstWhere((i) => i.isBest, orElse: () => items.first);
-    double total = 0.0;
-    for (final it in items) {
-      if (it != best) total += it.info.fileSizeMb;
-    }
-    return total;
-  }
 }
 
 class _DuplicatesScreenState extends State<DuplicatesScreen> {
@@ -420,59 +390,24 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   }
 
   void _analyzeDuplicates(List<FlacInfo> tracks) {
-    final Map<String, List<FlacInfo>> map = {};
-
-    for (final t in tracks) {
-      String key;
-      if (t.title.isNotEmpty && t.artist.isNotEmpty) {
-        key = '${_sanitize(t.title)}:::${_sanitize(t.artist)}';
-      } else {
-        key = _sanitize(t.fileName.replaceAll(RegExp(r'\.flac$', caseSensitive: false), ''));
-      }
-      map.putIfAbsent(key, () => []).add(t);
-    }
-
-    final List<DuplicateGroup> groups = [];
-
-    for (final entry in map.entries) {
-      if (entry.value.length > 1) {
-        final sorted = List<FlacInfo>.from(entry.value)
-          ..sort((a, b) {
-            if (b.score != a.score) return b.score.compareTo(a.score);
-            if (b.bitDepth != a.bitDepth) return b.bitDepth.compareTo(a.bitDepth);
-            if (b.sampleRate != a.sampleRate) return b.sampleRate.compareTo(a.sampleRate);
-            return b.bitrateKbps.compareTo(a.bitrateKbps);
-          });
-
-        final best = sorted.first;
-        final items = sorted.map((track) {
-          final isBest = identical(track, best);
-          String reason;
-          if (isBest) {
-            reason = 'Highest authenticity (${track.score}%) • ${track.bitDepth}-bit/${(track.sampleRate / 1000).toStringAsFixed(1)}k';
-          } else {
-            reason = 'Redundant copy (${track.score}% purity) • ${(track.sampleRate / 1000).toStringAsFixed(1)}k';
-          }
-          return DuplicateItem(info: track, isBest: isBest, reason: reason);
-        }).toList();
-
-        final first = sorted.first;
-        groups.add(DuplicateGroup(
-          key: entry.key,
-          title: first.title.isNotEmpty ? first.title : first.fileName,
-          artist: first.artist.isNotEmpty ? first.artist : 'Unknown Artist',
-          items: items,
-        ));
-      }
-    }
-
+    final groups = DuplicateDetector.findDuplicates(tracks);
     if (mounted) {
       setState(() => _groups = groups);
     }
   }
 
-  String _sanitize(String text) {
-    return text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  Future<void> _deleteTrackWithMediaStoreSync(String filePath) async {
+    try {
+      const channel = MethodChannel('flac_toolkit/audio_decoder');
+      await channel.invokeMethod('deleteMediaFile', {'filePath': filePath});
+    } catch (_) {
+      try {
+        final file = File(filePath);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      } catch (_) {}
+    }
   }
 
   void _confirmDeleteTrack(FlacInfo track) {
@@ -481,28 +416,72 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       title: 'Delete Redundant Copy?',
       icon: Icons.delete_outline_rounded,
       iconColor: AppColors.fakeCoral,
-      content: 'This will permanently delete:\n${track.fileName}\n(${track.fileSizeMb.toStringAsFixed(1)} MB)\n\nYour highest quality version will be preserved.',
+      content: 'This will permanently delete:\n${track.fileName}\n(${track.fileSizeMb.toStringAsFixed(1)} MB)\n\nYour highest quality version will be preserved, and Android MediaStore will be updated.',
       cancelLabel: 'Cancel',
       confirmLabel: 'Delete',
       isDestructive: true,
-      onConfirm: () {
+      onConfirm: () async {
         try {
-          final file = File(track.filePath);
-          if (file.existsSync()) {
-            file.deleteSync();
-          }
+          await _deleteTrackWithMediaStoreSync(track.filePath);
           appState.removeTrackFromLibrary(track.filePath);
           _analyzeDuplicates(appState.sharedLibrary);
-          showThemedSnackBar(
-            context,
-            'Redundant file deleted',
-            icon: Icons.delete_sweep_rounded,
-          );
+          if (mounted) {
+            showThemedSnackBar(
+              context,
+              'Redundant file deleted & MediaStore refreshed',
+              icon: Icons.delete_sweep_rounded,
+            );
+          }
         } catch (e) {
+          if (mounted) {
+            showThemedSnackBar(
+              context,
+              'Failed to delete file: $e',
+              icon: Icons.error_outline_rounded,
+            );
+          }
+        }
+      },
+    );
+  }
+
+  void _confirmCleanAllRedundant(List<DuplicateGroup> groups) {
+    final redundantTracks = <FlacInfo>[];
+    double totalWasted = 0.0;
+    for (final g in groups) {
+      for (final it in g.items) {
+        if (!it.isBest) {
+          redundantTracks.add(it.info);
+          totalWasted += it.info.fileSizeMb;
+        }
+      }
+    }
+
+    if (redundantTracks.isEmpty) return;
+
+    showAppGlassDialog(
+      context: context,
+      title: 'Clean All Redundant Copies?',
+      icon: Icons.auto_delete_rounded,
+      iconColor: AppColors.fakeCoral,
+      content: 'Permanently delete ${redundantTracks.length} redundant copies to reclaim ${totalWasted.toStringAsFixed(1)} MB?\n\nYour highest authenticity copy of each track will be preserved, and Android MediaStore will be updated.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Delete All (${totalWasted.toStringAsFixed(1)} MB)',
+      isDestructive: true,
+      onConfirm: () async {
+        int deletedCount = 0;
+        for (final track in redundantTracks) {
+          await _deleteTrackWithMediaStoreSync(track.filePath);
+          appState.removeTrackFromLibrary(track.filePath);
+          deletedCount++;
+        }
+        _analyzeDuplicates(appState.sharedLibrary);
+        if (mounted) {
           showThemedSnackBar(
             context,
-            'Failed to delete file: $e',
-            icon: Icons.error_outline_rounded,
+            'Cleaned $deletedCount redundant copies (${totalWasted.toStringAsFixed(1)} MB reclaimed)',
+            icon: Icons.delete_sweep_rounded,
+            accentColor: AppColors.genuineEmerald,
           );
         }
       },
@@ -534,14 +513,50 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 4),
-                    child: Text(
-                      'Duplicates',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6,
-                        color: textColor,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Duplicates',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.6,
+                            color: textColor,
+                          ),
+                        ),
+                        if (duplicatesCount > 0)
+                          LuminousFeedback(
+                            onTap: () => _confirmCleanAllRedundant(_groups),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.fakeCoral.withOpacity(0.40),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.auto_delete_rounded, size: 15, color: AppColors.fakeCoral),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Clean All',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.fakeCoral,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -789,6 +804,41 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 _buildStatPill('Storage to Free', '${wastedMb.toStringAsFixed(0)} MB', AppColors.genuineEmerald, isDark),
               ],
             ),
+
+            if (duplicatesCount > 0) ...[
+              const SizedBox(height: 14),
+              LuminousFeedback(
+                onTap: () => _confirmCleanAllRedundant(_groups),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.fakeCoral.withOpacity(0.35),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.delete_sweep_rounded, size: 16, color: AppColors.fakeCoral),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Clean All Redundant Copies (${wastedMb.toStringAsFixed(1)} MB)',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.fakeCoral,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -859,6 +909,33 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 ),
               ),
               const SizedBox(width: 8),
+              if (group.isMd5Identical) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.genuineEmerald.withOpacity(0.35), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fingerprint_rounded, size: 11, color: AppColors.genuineEmerald),
+                      const SizedBox(width: 3),
+                      Text(
+                        'MD5 EXACT',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.genuineEmerald,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               Text(
                 '${group.items.length} copies',
                 style: TextStyle(

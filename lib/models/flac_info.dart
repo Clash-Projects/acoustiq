@@ -27,6 +27,7 @@ class FlacInfo {
   final bool hasLyrics;
   final String? lyricsText;
   String? get lyrics => lyricsText;
+  final String? audioMd5;
   final String? error;
 
   FlacInfo({
@@ -55,6 +56,7 @@ class FlacInfo {
     this.spectrogramMatrix = const [],
     this.hasLyrics = false,
     this.lyricsText,
+    this.audioMd5,
     this.error,
   });
 
@@ -92,6 +94,7 @@ class FlacInfo {
       spectrogramMatrix: const [],
       hasLyrics: false,
       lyricsText: null,
+      audioMd5: null,
       error: error,
     );
   }

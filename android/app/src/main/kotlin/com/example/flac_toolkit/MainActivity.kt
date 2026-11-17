@@ -332,6 +332,48 @@ class MainActivity: FlutterActivity() {
                         result.error("SPECS_ERROR", e.localizedMessage, null)
                     }
                 }
+                "rescanMediaFile" -> {
+                    val filePath = call.argument<String>("filePath")
+                    if (filePath == null) {
+                        result.error("INVALID_ARGS", "filePath is required", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        android.media.MediaScannerConnection.scanFile(
+                            applicationContext,
+                            arrayOf(filePath),
+                            null
+                        ) { _, _ -> }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("SCAN_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "deleteMediaFile" -> {
+                    val filePath = call.argument<String>("filePath")
+                    if (filePath == null) {
+                        result.error("INVALID_ARGS", "filePath is required", null)
+                        return@setMethodCallHandler
+                    }
+                    thread(name = "DeleteMediaThread") {
+                        try {
+                            val file = File(filePath)
+                            val wasDeleted = if (file.exists()) file.delete() else true
+                            android.media.MediaScannerConnection.scanFile(
+                                applicationContext,
+                                arrayOf(filePath),
+                                null
+                            ) { _, _ -> }
+                            runOnUiThread {
+                                result.success(wasDeleted)
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread {
+                                result.error("DELETE_ERROR", e.localizedMessage, null)
+                            }
+                        }
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
