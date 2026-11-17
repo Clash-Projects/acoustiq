@@ -7,7 +7,9 @@ class DuplicateGroup {
   final List<DuplicateItem> items;
   final double wastedMb;
   final bool isMd5Identical;
-  final String bestFilePath;
+  final bool isAllFake;
+  final String acoustiqPickPath;
+  final String userKeepPath;
 
   DuplicateGroup({
     required this.key,
@@ -16,13 +18,15 @@ class DuplicateGroup {
     required this.items,
     required this.wastedMb,
     this.isMd5Identical = false,
-    required this.bestFilePath,
+    this.isAllFake = false,
+    required this.acoustiqPickPath,
+    required this.userKeepPath,
   });
 
   DuplicateGroup copyWith({
     List<DuplicateItem>? items,
     double? wastedMb,
-    String? bestFilePath,
+    String? userKeepPath,
   }) {
     return DuplicateGroup(
       key: key,
@@ -31,56 +35,58 @@ class DuplicateGroup {
       items: items ?? this.items,
       wastedMb: wastedMb ?? this.wastedMb,
       isMd5Identical: isMd5Identical,
-      bestFilePath: bestFilePath ?? this.bestFilePath,
+      isAllFake: isAllFake,
+      acoustiqPickPath: acoustiqPickPath,
+      userKeepPath: userKeepPath ?? this.userKeepPath,
     );
   }
 
-  DuplicateGroup withCustomBest(String targetPath) {
+  DuplicateGroup withUserSelection(String targetPath) {
     final updatedItems = items.map((it) {
       final isTarget = it.info.filePath == targetPath;
-      return it.copyWith(isBest: isTarget);
+      return it.copyWith(isUserKept: isTarget);
     }).toList();
 
     double newWasted = 0.0;
     for (final it in updatedItems) {
-      if (!it.isBest) newWasted += it.info.fileSizeMb;
+      if (!it.isUserKept) newWasted += it.info.fileSizeMb;
     }
 
     return copyWith(
       items: updatedItems,
       wastedMb: double.parse(newWasted.toStringAsFixed(2)),
-      bestFilePath: targetPath,
+      userKeepPath: targetPath,
     );
   }
 }
 
 class DuplicateItem {
   final FlacInfo info;
-  final bool isBest;
+  final bool isAcoustiqPick;
+  final bool isUserKept;
   final String reason;
-  final List<String> superiorityBadges;
-  final double vectorScore;
+  final String qualityTitle;
 
   DuplicateItem({
     required this.info,
-    required this.isBest,
+    required this.isAcoustiqPick,
+    required this.isUserKept,
     required this.reason,
-    this.superiorityBadges = const [],
-    this.vectorScore = 0.0,
+    required this.qualityTitle,
   });
 
   DuplicateItem copyWith({
-    bool? isBest,
+    bool? isAcoustiqPick,
+    bool? isUserKept,
     String? reason,
-    List<String>? superiorityBadges,
-    double? vectorScore,
+    String? qualityTitle,
   }) {
     return DuplicateItem(
       info: info,
-      isBest: isBest ?? this.isBest,
+      isAcoustiqPick: isAcoustiqPick ?? this.isAcoustiqPick,
+      isUserKept: isUserKept ?? this.isUserKept,
       reason: reason ?? this.reason,
-      superiorityBadges: superiorityBadges ?? this.superiorityBadges,
-      vectorScore: vectorScore ?? this.vectorScore,
+      qualityTitle: qualityTitle ?? this.qualityTitle,
     );
   }
 }
@@ -159,7 +165,6 @@ class DuplicateDetector {
       for (final track in list) {
         bool addedToCluster = false;
         for (final cluster in clusters) {
-          // Compare against the reference track of this cluster
           final ref = cluster.first;
           final durationDiff = (track.durationSec - ref.durationSec).abs();
           if (track.durationSec > 0 && ref.durationSec > 0 && durationDiff <= 4.0) {
@@ -198,14 +203,14 @@ class DuplicateDetector {
       score += 500.0;
     }
 
-    // 2. Bit depth (24-bit studio master bonus)
+    // 2. Bit depth (24-bit studio container)
     if (t.bitDepth >= 24) {
       score += 150.0;
     } else if (t.bitDepth >= 20) {
       score += 50.0;
     }
 
-    // 3. Sample rate (88.2k/96k/192k studio bonus)
+    // 3. Sample rate (88.2k/96k/192k)
     if (t.sampleRate >= 88200) {
       score += 150.0;
     } else if (t.sampleRate >= 48000) {
@@ -216,37 +221,14 @@ class DuplicateDetector {
     if (t.hasLyrics) score += 60.0;
     if (t.hasCover) score += 40.0;
 
-    // 5. Compression efficiency or bitrate
+    // 5. Compression efficiency
     if (isMd5 && smallestFile != null && t.filePath == smallestFile.filePath) {
-      score += 80.0; // Bit-identical: smaller file is better compressed
+      score += 80.0;
     } else {
       score += (t.bitrateKbps / 100.0);
     }
 
     return score;
-  }
-
-  static List<String> _buildSuperiorityBadges(FlacInfo t, bool isMd5, bool isSmallest) {
-    final badges = <String>[];
-    if (t.status == 'genuine' && t.score >= 80) {
-      badges.add('🏆 Master');
-    } else if (t.status == 'fake' || t.score < 50) {
-      badges.add('⚠️ Transcode');
-    }
-
-    if (t.bitDepth >= 24 || t.sampleRate >= 88200) {
-      badges.add('✨ Hi-Res ${(t.sampleRate / 1000).toStringAsFixed(0)}k');
-    }
-
-    if (t.hasLyrics) {
-      badges.add('🎵 Synced Lyrics');
-    }
-
-    if (isMd5 && isSmallest) {
-      badges.add('💾 Best Compression');
-    }
-
-    return badges;
   }
 
   static DuplicateGroup _buildGroup({
@@ -259,7 +241,6 @@ class DuplicateDetector {
       smallestInMd5 = list.reduce((a, b) => a.fileSizeMb < b.fileSizeMb ? a : b);
     }
 
-    // Multi-Vector Ranking: Score based on purity, bit-depth, sampling, lyrics, and compression
     final scoredTracks = list.map((t) {
       final vScore = _calculateVectorScore(t, isMd5, smallestInMd5);
       return MapEntry(t, vScore);
@@ -275,49 +256,54 @@ class DuplicateDetector {
     final sorted = scoredTracks.map((e) => e.key).toList();
     final best = sorted.first;
 
+    final allFake = list.every((t) => t.status == 'fake' || (t.score > 0 && t.score < 50));
+
     final items = <DuplicateItem>[];
     double wasted = 0.0;
 
     for (int i = 0; i < sorted.length; i++) {
       final item = sorted[i];
-      final itemVectorScore = scoredTracks[i].value;
-      final isBest = i == 0;
-      if (!isBest) wasted += item.fileSizeMb;
+      final isPick = i == 0;
+      if (!isPick) wasted += item.fileSizeMb;
 
-      final isSmallest = item.filePath == smallestInMd5?.filePath;
-      final badges = _buildSuperiorityBadges(item, isMd5, isSmallest);
+      String qualityTitle;
+      if (item.status == 'fake' || (item.score > 0 && item.score < 50)) {
+        qualityTitle = 'Lossy Transcode';
+      } else if (item.bitDepth >= 24 || item.sampleRate >= 88200) {
+        qualityTitle = 'Lossless Studio Master';
+      } else {
+        qualityTitle = 'Lossless CD Quality';
+      }
 
       String reason;
-      if (isBest) {
+      if (isPick) {
         if (isMd5) {
-          reason = 'Bit-Identical Audio • Best Compression (${item.fileSizeMb.toStringAsFixed(1)} MB)';
+          reason = 'Identical audio waveforms • Best compression';
+        } else if (allFake) {
+          reason = 'Identical lossy cutoff • Preserving space-saving copy';
         } else if (item.status == 'genuine') {
-          reason = 'Highest Authenticity (${item.score}% • ${item.bitDepth}-bit / ${(item.sampleRate / 1000).toStringAsFixed(1)}k)';
+          reason = 'Authentic lossless audio with full studio harmonics';
         } else {
-          reason = 'Highest Quality (${item.bitDepth}-bit / ${(item.sampleRate / 1000).toStringAsFixed(1)}k • ${item.bitrateKbps} kbps)';
+          reason = 'Highest resolution and metadata fidelity';
         }
       } else if (isMd5) {
-        reason = 'Bit-Identical Audio Stream (MD5 Verified) • Redundant copy (${item.fileSizeMb.toStringAsFixed(1)} MB)';
+        reason = 'Bit-identical clone (${item.fileSizeMb.toStringAsFixed(1)} MB redundant)';
       } else if (best.score > item.score && item.score > 0) {
-        reason = 'Lower Authenticity (${item.score}% vs ${best.score}%) • Likely lossy transcode';
+        reason = 'Lower purity (${item.score}% vs ${best.score}%) • Lossy transcode';
       } else if (best.bitDepth > item.bitDepth) {
-        reason = 'Lower Resolution (${item.bitDepth}-bit vs ${best.bitDepth}-bit Studio Master)';
+        reason = 'Lower bit depth (${item.bitDepth}-bit vs ${best.bitDepth}-bit)';
       } else if (best.sampleRate > item.sampleRate) {
-        reason = 'Lower Sample Rate (${(item.sampleRate / 1000).toStringAsFixed(1)}k vs ${(best.sampleRate / 1000).toStringAsFixed(1)}k)';
-      } else if (!item.hasLyrics && best.hasLyrics) {
-        reason = 'Missing Synced Lyrics & lower metadata fidelity';
-      } else if (best.bitrateKbps > item.bitrateKbps) {
-        reason = 'Lower Bitrate (${item.bitrateKbps} vs ${best.bitrateKbps} kbps)';
+        reason = 'Lower sample rate (${(item.sampleRate / 1000).toStringAsFixed(1)}k vs ${(best.sampleRate / 1000).toStringAsFixed(1)}k)';
       } else {
-        reason = 'Redundant Duplicate Copy (${item.fileSizeMb.toStringAsFixed(1)} MB)';
+        reason = 'Redundant copy (${item.fileSizeMb.toStringAsFixed(1)} MB redundant)';
       }
 
       items.add(DuplicateItem(
         info: item,
-        isBest: isBest,
+        isAcoustiqPick: isPick,
+        isUserKept: isPick,
         reason: reason,
-        superiorityBadges: badges,
-        vectorScore: itemVectorScore,
+        qualityTitle: qualityTitle,
       ));
     }
 
@@ -331,7 +317,9 @@ class DuplicateDetector {
       items: items,
       wastedMb: double.parse(wasted.toStringAsFixed(2)),
       isMd5Identical: isMd5,
-      bestFilePath: best.filePath,
+      isAllFake: allFake,
+      acoustiqPickPath: best.filePath,
+      userKeepPath: best.filePath,
     );
   }
 }
