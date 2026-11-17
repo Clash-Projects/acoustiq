@@ -46,6 +46,15 @@ class _InspectScreenState extends State<InspectScreen> {
     super.initState();
     _lastInjectedMock = appState.injectedMockTrack;
     _info = appState.injectedMockTrack ?? widget.initialTrack;
+    if (_info != null && _info!.coverBytes == null && _info!.hasCover) {
+      FlacParser.extractCoverBytes(_info!.filePath).then((bytes) {
+        if (mounted && bytes != null) {
+          setState(() {
+            _info = _info!.copyWith(coverBytes: bytes);
+          });
+        }
+      });
+    }
     appState.addListener(_onAppStateChanged);
     if (_info == null && appState.recentFilePaths.isNotEmpty) {
       _loadLastRecentTrack();
@@ -79,7 +88,7 @@ class _InspectScreenState extends State<InspectScreen> {
     final recent = appState.recentFilePaths;
     for (final path in recent) {
       if (File(path).existsSync()) {
-        final analyzed = await FlacParser.analyzeFile(path);
+        final analyzed = await FlacParser.analyzeFile(path, readCoverBytes: true);
         if (mounted && analyzed.error == null) {
           setState(() => _info = analyzed);
         }
@@ -91,7 +100,7 @@ class _InspectScreenState extends State<InspectScreen> {
   Future<void> _loadFileFromPath(String path) async {
     setState(() => _isLoading = true);
     try {
-      final analyzed = await FlacParser.analyzeFile(path);
+      final analyzed = await FlacParser.analyzeFile(path, readCoverBytes: true);
       if (analyzed.error == null) {
         appState.addRecentFilePath(path);
       }
@@ -392,7 +401,7 @@ class _InspectScreenState extends State<InspectScreen> {
 
       if (result != null && result.files.single.path != null) {
         final path = result.files.single.path!;
-        final analyzed = await FlacParser.analyzeFile(path);
+        final analyzed = await FlacParser.analyzeFile(path, readCoverBytes: true);
         if (analyzed.error == null) {
           appState.addRecentFilePath(path);
         }

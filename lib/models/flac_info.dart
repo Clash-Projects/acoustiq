@@ -68,6 +68,131 @@ class FlacInfo {
     return 'FAKE LOSSLESS';
   }
 
+  FlacInfo copyWith({
+    String? filePath,
+    String? fileName,
+    double? fileSizeMb,
+    String? title,
+    String? artist,
+    String? album,
+    int? sampleRate,
+    int? bitDepth,
+    int? channels,
+    double? durationSec,
+    String? durationStr,
+    int? bitrateKbps,
+    bool? hasCover,
+    Uint8List? coverBytes,
+    double? cutoffKhz,
+    double? maxKhz,
+    double? slopeDropDb,
+    int? score,
+    String? verdict,
+    String? status,
+    bool? isFake24,
+    List<double>? spectrumBands,
+    List<List<double>>? spectrogramMatrix,
+    bool? hasLyrics,
+    String? lyricsText,
+    String? audioMd5,
+    String? error,
+  }) {
+    return FlacInfo(
+      filePath: filePath ?? this.filePath,
+      fileName: fileName ?? this.fileName,
+      fileSizeMb: fileSizeMb ?? this.fileSizeMb,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      sampleRate: sampleRate ?? this.sampleRate,
+      bitDepth: bitDepth ?? this.bitDepth,
+      channels: channels ?? this.channels,
+      durationSec: durationSec ?? this.durationSec,
+      durationStr: durationStr ?? this.durationStr,
+      bitrateKbps: bitrateKbps ?? this.bitrateKbps,
+      hasCover: hasCover ?? this.hasCover,
+      coverBytes: coverBytes ?? this.coverBytes,
+      cutoffKhz: cutoffKhz ?? this.cutoffKhz,
+      maxKhz: maxKhz ?? this.maxKhz,
+      slopeDropDb: slopeDropDb ?? this.slopeDropDb,
+      score: score ?? this.score,
+      verdict: verdict ?? this.verdict,
+      status: status ?? this.status,
+      isFake24: isFake24 ?? this.isFake24,
+      spectrumBands: spectrumBands ?? this.spectrumBands,
+      spectrogramMatrix: spectrogramMatrix ?? this.spectrogramMatrix,
+      hasLyrics: hasLyrics ?? this.hasLyrics,
+      lyricsText: lyricsText ?? this.lyricsText,
+      audioMd5: audioMd5 ?? this.audioMd5,
+      error: error ?? this.error,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'filePath': filePath,
+      'fileName': fileName,
+      'fileSizeMb': fileSizeMb,
+      'title': title,
+      'artist': artist,
+      'album': album,
+      'sampleRate': sampleRate,
+      'bitDepth': bitDepth,
+      'channels': channels,
+      'durationSec': durationSec,
+      'durationStr': durationStr,
+      'bitrateKbps': bitrateKbps,
+      'hasCover': hasCover,
+      'cutoffKhz': cutoffKhz,
+      'maxKhz': maxKhz,
+      'slopeDropDb': slopeDropDb,
+      'score': score,
+      'verdict': verdict,
+      'status': status,
+      'isFake24': isFake24,
+      'spectrumBands': spectrumBands,
+      'hasLyrics': hasLyrics,
+      'lyricsText': lyricsText,
+      'audioMd5': audioMd5,
+      if (error != null) 'error': error,
+    };
+  }
+
+  factory FlacInfo.fromJson(Map<String, dynamic> json) {
+    return FlacInfo(
+      filePath: json['filePath'] as String? ?? '',
+      fileName: json['fileName'] as String? ?? '',
+      fileSizeMb: (json['fileSizeMb'] as num?)?.toDouble() ?? 0.0,
+      title: json['title'] as String? ?? '',
+      artist: json['artist'] as String? ?? '',
+      album: json['album'] as String? ?? '',
+      sampleRate: (json['sampleRate'] as num?)?.toInt() ?? 44100,
+      bitDepth: (json['bitDepth'] as num?)?.toInt() ?? 16,
+      channels: (json['channels'] as num?)?.toInt() ?? 2,
+      durationSec: (json['durationSec'] as num?)?.toDouble() ?? 0.0,
+      durationStr: json['durationStr'] as String? ?? '0m 00s',
+      bitrateKbps: (json['bitrateKbps'] as num?)?.toInt() ?? 0,
+      hasCover: json['hasCover'] as bool? ?? false,
+      coverBytes: null, // Lazy-loaded on demand to preserve RAM
+      cutoffKhz: (json['cutoffKhz'] as num?)?.toDouble() ?? 0.0,
+      maxKhz: (json['maxKhz'] as num?)?.toDouble() ?? 0.0,
+      slopeDropDb: (json['slopeDropDb'] as num?)?.toDouble() ?? 0.0,
+      score: (json['score'] as num?)?.toInt() ?? 0,
+      verdict: json['verdict'] as String? ?? '',
+      status: json['status'] as String? ?? 'genuine',
+      isFake24: json['isFake24'] as bool? ?? false,
+      spectrumBands: (json['spectrumBands'] as List<dynamic>?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          const [],
+      spectrogramMatrix: const [], // Lazy-loaded on demand during deep analysis
+      hasLyrics: json['hasLyrics'] as bool? ?? false,
+      lyricsText: json['lyricsText'] as String?,
+      audioMd5: json['audioMd5'] as String?,
+      error: json['error'] as String?,
+    );
+  }
+
   factory FlacInfo.withError(String filePath, String fileName, String error) {
     return FlacInfo(
       filePath: filePath,

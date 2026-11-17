@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'flac_info.dart';
 import '../ui/theme/colors.dart';
@@ -132,6 +134,7 @@ class AppState extends ChangeNotifier {
 
       _lastScannedFolder = _prefs?.getString('last_scanned_folder');
       _recentFilePaths = _prefs?.getStringList('recent_file_paths') ?? [];
+      await _loadLibraryCache();
       notifyListeners();
     } catch (_) {}
   }
@@ -321,15 +324,73 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> saveLibraryCache() async {
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final cacheFile = File('${docsDir.path}/library_cache.json');
+      final data = {
+        'folder': _lastScannedFolder,
+        'timestamp': DateTime.now().toIso8601String(),
+        'tracks': _sharedLibrary.map((t) => t.toJson()).toList(),
+      };
+      await cacheFile.writeAsString(jsonEncode(data));
+    } catch (_) {}
+  }
+
+  Future<void> _loadLibraryCache() async {
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final cacheFile = File('${docsDir.path}/library_cache.json');
+      if (await cacheFile.exists()) {
+        final content = await cacheFile.readAsString();
+        final decoded = jsonDecode(content) as Map<String, dynamic>;
+        final folder = decoded['folder'] as String?;
+        final trackList = (decoded['tracks'] as List<dynamic>?)
+                ?.map((t) => FlacInfo.fromJson(t as Map<String, dynamic>))
+                .toList() ??
+            [];
+        if (trackList.isNotEmpty) {
+          _sharedLibrary = trackList;
+          if (folder != null) _lastScannedFolder = folder;
+        }
+      }
+    } catch (_) {}
+  }
+
   void setSharedLibrary(List<FlacInfo> tracks, String folder) {
     _sharedLibrary = tracks;
     _lastScannedFolder = folder;
     _prefs?.setString('last_scanned_folder', folder);
+    saveLibraryCache();
     notifyListeners();
+  }
+
+  void updateTrackInLibrary(FlacInfo updated) {
+    final idx = _sharedLibrary.indexWhere((t) => t.filePath == updated.filePath);
+    if (idx != -1) {
+      _sharedLibrary[idx] = updated;
+      saveLibraryCache();
+      notifyListeners();
+    }
   }
 
   void removeTrackFromLibrary(String filePath) {
     _sharedLibrary.removeWhere((t) => t.filePath == filePath);
+    saveLibraryCache();
+    notifyListeners();
+  }
+
+  Future<void> clearLibraryCache() async {
+    _sharedLibrary.clear();
+    _lastScannedFolder = null;
+    _prefs?.remove('last_scanned_folder');
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final cacheFile = File('${docsDir.path}/library_cache.json');
+      if (await cacheFile.exists()) {
+        await cacheFile.delete();
+      }
+    } catch (_) {}
     notifyListeners();
   }
 

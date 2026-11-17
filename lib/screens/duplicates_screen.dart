@@ -32,7 +32,9 @@ class DuplicatesScreen extends StatefulWidget {
 
 class _DuplicatesScreenState extends State<DuplicatesScreen> {
   bool _isScanning = false;
+  bool _cancelRequested = false;
   int _scannedCount = 0;
+  int _totalFiles = 0;
   List<DuplicateGroup> _groups = [];
 
   @override
@@ -58,7 +60,9 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
     setState(() {
       _isScanning = true;
+      _cancelRequested = false;
       _scannedCount = 0;
+      _totalFiles = 0;
       _groups = [];
     });
 
@@ -68,9 +72,22 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       final List<File> flacFiles = [];
 
       await for (final entity in dir.list(recursive: true, followLinks: false)) {
+        if (_cancelRequested) break;
         if (entity is File && entity.path.toLowerCase().endsWith('.flac')) {
           flacFiles.add(entity);
         }
+      }
+
+      if (_cancelRequested) {
+        if (mounted) {
+          setState(() => _isScanning = false);
+          showThemedSnackBar(
+            context,
+            'Scan cancelled',
+            icon: Icons.cancel_outlined,
+          );
+        }
+        return;
       }
 
       if (flacFiles.isEmpty && mounted) {
@@ -81,8 +98,19 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         );
       }
 
+      if (mounted) {
+        setState(() {
+          _totalFiles = flacFiles.length;
+        });
+      }
+
       for (final file in flacFiles) {
-        final info = await FlacParser.analyzeFile(file.path);
+        if (_cancelRequested) break;
+        final info = await FlacParser.analyzeFile(
+          file.path,
+          deepDsp: false,
+          readCoverBytes: false,
+        );
         tracks.add(info);
         if (mounted) {
           setState(() {
@@ -91,8 +119,20 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         }
       }
 
-      appState.setSharedLibrary(tracks, dirPath);
-      _analyzeDuplicates(tracks);
+      if (tracks.isNotEmpty) {
+        appState.setSharedLibrary(tracks, dirPath);
+        _analyzeDuplicates(tracks);
+      }
+
+      if (mounted) {
+        showThemedSnackBar(
+          context,
+          _cancelRequested
+              ? 'Scan cancelled • Analyzed ${tracks.length} of $_totalFiles tracks'
+              : 'Audited ${tracks.length} tracks for duplicates',
+          icon: _cancelRequested ? Icons.info_outline_rounded : Icons.verified_rounded,
+        );
+      }
     } catch (e) {
       if (mounted) {
         showThemedSnackBar(
@@ -748,7 +788,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       const SizedBox(height: 3),
                       Text(
                         _isScanning
-                            ? 'Scanning... inspected $_scannedCount tracks'
+                            ? 'Scanning... $_scannedCount of $_totalFiles tracks'
                             : (groupsCount > 0
                                 ? '$groupsCount duplicate sets ($duplicatesCount redundant files)'
                                 : 'Tap to scan music folders and keep the purest FLAC'),
@@ -791,6 +831,68 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 ),
               ],
             ),
+
+            if (_isScanning) ...[
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: _totalFiles > 0 ? _scannedCount / _totalFiles : null,
+                  backgroundColor: isDark ? const Color(0x30FFFFFF) : const Color(0x20000000),
+                  valueColor: AlwaysStoppedAnimation<Color>(activeAccent),
+                  minHeight: 4,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _totalFiles > 0
+                        ? '${((_scannedCount / _totalFiles) * 100).toInt()}% complete'
+                        : 'Discovering tracks...',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11,
+                      color: subTextColor,
+                    ),
+                  ),
+                  LuminousFeedback(
+                    onTap: () {
+                      if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+                      setState(() => _cancelRequested = true);
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.fakeCoral.withOpacity(0.40),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.close_rounded, size: 13, color: AppColors.fakeCoral),
+                          SizedBox(width: 4),
+                          Text(
+                            'Cancel Scan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.fakeCoral,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
 
             const SizedBox(height: 18),
 

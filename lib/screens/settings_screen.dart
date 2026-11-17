@@ -208,7 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     try {
       await for (final entity in dir.list(recursive: true, followLinks: false)) {
         if (entity is File && entity.path.toLowerCase().endsWith('.flac')) {
-          final info = await FlacParser.analyzeFile(entity.path);
+          final info = await FlacParser.analyzeFile(entity.path, deepDsp: false, readCoverBytes: false);
           tracks.add(info);
         }
       }

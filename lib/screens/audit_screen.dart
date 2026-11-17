@@ -32,7 +32,9 @@ class AuditScreen extends StatefulWidget {
 
 class _AuditScreenState extends State<AuditScreen> {
   bool _isScanning = false;
+  bool _cancelRequested = false;
   int _scannedCount = 0;
+  int _totalFiles = 0;
   String _filter = 'all'; // 'all', 'genuine', 'suspicious', 'fake'
 
   @override
@@ -57,7 +59,9 @@ class _AuditScreenState extends State<AuditScreen> {
 
     setState(() {
       _isScanning = true;
+      _cancelRequested = false;
       _scannedCount = 0;
+      _totalFiles = 0;
     });
 
     final List<FlacInfo> newTracks = [];
@@ -66,9 +70,23 @@ class _AuditScreenState extends State<AuditScreen> {
       final List<File> flacFiles = [];
 
       await for (final entity in dir.list(recursive: true, followLinks: false)) {
+        if (_cancelRequested) break;
         if (entity is File && entity.path.toLowerCase().endsWith('.flac')) {
           flacFiles.add(entity);
         }
+      }
+
+      if (_cancelRequested) {
+        if (mounted) {
+          setState(() => _isScanning = false);
+          showThemedSnackBar(
+            context,
+            'Scan cancelled',
+            icon: Icons.cancel_outlined,
+            accentColor: AppColors.suspiciousAmber,
+          );
+        }
+        return;
       }
 
       if (flacFiles.isEmpty && mounted) {
@@ -80,8 +98,19 @@ class _AuditScreenState extends State<AuditScreen> {
         );
       }
 
+      if (mounted) {
+        setState(() {
+          _totalFiles = flacFiles.length;
+        });
+      }
+
       for (final file in flacFiles) {
-        final info = await FlacParser.analyzeFile(file.path);
+        if (_cancelRequested) break;
+        final info = await FlacParser.analyzeFile(
+          file.path,
+          deepDsp: false,
+          readCoverBytes: false,
+        );
         newTracks.add(info);
         if (mounted) {
           setState(() {
@@ -90,13 +119,18 @@ class _AuditScreenState extends State<AuditScreen> {
         }
       }
 
-      appState.setSharedLibrary(newTracks, dirPath);
+      if (newTracks.isNotEmpty) {
+        appState.setSharedLibrary(newTracks, dirPath);
+      }
+
       if (mounted) {
         showThemedSnackBar(
           context,
-          'Audited ${newTracks.length} FLAC tracks successfully',
-          icon: Icons.verified_rounded,
-          accentColor: AppColors.genuineEmerald,
+          _cancelRequested
+              ? 'Scan cancelled • Audited ${newTracks.length} of $_totalFiles tracks'
+              : 'Audited ${newTracks.length} FLAC tracks successfully',
+          icon: _cancelRequested ? Icons.info_outline_rounded : Icons.verified_rounded,
+          accentColor: _cancelRequested ? AppColors.suspiciousAmber : AppColors.genuineEmerald,
         );
       }
     } catch (e) {
@@ -687,7 +721,7 @@ class _AuditScreenState extends State<AuditScreen> {
                       const SizedBox(height: 3),
                       Text(
                         _isScanning
-                            ? 'Scanning folder... analyzed $_scannedCount tracks'
+                            ? 'Scanning folder... $_scannedCount of $_totalFiles tracks'
                             : (appState.lastScannedFolder != null
                                 ? 'Source: ${appState.lastScannedFolder!.split('/').last}'
                                 : 'Tap to scan folder and audit entire library'),
@@ -728,6 +762,68 @@ class _AuditScreenState extends State<AuditScreen> {
                 ),
               ],
             ),
+
+            if (_isScanning) ...[
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: _totalFiles > 0 ? _scannedCount / _totalFiles : null,
+                  backgroundColor: isDark ? const Color(0x30FFFFFF) : const Color(0x20000000),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.genuineEmerald),
+                  minHeight: 4,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _totalFiles > 0
+                        ? '${((_scannedCount / _totalFiles) * 100).toInt()}% complete'
+                        : 'Discovering tracks...',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11,
+                      color: subTextColor,
+                    ),
+                  ),
+                  LuminousFeedback(
+                    onTap: () {
+                      if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+                      setState(() => _cancelRequested = true);
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.fakeCoral.withOpacity(0.40),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.close_rounded, size: 13, color: AppColors.fakeCoral),
+                          SizedBox(width: 4),
+                          Text(
+                            'Cancel Scan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.fakeCoral,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
 
             const SizedBox(height: 18),
 
@@ -881,25 +977,11 @@ class _AuditScreenState extends State<AuditScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 48dp Squircle Artwork Thumbnail (12dp radius)
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0x28FFFFFF) : const Color(0xFFE5E5EA),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: isDark
-                        ? AppColors.softElevation(elevation: 2.0)
-                        : AppColors.lightSoftElevation(elevation: 2.0),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: track.hasCover && track.coverBytes != null
-                      ? Image.memory(
-                          track.coverBytes!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _fallbackCover(statusColor),
-                        )
-                      : _fallbackCover(statusColor),
+                // 48dp Squircle Artwork Thumbnail (12dp radius, RAM-protected lazy loader)
+                _TrackCoverThumbnail(
+                  track: track,
+                  statusColor: statusColor,
+                  isDark: isDark,
                 ),
                 const SizedBox(width: 14),
 
@@ -968,6 +1050,97 @@ class _AuditScreenState extends State<AuditScreen> {
       ),
     );
   }
+}
+
+/// Memory-bounded continuous lazy artwork loader (max 60 thumbnails in RAM)
+class _TrackCoverThumbnail extends StatefulWidget {
+  final FlacInfo track;
+  final Color statusColor;
+  final bool isDark;
+
+  const _TrackCoverThumbnail({
+    required this.track,
+    required this.statusColor,
+    required this.isDark,
+  });
+
+  @override
+  State<_TrackCoverThumbnail> createState() => _TrackCoverThumbnailState();
+}
+
+class _TrackCoverThumbnailState extends State<_TrackCoverThumbnail> {
+  static final Map<String, Uint8List> _thumbCache = {};
+  Uint8List? _loadedBytes;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAndLoadCover();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TrackCoverThumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.track.filePath != widget.track.filePath) {
+      _checkAndLoadCover();
+    }
+  }
+
+  void _checkAndLoadCover() {
+    if (widget.track.coverBytes != null) {
+      _loadedBytes = widget.track.coverBytes;
+      return;
+    }
+    if (!widget.track.hasCover) {
+      _loadedBytes = null;
+      return;
+    }
+    if (_thumbCache.containsKey(widget.track.filePath)) {
+      _loadedBytes = _thumbCache[widget.track.filePath];
+      return;
+    }
+    if (!_isLoading) {
+      _isLoading = true;
+      FlacParser.extractCoverBytes(widget.track.filePath).then((bytes) {
+        if (mounted) {
+          if (bytes != null) {
+            if (_thumbCache.length > 60) {
+              _thumbCache.remove(_thumbCache.keys.first);
+            }
+            _thumbCache[widget.track.filePath] = bytes;
+          }
+          setState(() {
+            _loadedBytes = bytes;
+            _isLoading = false;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0x28FFFFFF) : const Color(0xFFE5E5EA),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: widget.isDark
+            ? AppColors.softElevation(elevation: 2.0)
+            : AppColors.lightSoftElevation(elevation: 2.0),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _loadedBytes != null
+          ? Image.memory(
+              _loadedBytes!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _fallbackCover(widget.statusColor),
+            )
+          : _fallbackCover(widget.statusColor),
+    );
+  }
 
   Widget _fallbackCover(Color statusColor) {
     return Center(
@@ -983,13 +1156,55 @@ class _AuditScreenState extends State<AuditScreen> {
 /// Rich Studio Audio Inspector Modal Bottom Sheet with Spectral Analyzer Stage
 ///
 /// Features Apple WWDC25 Frosted Glass Substrate with real Gaussian blur & specular rim.
-class _TrackDetailModal extends StatelessWidget {
+class _TrackDetailModal extends StatefulWidget {
   final FlacInfo track;
 
   const _TrackDetailModal({required this.track});
 
   @override
+  State<_TrackDetailModal> createState() => _TrackDetailModalState();
+}
+
+class _TrackDetailModalState extends State<_TrackDetailModal> {
+  late FlacInfo _track;
+  Uint8List? _coverBytes;
+  bool _isAnalyzingDsp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _track = widget.track;
+    _coverBytes = _track.coverBytes;
+
+    // Lazy-load artwork if not already loaded in RAM
+    if (_coverBytes == null && _track.hasCover) {
+      FlacParser.extractCoverBytes(_track.filePath).then((bytes) {
+        if (mounted && bytes != null) {
+          setState(() => _coverBytes = bytes);
+        }
+      });
+    }
+
+    // If fast metadata scanned (no spectrum bands yet), trigger Deep DSP analysis on-demand
+    if (_track.spectrumBands.isEmpty && _track.error == null) {
+      _isAnalyzingDsp = true;
+      FlacParser.analyzeFile(_track.filePath, deepDsp: true, readCoverBytes: false).then((fullTrack) {
+        if (mounted && fullTrack.error == null) {
+          setState(() {
+            _track = fullTrack.copyWith(coverBytes: _coverBytes ?? fullTrack.coverBytes);
+            _isAnalyzingDsp = false;
+          });
+          appState.updateTrackInLibrary(_track);
+        } else if (mounted) {
+          setState(() => _isAnalyzingDsp = false);
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final track = _track;
     final isDark = appState.isCurrentDark(context);
     final textColor = appState.getTextColor(context);
     final subTextColor = appState.getSubTextColor(context);
@@ -1043,8 +1258,8 @@ class _TrackDetailModal extends StatelessWidget {
                       : AppColors.lightSoftElevation(elevation: 3.0),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: track.hasCover && track.coverBytes != null
-                    ? Image.memory(track.coverBytes!, fit: BoxFit.cover)
+                child: _coverBytes != null
+                    ? Image.memory(_coverBytes!, fit: BoxFit.cover)
                     : Icon(Icons.album_rounded, size: 32, color: statusColor),
               ),
               const SizedBox(width: 14),
@@ -1097,6 +1312,33 @@ class _TrackDetailModal extends StatelessWidget {
           ),
 
           const SizedBox(height: 18),
+
+          if (_isAnalyzingDsp)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.8,
+                      color: AppColors.genuineEmerald,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Analyzing studio spectrum & Nyquist cutoff...',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: subTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // 2. Hybrid Forensic Audio Engine (Speedometer + Waveform Switcher)
           AudioSpectrumStage(
