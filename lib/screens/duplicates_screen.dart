@@ -1121,6 +1121,16 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     );
   }
 
+  String _formatCleanLocation(String path) {
+    final parts = path.split('/');
+    if (parts.length >= 2) {
+      final folder = parts[parts.length - 2];
+      final file = parts.last;
+      return '$folder / $file';
+    }
+    return path;
+  }
+
   void _showComparisonSheet(DuplicateGroup group) {
     final isDark = appState.isCurrentDark(context);
     final textColor = appState.getTextColor(context);
@@ -1140,22 +1150,28 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             );
 
             // Forensic Banner Content
-            String bannerText;
+            String bannerTitle;
+            String bannerDetail;
             IconData bannerIcon;
             Color bannerColor;
 
             if (currentGroup.isMd5Identical) {
               bannerIcon = Icons.fingerprint_rounded;
               bannerColor = AppColors.genuineEmerald;
-              bannerText = 'Audio MD5 Signatures Match! These files contain 100% bit-for-bit identical waveforms. AcoustiQ recommends the most efficiently compressed file to save ${currentGroup.wastedMb.toStringAsFixed(1)} MB with zero loss.';
+              bannerTitle = '100% Bit-Identical Waveforms (MD5 Certified)';
+              bannerDetail = currentGroup.wastedMb > 0
+                  ? 'Both files contain identical audio streams. AcoustiQ recommends the most efficiently compressed file to reclaim ${currentGroup.wastedMb.toStringAsFixed(1)} MB with zero quality loss.'
+                  : 'Both files contain identical audio streams and matching file size. AcoustiQ designates the primary collection master and marks the clone as redundant.';
             } else if (currentGroup.isAllFake) {
               bannerIcon = Icons.warning_amber_rounded;
               bannerColor = AppColors.suspiciousAmber;
-              bannerText = 'Lossy Transcodes Detected. All duplicate files in this set are transcoded audio upscaled to FLAC. AcoustiQ recommends preserving the space-saving version.';
+              bannerTitle = 'Lossy Audio Transcodes Detected';
+              bannerDetail = 'All files in this set are lossy upscales to FLAC. AcoustiQ designates the space-saving version to conserve storage without compromising audio fidelity.';
             } else {
               bannerIcon = Icons.verified_rounded;
               bannerColor = activeAccent;
-              bannerText = 'Forensic Multi-Vector recommendation: Authenticity, bit depth, and sample rate evaluated. Tap "Keep This File" on any track to customize your selection.';
+              bannerTitle = 'Forensic Multi-Vector Quality Diagnosis';
+              bannerDetail = 'AcoustiQ evaluated audio purity, bit depth, sampling rates, and metadata completeness to determine the superior studio copy.';
             }
 
             return GlassSurface(
@@ -1167,7 +1183,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 top: false,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.85,
+                    maxHeight: MediaQuery.of(context).size.height * 0.88,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1235,7 +1251,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               child: Text(
                                 '${currentGroup.items.length} Versions',
                                 style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: subTextColor,
@@ -1271,13 +1286,27 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               ),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: Text(
-                                  bannerText,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    height: 1.35,
-                                    color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      bannerTitle,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: bannerColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      bannerDetail,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        height: 1.35,
+                                        color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -1287,14 +1316,14 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Scrollable Versions List
+                      // Scrollable Versions List (Diff Matrix)
                       Flexible(
                         child: ListView.separated(
                           shrinkWrap: true,
                           physics: const BoundedBouncingScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                           itemCount: currentGroup.items.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (context, i) {
                             final item = currentGroup.items[i];
                             final info = item.info;
@@ -1373,16 +1402,19 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                           decoration: BoxDecoration(
                                             color: AppColors.genuineEmerald.withOpacity(isDark ? 0.15 : 0.08),
                                             borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: AppColors.genuineEmerald.withOpacity(0.30),
+                                              width: 0.6,
+                                            ),
                                           ),
                                           child: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(Icons.auto_awesome_rounded, size: 10.5, color: AppColors.genuineEmerald),
+                                              Icon(Icons.verified_outlined, size: 10.5, color: AppColors.genuineEmerald),
                                               SizedBox(width: 3),
                                               Text(
                                                 'ACOUSTIQ CHOICE',
                                                 style: TextStyle(
-                                                  fontFamily: 'JetBrainsMono',
                                                   fontSize: 9,
                                                   fontWeight: FontWeight.w700,
                                                   color: AppColors.genuineEmerald,
@@ -1397,7 +1429,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                         Text(
                                           '${info.score}% purity',
                                           style: TextStyle(
-                                            fontFamily: 'JetBrainsMono',
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
                                             color: info.score >= 80
@@ -1411,40 +1442,112 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                   ),
                                   const SizedBox(height: 7),
 
-                                  // Specs Matrix (Clean Single-Line Monospace)
+                                  // Specs Matrix (Clean Proportional Typography)
                                   Text(
                                     '${info.bitDepth}-bit / ${(info.sampleRate / 1000).toStringAsFixed(1)}k • ${info.fileSizeMb.toStringAsFixed(1)} MB • ${item.qualityTitle}',
                                     style: TextStyle(
-                                      fontFamily: 'JetBrainsMono',
-                                      fontSize: 11,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: textColor,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    item.reason,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontStyle: FontStyle.italic,
-                                      color: subTextColor,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    info.filePath,
-                                    style: TextStyle(
-                                      fontFamily: 'JetBrainsMono',
-                                      fontSize: 9.5,
-                                      color: subTextColor.withOpacity(0.60),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
 
-                                  const SizedBox(height: 8),
+                                  // Concrete Forensic Advantages Container
+                                  if (item.advantages.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.genuineEmerald.withOpacity(isDark ? 0.12 : 0.07),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: AppColors.genuineEmerald.withOpacity(0.25),
+                                          width: 0.6,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: item.advantages.map((adv) => Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 1.5),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.check_circle_outline_rounded, size: 12, color: AppColors.genuineEmerald),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  adv,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isDark ? const Color(0xEEFFFFFF) : const Color(0xEE000000),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )).toList(),
+                                      ),
+                                    ),
+                                  ] else if (item.disadvantages.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.fakeCoral.withOpacity(isDark ? 0.10 : 0.06),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: AppColors.fakeCoral.withOpacity(0.25),
+                                          width: 0.6,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: item.disadvantages.map((dis) => Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 1.5),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.remove_circle_outline_rounded, size: 12, color: AppColors.fakeCoral),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  dis,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: subTextColor,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )).toList(),
+                                      ),
+                                    ),
+                                  ],
+
+                                  // Clean Origin Location
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.folder_open_rounded, size: 13, color: subTextColor.withOpacity(0.70)),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          _formatCleanLocation(info.filePath),
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            color: subTextColor.withOpacity(0.70),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 10),
 
                                   // Action Row: Audio Preview & Keep button
                                   Row(
@@ -1492,7 +1595,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                       ),
                                       const Spacer(),
 
-                                      if (!item.isUserKept)
+                                      if (!item.isUserKept) ...[
                                         LuminousFeedback(
                                           onTap: () {
                                             _setUserKeepTrack(currentGroup, info.filePath);
@@ -1525,8 +1628,20 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                               ],
                                             ),
                                           ),
-                                        )
-                                      else
+                                        ),
+                                        const SizedBox(width: 4),
+                                        IconButton(
+                                          onPressed: () => _confirmDeleteTrack(item.info),
+                                          icon: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            size: 18,
+                                            color: AppColors.fakeCoral,
+                                          ),
+                                          splashRadius: 18,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                        ),
+                                      ] else
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                                           child: Row(
@@ -1683,7 +1798,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       Text(
                         'MD5 EXACT',
                         style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: AppColors.genuineEmerald,
@@ -1709,7 +1823,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       Text(
                         'LOSSY SET',
                         style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: AppColors.suspiciousAmber,
@@ -1750,16 +1863,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-              Text(
-                '${group.items.length} copies',
-                style: TextStyle(
-                  fontFamily: 'JetBrainsMono',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.suspiciousAmber : AppColors.lightAmberText,
-                ),
-              ),
             ],
           ),
         ),
@@ -1795,7 +1898,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             }
 
             return LuminousFeedback(
-              onTap: () => _showComparisonSheet(group),
+              onTap: () {
+                if (!item.isUserKept) {
+                  _setUserKeepTrack(group, item.info.filePath);
+                } else {
+                  _showComparisonSheet(group);
+                }
+              },
               borderRadius: shape,
               child: GlassSurface(
                 borderRadius: shape,
@@ -1804,24 +1913,28 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
                   children: [
-                    // Radio / Check Selection Indicator
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: item.isUserKept
-                            ? statusColor.withOpacity(isDark ? 0.25 : 0.15)
-                            : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        item.isUserKept
-                            ? Icons.check_circle_rounded
-                            : Icons.radio_button_unchecked_rounded,
-                        size: 18,
-                        color: item.isUserKept
-                            ? statusColor
-                            : (isDark ? const Color(0x50FFFFFF) : const Color(0x40000000)),
+                    // Radio / Check Selection Indicator (1-tap toggle)
+                    LuminousFeedback(
+                      onTap: () => _setUserKeepTrack(group, item.info.filePath),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: item.isUserKept
+                              ? statusColor.withOpacity(isDark ? 0.25 : 0.15)
+                              : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          item.isUserKept
+                              ? Icons.check_circle_rounded
+                              : Icons.radio_button_unchecked_rounded,
+                          size: 18,
+                          color: item.isUserKept
+                              ? statusColor
+                              : (isDark ? const Color(0x50FFFFFF) : const Color(0x40000000)),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1847,11 +1960,14 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                   decoration: BoxDecoration(
                                     color: AppColors.genuineEmerald.withOpacity(isDark ? 0.15 : 0.08),
                                     borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: AppColors.genuineEmerald.withOpacity(0.30),
+                                      width: 0.6,
+                                    ),
                                   ),
                                   child: const Text(
                                     'ACOUSTIQ PICK',
                                     style: TextStyle(
-                                      fontFamily: 'JetBrainsMono',
                                       fontSize: 8.5,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.genuineEmerald,
@@ -1863,7 +1979,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               Text(
                                 item.info.status == 'untested' ? 'UNTESTED' : '${item.info.score}% purity',
                                 style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w600,
                                   color: item.info.status == 'untested'
@@ -1881,8 +1996,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           Text(
                             '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k • ${item.info.fileSizeMb.toStringAsFixed(1)} MB • ${item.qualityTitle}',
                             style: TextStyle(
-                              fontFamily: 'JetBrainsMono',
-                              fontSize: 11,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                               color: textColor,
                             ),
@@ -1900,23 +2014,30 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 1),
-                          Text(
-                            item.info.fileName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'JetBrainsMono',
-                              fontSize: 9.5,
-                              color: subTextColor.withOpacity(0.65),
-                            ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(Icons.insert_drive_file_outlined, size: 11, color: subTextColor.withOpacity(0.60)),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  item.info.fileName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    color: subTextColor.withOpacity(0.65),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
 
-                    // Audio Preview Icon Button
+                    // Audio Preview Icon Button (Symmetric on all rows)
                     LuminousFeedback(
                       onTap: () async {
                         if (isPlaying) {
@@ -1944,47 +2065,17 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     ),
 
                     if (!item.isUserKept) ...[
-                      const SizedBox(width: 6),
-                      // 1-Tap Keep This Selection button (zero emojis)
-                      LuminousFeedback(
-                        onTap: () => _setUserKeepTrack(group, item.info.filePath),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: activeAccent.withOpacity(0.35),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_rounded, size: 12, color: activeAccent),
-                              const SizedBox(width: 3),
-                              Text(
-                                'Keep',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: activeAccent,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 4),
                       IconButton(
                         onPressed: () => _confirmDeleteTrack(item.info),
                         icon: const Icon(
                           Icons.delete_outline_rounded,
-                          size: 19,
+                          size: 18,
                           color: AppColors.fakeCoral,
                         ),
-                        splashRadius: 20,
+                        splashRadius: 18,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                       ),
                     ],
                   ],

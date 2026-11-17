@@ -66,6 +66,8 @@ class DuplicateItem {
   final bool isUserKept;
   final String reason;
   final String qualityTitle;
+  final List<String> advantages;
+  final List<String> disadvantages;
 
   DuplicateItem({
     required this.info,
@@ -73,6 +75,8 @@ class DuplicateItem {
     required this.isUserKept,
     required this.reason,
     required this.qualityTitle,
+    this.advantages = const [],
+    this.disadvantages = const [],
   });
 
   DuplicateItem copyWith({
@@ -80,6 +84,8 @@ class DuplicateItem {
     bool? isUserKept,
     String? reason,
     String? qualityTitle,
+    List<String>? advantages,
+    List<String>? disadvantages,
   }) {
     return DuplicateItem(
       info: info,
@@ -87,6 +93,8 @@ class DuplicateItem {
       isUserKept: isUserKept ?? this.isUserKept,
       reason: reason ?? this.reason,
       qualityTitle: qualityTitle ?? this.qualityTitle,
+      advantages: advantages ?? this.advantages,
+      disadvantages: disadvantages ?? this.disadvantages,
     );
   }
 }
@@ -237,8 +245,11 @@ class DuplicateDetector {
     required bool isMd5,
   }) {
     FlacInfo? smallestInMd5;
+    bool allSameSize = false;
     if (isMd5 && list.isNotEmpty) {
       smallestInMd5 = list.reduce((a, b) => a.fileSizeMb < b.fileSizeMb ? a : b);
+      final firstSize = list.first.fileSizeMb;
+      allSameSize = list.every((t) => (t.fileSizeMb - firstSize).abs() < 0.05);
     }
 
     final scoredTracks = list.map((t) {
@@ -275,19 +286,109 @@ class DuplicateDetector {
         qualityTitle = 'Lossless CD Quality';
       }
 
+      final advantages = <String>[];
+      final disadvantages = <String>[];
+
+      final otherTracks = sorted.where((t) => t.filePath != item.filePath).toList();
+      final otherLacksLyrics = otherTracks.any((t) => !t.hasLyrics);
+
+      if (isPick) {
+        if (isMd5) {
+          if (allSameSize) {
+            advantages.add('Bit-identical audio waveform (MD5 match)');
+            advantages.add('Primary collection master');
+          } else {
+            final diff = (otherTracks.isNotEmpty ? (otherTracks.first.fileSizeMb - item.fileSizeMb) : 0.0);
+            if (diff > 0.05) {
+              advantages.add('Saves ${diff.toStringAsFixed(1)} MB with identical waveform');
+            }
+            advantages.add('100% bit-identical stream');
+          }
+        } else {
+          if (item.hasLyrics && otherLacksLyrics) {
+            advantages.add('Contains Synced Lyrics (.lrc)');
+          }
+          if (item.score >= 80 && otherTracks.any((t) => t.score < 50 && t.score > 0)) {
+            advantages.add('Genuine Lossless (${item.score}% purity)');
+          }
+          final maxOtherBitDepth = otherTracks.isNotEmpty ? otherTracks.map((t) => t.bitDepth).reduce((a, b) => a > b ? a : b) : 0;
+          if (item.bitDepth > maxOtherBitDepth) {
+            advantages.add('${item.bitDepth}-bit Studio Master container');
+          }
+          final maxOtherSampleRate = otherTracks.isNotEmpty ? otherTracks.map((t) => t.sampleRate).reduce((a, b) => a > b ? a : b) : 0;
+          if (item.sampleRate > maxOtherSampleRate) {
+            advantages.add('${(item.sampleRate / 1000).toStringAsFixed(1)} kHz High-Res sampling');
+          }
+          if (item.hasCover && otherTracks.any((t) => !t.hasCover)) {
+            advantages.add('High-Res embedded artwork');
+          }
+        }
+      } else {
+        if (isMd5) {
+          if (allSameSize) {
+            disadvantages.add('Bit-identical clone of primary file');
+            disadvantages.add('${item.fileSizeMb.toStringAsFixed(1)} MB redundant storage');
+          } else {
+            final extra = item.fileSizeMb - best.fileSizeMb;
+            if (extra > 0.05) {
+              disadvantages.add('Uses ${extra.toStringAsFixed(1)} MB extra storage');
+            }
+            disadvantages.add('Redundant bit-identical audio');
+          }
+        } else {
+          if (!item.hasLyrics && best.hasLyrics) {
+            disadvantages.add('Missing Synced Lyrics (.lrc)');
+          }
+          if (item.score < best.score && item.score > 0) {
+            disadvantages.add('Lower purity (${item.score}% vs ${best.score}%)');
+          }
+          if (item.bitDepth < best.bitDepth) {
+            disadvantages.add('Lower bit depth (${item.bitDepth}-bit vs ${best.bitDepth}-bit)');
+          }
+          if (item.sampleRate < best.sampleRate) {
+            disadvantages.add('Lower sample rate (${(item.sampleRate / 1000).toStringAsFixed(1)}k vs ${(best.sampleRate / 1000).toStringAsFixed(1)}k)');
+          }
+          if (!item.hasCover && best.hasCover) {
+            disadvantages.add('Missing album artwork');
+          }
+        }
+      }
+
       String reason;
       if (isPick) {
         if (isMd5) {
-          reason = 'Identical audio waveforms • Best compression';
+          if (allSameSize) {
+            reason = 'Bit-identical waveforms • Primary library master';
+          } else {
+            final diff = (otherTracks.isNotEmpty ? (otherTracks.first.fileSizeMb - item.fileSizeMb) : 0.0);
+            reason = diff > 0.05
+                ? 'Bit-identical audio • Saves ${diff.toStringAsFixed(1)} MB'
+                : 'Bit-identical audio • Best compression';
+          }
         } else if (allFake) {
           reason = 'Identical lossy cutoff • Preserving space-saving copy';
-        } else if (item.status == 'genuine') {
+        } else if (item.hasLyrics && otherLacksLyrics) {
+          reason = 'Embedded synced lyrics & highest metadata fidelity';
+        } else if (item.status == 'genuine' && otherTracks.any((t) => t.status == 'fake')) {
           reason = 'Authentic lossless audio with full studio harmonics';
+        } else if (otherTracks.isNotEmpty && item.bitDepth > otherTracks.first.bitDepth) {
+          reason = 'Higher resolution (${item.bitDepth}-bit Studio Master)';
+        } else if (otherTracks.isNotEmpty && item.sampleRate > otherTracks.first.sampleRate) {
+          reason = 'Higher sample rate (${(item.sampleRate / 1000).toStringAsFixed(1)}k vs ${(otherTracks.first.sampleRate / 1000).toStringAsFixed(1)}k)';
         } else {
           reason = 'Highest resolution and metadata fidelity';
         }
       } else if (isMd5) {
-        reason = 'Bit-identical clone (${item.fileSizeMb.toStringAsFixed(1)} MB redundant)';
+        if (allSameSize) {
+          reason = 'Bit-identical clone (${item.fileSizeMb.toStringAsFixed(1)} MB redundant)';
+        } else {
+          final extra = item.fileSizeMb - best.fileSizeMb;
+          reason = extra > 0.05
+              ? 'Bit-identical clone • ${extra.toStringAsFixed(1)} MB extra storage'
+              : 'Bit-identical clone (${item.fileSizeMb.toStringAsFixed(1)} MB redundant)';
+        }
+      } else if (!item.hasLyrics && best.hasLyrics) {
+        reason = 'Missing synced lyrics (.lrc) & lower metadata';
       } else if (best.score > item.score && item.score > 0) {
         reason = 'Lower purity (${item.score}% vs ${best.score}%) • Lossy transcode';
       } else if (best.bitDepth > item.bitDepth) {
@@ -304,6 +405,8 @@ class DuplicateDetector {
         isUserKept: isPick,
         reason: reason,
         qualityTitle: qualityTitle,
+        advantages: advantages,
+        disadvantages: disadvantages,
       ));
     }
 
