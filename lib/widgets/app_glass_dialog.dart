@@ -21,6 +21,7 @@ Future<T?> showAppGlassDialog<T>({
   Color? iconColor,
   String confirmLabel = 'Got it',
   VoidCallback? onConfirm,
+  Color? confirmColor,
   String? cancelLabel,
   VoidCallback? onCancel,
   bool isDestructive = false,
@@ -38,7 +39,9 @@ Future<T?> showAppGlassDialog<T>({
       final textColor = appState.getTextColor(ctx);
       final subTextColor = appState.getSubTextColor(ctx);
       final activeAccent = appState.getAccentColor(ctx);
-      final onAccentColor = isDestructive
+      final resolvedConfirmColor = confirmColor ??
+          (isDestructive ? AppColors.fakeCoral.withOpacity(0.9) : activeAccent);
+      final onAccentColor = (confirmColor != null || isDestructive)
           ? Colors.white
           : AppColors.getOnAccentColor(activeAccent, isDark: isDark);
 
@@ -156,14 +159,11 @@ Future<T?> showAppGlassDialog<T>({
                             height: 42,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: isDestructive
-                                  ? AppColors.fakeCoral.withOpacity(0.9)
-                                  : activeAccent,
+                              color: resolvedConfirmColor,
                               borderRadius: BorderRadius.circular(13),
                               boxShadow: [
                                 BoxShadow(
-                                  color: (isDestructive ? AppColors.fakeCoral : activeAccent)
-                                      .withOpacity(0.35),
+                                  color: resolvedConfirmColor.withOpacity(0.35),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -195,11 +195,11 @@ Future<T?> showAppGlassDialog<T>({
                       height: 42,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: activeAccent,
+                        color: resolvedConfirmColor,
                         borderRadius: BorderRadius.circular(13),
                         boxShadow: [
                           BoxShadow(
-                            color: activeAccent.withOpacity(0.35),
+                            color: resolvedConfirmColor.withOpacity(0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),

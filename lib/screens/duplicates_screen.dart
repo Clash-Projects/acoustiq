@@ -40,7 +40,20 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   @override
   void initState() {
     super.initState();
+    appState.addListener(_onAppStateChanged);
     if (appState.sharedLibrary.isNotEmpty) {
+      _analyzeDuplicates(appState.sharedLibrary);
+    }
+  }
+
+  @override
+  void dispose() {
+    appState.removeListener(_onAppStateChanged);
+    super.dispose();
+  }
+
+  void _onAppStateChanged() {
+    if (!_isScanning && mounted) {
       _analyzeDuplicates(appState.sharedLibrary);
     }
   }
@@ -300,7 +313,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Quick Scan Device Music',
+                                'Scan Music Folder',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -309,7 +322,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '/storage/emulated/0/Music • 1-Tap direct scan',
+                                '/storage/emulated/0/Music • Standard music library',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: subTextColor,
@@ -353,7 +366,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Quick Scan Downloads',
+                                'Scan Downloads Folder',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -362,7 +375,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '/storage/emulated/0/Download • FLAC downloads',
+                                '/storage/emulated/0/Download • FLAC downloads folder',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: subTextColor,
@@ -672,7 +685,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                           Icon(Icons.library_music_rounded, size: 16, color: activeAccent),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'Quick Scan Music',
+                                            'Scan Music Library',
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w700,

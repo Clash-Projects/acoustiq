@@ -386,6 +386,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addTrackToLibrary(FlacInfo track) {
+    if (!_sharedLibrary.any((t) => t.filePath == track.filePath)) {
+      _sharedLibrary.add(track);
+      saveLibraryCache();
+      notifyListeners();
+    }
+  }
+
   Future<void> clearLibraryCache() async {
     _sharedLibrary.clear();
     _lastScannedFolder = null;
