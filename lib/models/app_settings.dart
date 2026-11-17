@@ -21,15 +21,13 @@ class AppState extends ChangeNotifier {
   String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
   String _fontFamily = 'SF-Pro'; // 'SF-Pro', 'Geist', 'PlusJakartaSans', 'Inter'
 
-  // Hardware Tiering & Low-Power Performance Engine (Strategy B)
-  bool _strictLowPowerMode = false;
-  bool _autoHardwareTiering = true;
+  // Hardware Tiering & Low-Power Specs (Detected quietly)
   String _deviceModel = '';
   int _totalRamMb = 0;
   bool _isLowSpecDevice = false;
   int _activeTabIndex = 0;
 
-  // AcoustiQ Developer Laboratory & QA Mode (Enabled for active QA cycle)
+  // AcoustiQ Developer Laboratory & QA Mode
   bool _devModeEnabled = true;
   FlacInfo? _injectedMockTrack;
 
@@ -37,8 +35,8 @@ class AppState extends ChangeNotifier {
   String? _lastScannedFolder;
   List<String> _recentFilePaths = [];
 
-  bool get isLiquidGlass => _strictLowPowerMode ? false : _isLiquidGlass;
-  bool get liquidGlassEnabled => isLiquidGlass;
+  bool get isLiquidGlass => _isLiquidGlass;
+  bool get liquidGlassEnabled => _isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get amoledMode => _amoledMode;
   bool get audiophileMode => _audiophileMode;
@@ -52,11 +50,11 @@ class AppState extends ChangeNotifier {
   String get wallpaperPreset => _wallpaperPreset;
   String? get customWallpaperPath => _customWallpaperPath;
   String get motionPreset => _motionPreset;
-  bool get isFullMotion => _motionPreset == 'full' && !_strictLowPowerMode;
-  bool get isReducedMotion => _motionPreset == 'reduced' || (_strictLowPowerMode && _motionPreset != 'off');
+  bool get isFullMotion => _motionPreset == 'full';
+  bool get isReducedMotion => _motionPreset == 'reduced';
   bool get isMotionOff => _motionPreset == 'off';
-  bool get strictLowPowerMode => _strictLowPowerMode;
-  bool get autoHardwareTiering => _autoHardwareTiering;
+  bool get strictLowPowerMode => !_isLiquidGlass;
+  bool get autoHardwareTiering => true;
   String get deviceModel => _deviceModel;
   int get totalRamMb => _totalRamMb;
   bool get isLowSpecDevice => _isLowSpecDevice;
@@ -69,55 +67,11 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     try {
       _prefs = await SharedPreferences.getInstance();
-      _isLiquidGlass = _prefs?.getBool('is_liquid_glass') ?? true;
-      _hapticsEnabled = _prefs?.getBool('haptics_enabled') ?? true;
-      _amoledMode = _prefs?.getBool('amoled_mode') ?? true;
-      _themeMode = _prefs?.getString('theme_mode') ?? 'dark';
-      _accentPreset = _prefs?.getString('accent_preset') ?? 'Cyan';
-      // Seamless migration from legacy LastWave and prototype preset names
-      if (_accentPreset == 'Ocean' || _accentPreset == 'Prism Cyan') {
-        _accentPreset = 'Cyan';
-      } else if (_accentPreset == 'Amber' || _accentPreset == 'Analog Amber') {
-        _accentPreset = 'Amber';
-      } else if (_accentPreset == 'Sage' || _accentPreset == 'Acoustic Emerald') {
-        _accentPreset = 'Emerald';
-      } else if (_accentPreset == 'Violet' || _accentPreset == 'Ultraviolet Hi-Res') {
-        _accentPreset = 'Violet';
-      } else if (_accentPreset == 'Crimson' || _accentPreset == 'Crimson Peak') {
-        _accentPreset = 'Crimson';
-      } else if (_accentPreset == 'Mono' || _accentPreset == 'Titanium Mono') {
-        _accentPreset = 'Monochrome';
-      } else if (_accentPreset == 'Custom' || _accentPreset == 'Custom Resonance') {
-        _accentPreset = 'Custom';
-      }
 
-      final savedColor = _prefs?.getInt('custom_color_value');
-      if (savedColor != null) {
-        _customColor = Color(savedColor);
-      }
+      final hasExistingPrefs = _prefs?.containsKey('is_liquid_glass') ?? false;
+      final hasInitialized = (_prefs?.getBool('has_initialized_defaults') ?? false) || hasExistingPrefs;
 
-      _wallpaperPreset = _prefs?.getString('wallpaper_preset') ?? 'cloud';
-      if (_wallpaperPreset == 'nebula' ||
-          _wallpaperPreset == 'sunset' ||
-          _wallpaperPreset == 'titanium' ||
-          _wallpaperPreset == 'acoustic') {
-        _wallpaperPreset = 'cloud';
-        _prefs?.setString('wallpaper_preset', 'cloud');
-      } else if (_wallpaperPreset == 'abyss') {
-        _wallpaperPreset = 'emerald';
-        _prefs?.setString('wallpaper_preset', 'emerald');
-      }
-      _customWallpaperPath = _prefs?.getString('custom_wallpaper_path');
-      _motionPreset = _prefs?.getString('motion_preset') ?? 'full';
-
-      _audiophileMode = _prefs?.getBool('audiophile_mode') ?? false;
-      _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
-      _fontFamily = _prefs?.getString('font_family') ?? 'SF-Pro';
-      _devModeEnabled = true; // Always active for instant Dev Lab QA and live font testing
-      _autoHardwareTiering = _prefs?.getBool('auto_hardware_tiering') ?? true;
-      _strictLowPowerMode = _prefs?.getBool('strict_low_power_mode') ?? false;
-
-      // Query hardware specs from native Android layer for Strategy B Hardware Tiering
+      // Query hardware specs from native Android layer quietly
       try {
         const channel = MethodChannel('flac_toolkit/audio_decoder');
         final specs = await channel.invokeMethod<Map>('getDeviceHardwareSpecs');
@@ -126,20 +80,47 @@ class AppState extends ChangeNotifier {
           _totalRamMb = (specs['totalRamMb'] as int?) ?? 0;
           final isLowRam = specs['isLowRam'] == true;
           _isLowSpecDevice = isLowRam || _totalRamMb < 3500 || _deviceModel.toLowerCase().contains('acer');
-
-          // If auto tiering is enabled and user hasn't explicitly customized, engage Low-Power Mode for Acer / budget hardware
-          if (_autoHardwareTiering && _isLowSpecDevice) {
-            final hasExplicit = _prefs?.containsKey('strict_low_power_mode') ?? false;
-            if (!hasExplicit) {
-              _strictLowPowerMode = true;
-              _isLiquidGlass = false;
-              if (_motionPreset == 'full') {
-                _motionPreset = 'reduced';
-              }
-            }
-          }
         }
       } catch (_) {}
+
+      if (!hasInitialized) {
+        // First run on this device: establish device-appropriate defaults
+        _isLiquidGlass = !_isLowSpecDevice;
+        _motionPreset = _isLowSpecDevice ? 'reduced' : 'full';
+        _hapticsEnabled = true;
+        _amoledMode = true;
+        _themeMode = 'dark';
+        _accentPreset = 'Cyan';
+        _fontFamily = 'SF-Pro';
+        _wallpaperPreset = 'cloud';
+        _audiophileMode = false;
+        _visualizerMode = 'hybrid';
+
+        // Persist all defaults immediately so they sustain across restarts
+        await _prefs?.setBool('is_liquid_glass', _isLiquidGlass);
+        await _prefs?.setString('motion_preset', _motionPreset);
+        await _prefs?.setBool('haptics_enabled', _hapticsEnabled);
+        await _prefs?.setBool('amoled_mode', _amoledMode);
+        await _prefs?.setString('theme_mode', _themeMode);
+        await _prefs?.setString('accent_preset', _accentPreset);
+        await _prefs?.setString('font_family', _fontFamily);
+        await _prefs?.setString('wallpaper_preset', _wallpaperPreset);
+        await _prefs?.setBool('audiophile_mode', _audiophileMode);
+        await _prefs?.setString('visualizer_mode', _visualizerMode);
+        await _prefs?.setBool('has_initialized_defaults', true);
+      } else {
+        // Subsequent launches: ALWAYS restore saved user settings
+        _isLiquidGlass = _prefs?.getBool('is_liquid_glass') ?? (!_isLowSpecDevice);
+        _motionPreset = _prefs?.getString('motion_preset') ?? (_isLowSpecDevice ? 'reduced' : 'full');
+        _hapticsEnabled = _prefs?.getBool('haptics_enabled') ?? true;
+        _amoledMode = _prefs?.getBool('amoled_mode') ?? true;
+        _themeMode = _prefs?.getString('theme_mode') ?? 'dark';
+        _accentPreset = _prefs?.getString('accent_preset') ?? 'Cyan';
+        _fontFamily = _prefs?.getString('font_family') ?? 'SF-Pro';
+        _wallpaperPreset = _prefs?.getString('wallpaper_preset') ?? 'cloud';
+        _audiophileMode = _prefs?.getBool('audiophile_mode') ?? false;
+        _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
+      }
 
       // Verify custom wallpaper file still exists on disk
       if (_customWallpaperPath != null && !File(_customWallpaperPath!).existsSync()) {
@@ -231,31 +212,15 @@ class AppState extends ChangeNotifier {
   void setLiquidGlass(bool value) {
     _isLiquidGlass = value;
     _prefs?.setBool('is_liquid_glass', value);
-    if (value && _strictLowPowerMode) {
-      _strictLowPowerMode = false;
-      _prefs?.setBool('strict_low_power_mode', false);
-    }
     notifyListeners();
   }
 
   void setStrictLowPowerMode(bool enabled) {
-    _strictLowPowerMode = enabled;
-    _prefs?.setBool('strict_low_power_mode', enabled);
-    if (enabled) {
-      _isLiquidGlass = false;
-      if (_motionPreset == 'full') {
-        _motionPreset = 'reduced';
-      }
-    }
-    notifyListeners();
+    setLiquidGlass(!enabled);
   }
 
   void setAutoHardwareTiering(bool enabled) {
-    _autoHardwareTiering = enabled;
-    _prefs?.setBool('auto_hardware_tiering', enabled);
-    if (enabled && _isLowSpecDevice) {
-      setStrictLowPowerMode(true);
-    }
+    // Preserved for binary/DevLab compatibility
     notifyListeners();
   }
 

@@ -344,13 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             badges: [
               appState.accentPreset.toUpperCase(),
               _fontBadgeLabel(appState.fontFamily),
-              appState.amoledMode && isDark ? 'PURE BLACK' : (isDark ? 'DARK' : 'LIGHT'),
-              if (appState.strictLowPowerMode)
-                'HIGH EFFICIENCY'
-              else if (appState.isLiquidGlass)
-                'GLASS BLUR'
-              else
-                'MATTE SURFACES',
+              appState.isLiquidGlass ? 'GLASS' : 'MATTE',
               motionLabel.toUpperCase(),
             ],
             onTap: () {
@@ -706,8 +700,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
           const SizedBox(height: 16),
 
-          // 2. TYPOGRAPHY ENGINE
-          buildSectionHeader('Typography Engine', subTextColor),
+          // 2. TYPOGRAPHY
+          buildSectionHeader('Typography', subTextColor),
           _buildTypographySection(context, isDark, textColor, subTextColor, activeAccent),
 
           const SizedBox(height: 16),
@@ -721,7 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           // 4. DISPLAY & SURFACES
           buildSectionHeader('Display & Surfaces', subTextColor),
           ExpressiveGroup(
-            rowCount: 5,
+            rowCount: 3,
             itemBuilder: (context, index, position) {
               switch (index) {
                 case 0:
@@ -748,14 +742,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   );
                 case 2:
+                default:
                   return ExpressiveGroupRow(
                     icon: Icons.blur_on_rounded,
                     iconColor: activeAccent,
                     iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                    title: 'Glass Blur Effect',
+                    title: 'Translucent Glass',
                     subtitle: appState.isLiquidGlass
-                        ? 'Frosted translucent glass across cards and dialogs'
-                        : 'Solid opaque surfaces to save battery on older devices',
+                        ? 'Frosted translucent surfaces across dock & cards'
+                        : 'Solid matte surfaces for maximum speed & battery',
                     position: position,
                     trailing: Switch.adaptive(
                       value: appState.isLiquidGlass,
@@ -763,51 +758,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       onChanged: (val) {
                         if (appState.hapticsEnabled) HapticFeedback.selectionClick();
                         appState.setLiquidGlass(val);
-                      },
-                    ),
-                  );
-                case 3:
-                  return ExpressiveGroupRow(
-                    icon: Icons.speed_rounded,
-                    iconColor: AppColors.genuineEmerald,
-                    iconBgColor: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
-                    title: 'Strict High-Efficiency Mode',
-                    subtitle: appState.strictLowPowerMode
-                        ? 'Zero GPU blur passes • 100% matte surfaces • Butter-smooth 60 FPS'
-                        : 'Bypasses heavy GPU shaders on entry-level tablets (Strategy B)',
-                    position: position,
-                    trailing: Switch.adaptive(
-                      value: appState.strictLowPowerMode,
-                      activeColor: AppColors.genuineEmerald,
-                      onChanged: (val) {
-                        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                        appState.setStrictLowPowerMode(val);
                         showThemedSnackBar(
                           context,
-                          val ? '⚡ High-Efficiency Mode ON (Zero Blur)' : '✨ Normal Glass Rendering',
-                          icon: Icons.speed_rounded,
+                          val ? '✨ Translucent Glass ON' : '⚡ Matte Surface Mode (Zero Blur)',
+                          icon: val ? Icons.blur_on_rounded : Icons.flash_on_rounded,
                         );
-                      },
-                    ),
-                  );
-                case 4:
-                default:
-                  final hwDesc = appState.deviceModel.isNotEmpty
-                      ? '${appState.deviceModel} (${appState.totalRamMb > 0 ? "${appState.totalRamMb}MB" : ""}) • ${appState.isLowSpecDevice ? "Tier: Budget" : "Tier: High-Performance"}'
-                      : 'Automatically tunes glass & motion to device GPU capability';
-                  return ExpressiveGroupRow(
-                    icon: Icons.devices_rounded,
-                    iconColor: const Color(0xFF38BDF8),
-                    iconBgColor: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
-                    title: 'Hardware Auto-Tiering',
-                    subtitle: hwDesc,
-                    position: position,
-                    trailing: Switch.adaptive(
-                      value: appState.autoHardwareTiering,
-                      activeColor: const Color(0xFF38BDF8),
-                      onChanged: (val) {
-                        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-                        appState.setAutoHardwareTiering(val);
                       },
                     ),
                   );
@@ -832,10 +787,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     Color activeAccent,
   ) {
     final fonts = [
-      {'key': 'SF-Pro', 'title': 'SF Pro', 'desc': 'Apple visionOS (Sleek Luxury)', 'icon': Icons.apple_rounded},
-      {'key': 'Geist', 'title': 'Geist Sans', 'desc': 'Vercel / Linear (Razor-Sharp Tech)', 'icon': Icons.bolt_rounded},
-      {'key': 'PlusJakartaSans', 'title': 'Plus Jakarta Sans', 'desc': 'Modern Geometric Grotesque', 'icon': Icons.waves_rounded},
-      {'key': 'Inter', 'title': 'Inter', 'desc': 'Tuned Compact Neo-Grotesque', 'icon': Icons.tune_rounded},
+      {'key': 'SF-Pro', 'title': 'SF Pro', 'desc': 'System Default • Clean & Balanced', 'icon': Icons.apple_rounded},
+      {'key': 'Geist', 'title': 'Geist Sans', 'desc': 'Modern & Sharp', 'icon': Icons.bolt_rounded},
+      {'key': 'PlusJakartaSans', 'title': 'Plus Jakarta Sans', 'desc': 'Rounded & Friendly', 'icon': Icons.waves_rounded},
+      {'key': 'Inter', 'title': 'Inter', 'desc': 'Classic & Highly Legible', 'icon': Icons.tune_rounded},
     ];
 
     return ExpressiveGroup(
@@ -904,42 +859,17 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   ) {
     final currentPreset = appState.motionPreset;
 
-    final IconData statusIcon;
-    final String statusBadge;
-    final Color statusBadgeBg;
-    final Color statusBadgeText;
-    final String statusTitle;
-    final String statusBody1;
-    final String statusBody2;
-
+    final String motionHint;
     switch (currentPreset) {
       case 'reduced':
-        statusIcon = Icons.tune_rounded;
-        statusBadge = 'BALANCED';
-        statusBadgeBg = AppColors.suspiciousAmber.withOpacity(isDark ? 0.25 : 0.15);
-        statusBadgeText = AppColors.suspiciousAmber;
-        statusTitle = 'Essential Screen Transitions';
-        statusBody1 = 'Page transitions remain smooth and responsive.';
-        statusBody2 = 'Continuous looping waveforms are paused to save battery.';
+        motionHint = 'Smooth transitions with paused background waveforms (Balanced)';
         break;
       case 'off':
-        statusIcon = Icons.block_rounded;
-        statusBadge = 'BATTERY SAVER';
-        statusBadgeBg = const Color(0xFF64748B).withOpacity(isDark ? 0.25 : 0.15);
-        statusBadgeText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
-        statusTitle = 'Instant Static Rendering';
-        statusBody1 = 'Zero animation overhead across the entire app.';
-        statusBody2 = 'Maximum battery life and optimal performance on low-power devices.';
+        motionHint = 'Instant transitions for maximum battery savings';
         break;
       case 'full':
       default:
-        statusIcon = Icons.bolt_rounded;
-        statusBadge = '120Hz SMOOTH';
-        statusBadgeBg = AppColors.genuineEmerald.withOpacity(isDark ? 0.25 : 0.15);
-        statusBadgeText = AppColors.genuineEmerald;
-        statusTitle = 'Full Fluid Animations';
-        statusBody1 = 'High-refresh 120Hz screen transitions and active visualizers.';
-        statusBody2 = 'Recommended for modern displays for maximum visual fluidity.';
+        motionHint = 'Fluid micro-interactions and smooth spring physics';
         break;
     }
 
@@ -980,7 +910,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Motion Smoothness',
+                            'Animation Smoothness',
                             style: TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
@@ -988,7 +918,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                             ),
                           ),
                           Text(
-                            'Animation refresh rate & power balance',
+                            motionHint,
                             style: TextStyle(
                               fontSize: 11,
                               color: subTextColor,
@@ -1000,7 +930,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   ],
                 ),
                 const SizedBox(height: 14),
-                // 3-way segment buttons (Clean Native Vector Icons, zero emojis)
+                // 3-way segment buttons
                 Container(
                   height: 38,
                   padding: const EdgeInsets.all(3),
@@ -1013,118 +943,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       _buildMotionSegment('full', Icons.bolt_rounded, 'Full', currentPreset, isDark, activeAccent, textColor),
                       _buildMotionSegment('reduced', Icons.tune_rounded, 'Reduced', currentPreset, isDark, activeAccent, textColor),
                       _buildMotionSegment('off', Icons.block_rounded, 'Off', currentPreset, isDark, activeAccent, textColor),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Formatted Status Card (Structured typography, bold highlights, line gaps)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: statusBadgeBg,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(statusIcon, size: 12, color: statusBadgeText),
-                                const SizedBox(width: 4),
-                                Text(
-                                  statusBadge,
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
-                                    color: statusBadgeText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              statusTitle,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 5),
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: activeAccent,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              statusBody1,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w500,
-                                color: subTextColor,
-                                height: 1.35,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 5),
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: activeAccent.withOpacity(0.5),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              statusBody2,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w500,
-                                color: subTextColor,
-                                height: 1.35,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -1770,7 +1588,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           // 2. HARDWARE & DECODER ARCHITECTURE (De-jargoned consumer info)
           buildSectionHeader('Hardware Architecture', subTextColor),
           ExpressiveGroup(
-            rowCount: 2,
+            rowCount: 3,
             itemBuilder: (context, index, position) {
               if (index == 0) {
                 return ExpressiveGroupRow(
@@ -1797,7 +1615,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   ),
                 );
-              } else {
+              } else if (index == 1) {
                 return ExpressiveGroupRow(
                   icon: Icons.speed_rounded,
                   iconColor: AppColors.genuineEmerald,
@@ -1818,6 +1636,36 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: AppColors.genuineEmerald,
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                final tierLabel = appState.isLowSpecDevice ? 'BALANCED' : 'HIGH PERFORMANCE';
+                final tierColor = appState.isLowSpecDevice ? AppColors.suspiciousAmber : AppColors.genuineEmerald;
+                final devName = appState.deviceModel.isNotEmpty ? appState.deviceModel : 'Detected Device';
+                final ramText = appState.totalRamMb > 0 ? ' • ${appState.totalRamMb} MB' : '';
+
+                return ExpressiveGroupRow(
+                  icon: Icons.devices_rounded,
+                  iconColor: const Color(0xFF38BDF8),
+                  iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
+                  title: 'Device Hardware Profile',
+                  subtitle: '$devName$ramText',
+                  position: position,
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: tierColor.withOpacity(isDark ? 0.20 : 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      tierLabel,
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: tierColor,
                       ),
                     ),
                   ),
