@@ -169,6 +169,7 @@ class _MainShellState extends State<MainShell> {
                   child: LiquidLensNavBar(
                     currentIndex: _currentIndex,
                     onTabSelected: (index) {
+                      appState.setActiveTabIndex(index);
                       setState(() => _currentIndex = index);
                     },
                   ),

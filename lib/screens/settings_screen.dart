@@ -345,7 +345,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               appState.accentPreset.toUpperCase(),
               _fontBadgeLabel(appState.fontFamily),
               appState.amoledMode && isDark ? 'PURE BLACK' : (isDark ? 'DARK' : 'LIGHT'),
-              if (appState.isLiquidGlass) 'GLASS BLUR',
+              if (appState.strictLowPowerMode)
+                'HIGH EFFICIENCY'
+              else if (appState.isLiquidGlass)
+                'GLASS BLUR'
+              else
+                'MATTE SURFACES',
               motionLabel.toUpperCase(),
             ],
             onTap: () {
@@ -716,7 +721,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           // 4. DISPLAY & SURFACES
           buildSectionHeader('Display & Surfaces', subTextColor),
           ExpressiveGroup(
-            rowCount: 3,
+            rowCount: 5,
             itemBuilder: (context, index, position) {
               switch (index) {
                 case 0:
@@ -743,7 +748,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   );
                 case 2:
-                default:
                   return ExpressiveGroupRow(
                     icon: Icons.blur_on_rounded,
                     iconColor: activeAccent,
@@ -759,6 +763,51 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       onChanged: (val) {
                         if (appState.hapticsEnabled) HapticFeedback.selectionClick();
                         appState.setLiquidGlass(val);
+                      },
+                    ),
+                  );
+                case 3:
+                  return ExpressiveGroupRow(
+                    icon: Icons.speed_rounded,
+                    iconColor: AppColors.genuineEmerald,
+                    iconBgColor: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                    title: 'Strict High-Efficiency Mode',
+                    subtitle: appState.strictLowPowerMode
+                        ? 'Zero GPU blur passes • 100% matte surfaces • Butter-smooth 60 FPS'
+                        : 'Bypasses heavy GPU shaders on entry-level tablets (Strategy B)',
+                    position: position,
+                    trailing: Switch.adaptive(
+                      value: appState.strictLowPowerMode,
+                      activeColor: AppColors.genuineEmerald,
+                      onChanged: (val) {
+                        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                        appState.setStrictLowPowerMode(val);
+                        showThemedSnackBar(
+                          context,
+                          val ? '⚡ High-Efficiency Mode ON (Zero Blur)' : '✨ Normal Glass Rendering',
+                          icon: Icons.speed_rounded,
+                        );
+                      },
+                    ),
+                  );
+                case 4:
+                default:
+                  final hwDesc = appState.deviceModel.isNotEmpty
+                      ? '${appState.deviceModel} (${appState.totalRamMb > 0 ? "${appState.totalRamMb}MB" : ""}) • ${appState.isLowSpecDevice ? "Tier: Budget" : "Tier: High-Performance"}'
+                      : 'Automatically tunes glass & motion to device GPU capability';
+                  return ExpressiveGroupRow(
+                    icon: Icons.devices_rounded,
+                    iconColor: const Color(0xFF38BDF8),
+                    iconBgColor: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
+                    title: 'Hardware Auto-Tiering',
+                    subtitle: hwDesc,
+                    position: position,
+                    trailing: Switch.adaptive(
+                      value: appState.autoHardwareTiering,
+                      activeColor: const Color(0xFF38BDF8),
+                      onChanged: (val) {
+                        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                        appState.setAutoHardwareTiering(val);
                       },
                     ),
                   );

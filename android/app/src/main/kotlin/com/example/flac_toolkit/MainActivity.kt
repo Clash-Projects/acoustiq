@@ -313,6 +313,25 @@ class MainActivity: FlutterActivity() {
                         }
                     }
                 }
+                "getDeviceHardwareSpecs" -> {
+                    try {
+                        val actManager = getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+                        val memInfo = android.app.ActivityManager.MemoryInfo()
+                        actManager?.getMemoryInfo(memInfo)
+                        val totalRamMb = (memInfo.totalMem / (1024 * 1024)).toInt()
+                        val isLowRam = actManager?.isLowRamDevice ?: (totalRamMb < 3500)
+                        result.success(mapOf(
+                            "model" to Build.MODEL,
+                            "manufacturer" to Build.MANUFACTURER,
+                            "totalRamMb" to totalRamMb,
+                            "isLowRam" to isLowRam,
+                            "cores" to Runtime.getRuntime().availableProcessors(),
+                            "sdkInt" to Build.VERSION.SDK_INT
+                        ))
+                    } catch (e: Exception) {
+                        result.error("SPECS_ERROR", e.localizedMessage, null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }

@@ -203,12 +203,7 @@ class AmbientWallpaperView extends StatelessWidget {
           ),
         ),
 
-        // 5. Micro-Texture Surface
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _MicroTexturePainter(isDark: isDark),
-          ),
-        ),
+        // 5. Clean optical surface
       ],
     );
   }
@@ -290,12 +285,7 @@ class AmbientWallpaperView extends StatelessWidget {
           ),
         ),
 
-        // 4. Physical Brushed Metal Striations
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _TitaniumBrushedPainter(isDark: isDark),
-          ),
-        ),
+        // 4. Clean metallic surface
       ],
     );
   }
@@ -401,65 +391,6 @@ class AmbientWallpaperView extends StatelessWidget {
         );
     }
   }
-}
-
-/// Optical Micro-Texture Grain Painter
-///
-/// Simulates physical optical stippling. When processed by a Gaussian blur shader,
-/// this micro-texture produces tangible dispersion and genuine frosted glass aesthetics.
-class _MicroTexturePainter extends CustomPainter {
-  final bool isDark;
-
-  const _MicroTexturePainter({required this.isDark});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = isDark ? Colors.white.withOpacity(0.025) : Colors.black.withOpacity(0.018)
-      ..style = PaintingStyle.fill;
-
-    const step = 28.0;
-    for (double x = 8.0; x < size.width; x += step) {
-      for (double y = 8.0; y < size.height; y += step) {
-        final offset = ((x.toInt() * 73 + y.toInt() * 37) % 7).toDouble();
-        canvas.drawCircle(Offset(x + offset, y + offset), 0.75, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MicroTexturePainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
-}
-
-/// Titanium Brushed Metal Striations Painter
-///
-/// Simulates fine horizontal directional brushed striations found on
-/// premium studio audio amplifiers and DAC chassis.
-class _TitaniumBrushedPainter extends CustomPainter {
-  final bool isDark;
-
-  const _TitaniumBrushedPainter({required this.isDark});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    const step = 4.0;
-    for (double y = 0.0; y < size.height; y += step) {
-      final hash = (y * 73 + 19).toInt();
-      final alphaFactor = ((hash % 10) / 10.0);
-      final alpha = (isDark ? 0.032 : 0.024) * alphaFactor;
-      linePaint.color = (isDark ? Colors.white : Colors.black).withOpacity(alpha);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _TitaniumBrushedPainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
 }
 
 /// Studio Acoustic Foam Diffuser Painter

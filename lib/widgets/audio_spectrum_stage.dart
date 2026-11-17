@@ -70,31 +70,59 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
     super.initState();
     _entryController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: Duration(milliseconds: appState.isMotionOff ? 0 : 900),
     );
     _entryAnimation = CurvedAnimation(
       parent: _entryController,
       curve: Curves.easeOutBack,
     );
-    _entryController.forward();
+    if (appState.isMotionOff) {
+      _entryController.value = 1.0;
+    } else {
+      _entryController.forward();
+    }
 
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
-    )..repeat();
+    );
+    if (appState.isFullMotion && appState.activeTabIndex == 0) {
+      _shimmerController.repeat();
+    }
+
+    appState.addListener(_onAppStateChanged);
+  }
+
+  void _onAppStateChanged() {
+    if (!mounted) return;
+    final shouldShimmer = appState.isFullMotion && appState.activeTabIndex == 0;
+    if (shouldShimmer) {
+      if (!_shimmerController.isAnimating) {
+        _shimmerController.repeat();
+      }
+    } else {
+      if (_shimmerController.isAnimating) {
+        _shimmerController.stop();
+      }
+    }
   }
 
   @override
   void didUpdateWidget(covariant AudioSpectrumStage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.score != widget.score || oldWidget.cutoffKhz != widget.cutoffKhz) {
-      _entryController.reset();
-      _entryController.forward();
+      if (appState.isMotionOff) {
+        _entryController.value = 1.0;
+      } else {
+        _entryController.reset();
+        _entryController.forward();
+      }
     }
   }
 
   @override
   void dispose() {
+    appState.removeListener(_onAppStateChanged);
     _entryController.dispose();
     _shimmerController.dispose();
     super.dispose();

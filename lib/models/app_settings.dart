@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'flac_info.dart';
 import '../ui/theme/colors.dart';
@@ -20,6 +21,14 @@ class AppState extends ChangeNotifier {
   String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
   String _fontFamily = 'SF-Pro'; // 'SF-Pro', 'Geist', 'PlusJakartaSans', 'Inter'
 
+  // Hardware Tiering & Low-Power Performance Engine (Strategy B)
+  bool _strictLowPowerMode = false;
+  bool _autoHardwareTiering = true;
+  String _deviceModel = '';
+  int _totalRamMb = 0;
+  bool _isLowSpecDevice = false;
+  int _activeTabIndex = 0;
+
   // AcoustiQ Developer Laboratory & QA Mode (Enabled for active QA cycle)
   bool _devModeEnabled = true;
   FlacInfo? _injectedMockTrack;
@@ -28,8 +37,8 @@ class AppState extends ChangeNotifier {
   String? _lastScannedFolder;
   List<String> _recentFilePaths = [];
 
-  bool get isLiquidGlass => _isLiquidGlass;
-  bool get liquidGlassEnabled => _isLiquidGlass;
+  bool get isLiquidGlass => _strictLowPowerMode ? false : _isLiquidGlass;
+  bool get liquidGlassEnabled => isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get amoledMode => _amoledMode;
   bool get audiophileMode => _audiophileMode;
@@ -43,9 +52,15 @@ class AppState extends ChangeNotifier {
   String get wallpaperPreset => _wallpaperPreset;
   String? get customWallpaperPath => _customWallpaperPath;
   String get motionPreset => _motionPreset;
-  bool get isFullMotion => _motionPreset == 'full';
-  bool get isReducedMotion => _motionPreset == 'reduced';
+  bool get isFullMotion => _motionPreset == 'full' && !_strictLowPowerMode;
+  bool get isReducedMotion => _motionPreset == 'reduced' || (_strictLowPowerMode && _motionPreset != 'off');
   bool get isMotionOff => _motionPreset == 'off';
+  bool get strictLowPowerMode => _strictLowPowerMode;
+  bool get autoHardwareTiering => _autoHardwareTiering;
+  String get deviceModel => _deviceModel;
+  int get totalRamMb => _totalRamMb;
+  bool get isLowSpecDevice => _isLowSpecDevice;
+  int get activeTabIndex => _activeTabIndex;
   List<FlacInfo> get sharedLibrary => _sharedLibrary;
   String? get lastScannedFolder => _lastScannedFolder;
   List<String> get recentFilePaths => _recentFilePaths;
@@ -99,6 +114,32 @@ class AppState extends ChangeNotifier {
       _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
       _fontFamily = _prefs?.getString('font_family') ?? 'SF-Pro';
       _devModeEnabled = true; // Always active for instant Dev Lab QA and live font testing
+      _autoHardwareTiering = _prefs?.getBool('auto_hardware_tiering') ?? true;
+      _strictLowPowerMode = _prefs?.getBool('strict_low_power_mode') ?? false;
+
+      // Query hardware specs from native Android layer for Strategy B Hardware Tiering
+      try {
+        const channel = MethodChannel('flac_toolkit/audio_decoder');
+        final specs = await channel.invokeMethod<Map>('getDeviceHardwareSpecs');
+        if (specs != null) {
+          _deviceModel = specs['model']?.toString() ?? '';
+          _totalRamMb = (specs['totalRamMb'] as int?) ?? 0;
+          final isLowRam = specs['isLowRam'] == true;
+          _isLowSpecDevice = isLowRam || _totalRamMb < 3500 || _deviceModel.toLowerCase().contains('acer');
+
+          // If auto tiering is enabled and user hasn't explicitly customized, engage Low-Power Mode for Acer / budget hardware
+          if (_autoHardwareTiering && _isLowSpecDevice) {
+            final hasExplicit = _prefs?.containsKey('strict_low_power_mode') ?? false;
+            if (!hasExplicit) {
+              _strictLowPowerMode = true;
+              _isLiquidGlass = false;
+              if (_motionPreset == 'full') {
+                _motionPreset = 'reduced';
+              }
+            }
+          }
+        }
+      } catch (_) {}
 
       // Verify custom wallpaper file still exists on disk
       if (_customWallpaperPath != null && !File(_customWallpaperPath!).existsSync()) {
@@ -190,7 +231,39 @@ class AppState extends ChangeNotifier {
   void setLiquidGlass(bool value) {
     _isLiquidGlass = value;
     _prefs?.setBool('is_liquid_glass', value);
+    if (value && _strictLowPowerMode) {
+      _strictLowPowerMode = false;
+      _prefs?.setBool('strict_low_power_mode', false);
+    }
     notifyListeners();
+  }
+
+  void setStrictLowPowerMode(bool enabled) {
+    _strictLowPowerMode = enabled;
+    _prefs?.setBool('strict_low_power_mode', enabled);
+    if (enabled) {
+      _isLiquidGlass = false;
+      if (_motionPreset == 'full') {
+        _motionPreset = 'reduced';
+      }
+    }
+    notifyListeners();
+  }
+
+  void setAutoHardwareTiering(bool enabled) {
+    _autoHardwareTiering = enabled;
+    _prefs?.setBool('auto_hardware_tiering', enabled);
+    if (enabled && _isLowSpecDevice) {
+      setStrictLowPowerMode(true);
+    }
+    notifyListeners();
+  }
+
+  void setActiveTabIndex(int index) {
+    if (_activeTabIndex != index) {
+      _activeTabIndex = index;
+      notifyListeners();
+    }
   }
 
   void setHaptics(bool value) {

@@ -284,6 +284,36 @@ class DevLabSheet extends StatelessWidget {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _togglePill(
+                                  label: '⚡ Strict Low-Power',
+                                  value: appState.strictLowPowerMode,
+                                  isDark: isDark,
+                                  activeAccent: activeAccent,
+                                  onChanged: (val) {
+                                    appState.setStrictLowPowerMode(val);
+                                    _showLabFeedback(context, val ? '⚡ Low-Power Active (Zero Blur 60FPS)' : '✨ Normal Rendering');
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _togglePill(
+                                  label: '📱 Auto Tiering',
+                                  value: appState.autoHardwareTiering,
+                                  isDark: isDark,
+                                  activeAccent: activeAccent,
+                                  onChanged: (val) {
+                                    appState.setAutoHardwareTiering(val);
+                                    _showLabFeedback(context, val ? '📱 Auto Hardware Tiering ON' : '⚙️ Manual Hardware Tiering');
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
 
                           const SizedBox(height: 16),
 

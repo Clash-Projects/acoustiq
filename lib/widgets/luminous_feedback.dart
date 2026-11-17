@@ -74,7 +74,9 @@ class _LuminousFeedbackState extends State<LuminousFeedback>
       _tapPosition = details.localPosition;
       _isPressed = true;
     });
-    _controller.forward(from: 0.0);
+    if (!appState.isMotionOff) {
+      _controller.forward(from: 0.0);
+    }
     if (appState.hapticsEnabled) {
       HapticFeedback.selectionClick();
     }
@@ -103,35 +105,36 @@ class _LuminousFeedbackState extends State<LuminousFeedback>
         onTapUp: _handleTapUp,
         onTapCancel: _handleTapCancel,
         child: AnimatedScale(
-          scale: _isPressed ? widget.scaleOnPress : 1.0,
-          duration: const Duration(milliseconds: 140),
+          scale: (_isPressed && !appState.isMotionOff) ? widget.scaleOnPress : 1.0,
+          duration: Duration(milliseconds: appState.isMotionOff ? 0 : 140),
           curve: Curves.fastOutSlowIn,
           child: ClipRRect(
             borderRadius: radius,
             child: Stack(
               children: [
                 widget.child,
-                // Luminous Glitter & Chromatic Ripple Overlay
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: AnimatedBuilder(
-                      animation: _controller,
-                      builder: (context, _) {
-                        if (_controller.value == 0.0 || _controller.value == 1.0) {
-                          return const SizedBox.shrink();
-                        }
-                        return CustomPaint(
-                          painter: _GlitterRipplePainter(
-                            progress: _controller.value,
-                            origin: _tapPosition,
-                            color: _accentColor,
-                            variant: widget.variant,
-                          ),
-                        );
-                      },
+                // Luminous Glitter & Chromatic Ripple Overlay (Disabled when Motion is Off)
+                if (!appState.isMotionOff)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: AnimatedBuilder(
+                        animation: _controller,
+                        builder: (context, _) {
+                          if (_controller.value == 0.0 || _controller.value == 1.0) {
+                            return const SizedBox.shrink();
+                          }
+                          return CustomPaint(
+                            painter: _GlitterRipplePainter(
+                              progress: _controller.value,
+                              origin: _tapPosition,
+                              color: _accentColor,
+                              variant: widget.variant,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

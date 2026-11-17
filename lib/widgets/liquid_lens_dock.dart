@@ -57,23 +57,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   static const double _kPillLiftGrowth = 21.0; // 55dp -> 76dp (stands 7.0dp above and 7.0dp below dock rail!)
   static const double _kPillWidthGrowth = 32.0; // 96dp -> 128dp (luxurious broad liquid bubble)
 
-  // BitChord Optical Backlit Vibrancy & Saturation Multipliers (Phase 5)
-  // Boosts chrominance by 1.30x and lifts luminance (+3% in dark mode, neutral in light mode)
-  // to prevent dull cloudy substrate and let wallpaper/artwork colors shine through the glass.
-  static const List<double> _kBacklitVibrancyDarkMatrix = <double>[
-    1.2361, -0.2145, -0.0216, 0.0, 7.65,
-    -0.0639, 1.0855, -0.0216, 0.0, 7.65,
-    -0.0639, -0.2145, 1.2784, 0.0, 7.65,
-    0.0, 0.0, 0.0, 1.0, 0.0,
-  ];
-
-  static const List<double> _kBacklitVibrancyLightMatrix = <double>[
-    1.2361, -0.2145, -0.0216, 0.0, 0.0,
-    -0.0639, 1.0855, -0.0216, 0.0, 0.0,
-    -0.0639, -0.2145, 1.2784, 0.0, 0.0,
-    0.0, 0.0, 0.0, 1.0, 0.0,
-  ];
-
   // BitChord Physics Springs & Decay Constants
   static const double _kTravelStiffness = 280.0;
   static const double _kTravelDamping = 31.4;
@@ -335,6 +318,24 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     if (targetIndex == _targetIndex && (_currentPosition - targetIndex.toDouble()).abs() < 0.001) {
       return;
     }
+    if (appState.isMotionOff) {
+      _currentPosition = targetIndex.toDouble();
+      _targetIndex = targetIndex;
+      _activeFromIndex = targetIndex;
+      _travelTarget = targetIndex.toDouble();
+      _travelFrom = targetIndex.toDouble();
+      _velocity = 0.0;
+      _liftTarget = 0.0;
+      _liftX = 0.0;
+      _liftY = 0.0;
+      _material = 0.0;
+      _handover = 1.0;
+      _glassPresence = 0.0;
+      _isFlat = true;
+      _ticker?.stop();
+      setState(() {});
+      return;
+    }
     _activeFromIndex = _targetIndex;
     _targetIndex = targetIndex;
     _travelActive = true;
@@ -344,7 +345,9 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     final double span = _travelTarget - _travelFrom;
     _travelSign = span.abs() < 1e-6 ? 0.0 : span.sign;
     _isFlat = false;
-    _squashModel.start();
+    if (!appState.isReducedMotion) {
+      _squashModel.start();
+    }
     _ensureTicker();
   }
 
@@ -463,13 +466,15 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       builder: (context, _) {
         final isDark = appState.isCurrentDark(context);
         final useGlass = appState.isLiquidGlass;
+        final activeAccent = appState.getAccentColor(context);
+        final bool isMotionReduced = appState.isReducedMotion || appState.isMotionOff;
 
         // Dynamic conservation of volume deformation (Pure acceleration, no fake sine)
-        final double deviation = _squashModel.value.clamp(-0.12, 0.12);
+        final double deviation = isMotionReduced ? 0.0 : _squashModel.value.clamp(-0.12, 0.12);
 
         // Proportional growth on lift: 55dp -> 66dp height, 96dp -> 115.2dp width
-        final double liftedW = _kActiveSlotWidth + (_liftX * _kPillWidthGrowth);
-        final double liftedH = _kPillHeight + (_liftY * _kPillLiftGrowth);
+        final double liftedW = isMotionReduced ? _kActiveSlotWidth : (_kActiveSlotWidth + (_liftX * _kPillWidthGrowth));
+        final double liftedH = isMotionReduced ? _kPillHeight : (_kPillHeight + (_liftY * _kPillLiftGrowth));
 
         final double dynamicPillWidth = liftedW * (1.0 + deviation);
         final double dynamicPillHeight = liftedH * (1.0 - deviation);
@@ -515,24 +520,17 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                     Positioned.fill(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(31),
-                        child: BackdropFilter(
-                          filter: useGlass
-                              ? ImageFilter.compose(
-                                  outer: ColorFilter.matrix(
-                                    isDark ? _kBacklitVibrancyDarkMatrix : _kBacklitVibrancyLightMatrix,
+                        child: useGlass
+                            ? BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                                child: CustomPaint(
+                                  painter: _DockSpecularRimPainter(
+                                    isDark: isDark,
+                                    radius: 31,
                                   ),
-                                  inner: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                                )
-                              : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-                          child: CustomPaint(
-                            painter: _DockSpecularRimPainter(
-                              isDark: isDark,
-                              radius: 31,
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: useGlass
-                                    ? LinearGradient(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
                                         begin: Alignment.topCenter,
                                         end: Alignment.bottomCenter,
                                         colors: isDark
@@ -549,47 +547,60 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                                 Colors.white.withOpacity(0.78),
                                               ],
                                         stops: const [0.0, 0.30, 0.70, 1.0],
-                                      )
-                                    : null,
-                                color: useGlass
-                                    ? null
-                                    : (isDark ? const Color(0xF012151A) : Colors.white),
-                                borderRadius: BorderRadius.circular(31),
-                                boxShadow: isDark
-                                    ? [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.28),
-                                          blurRadius: 18,
-                                          offset: const Offset(0, 6),
-                                        ),
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.10),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ]
-                                    : [
-                                        BoxShadow(
-                                          color: const Color(0x14000000),
-                                          blurRadius: 16,
-                                          offset: const Offset(0, 5),
-                                        ),
-                                      ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(31),
+                                      boxShadow: isDark
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.28),
+                                                blurRadius: 18,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.10),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                            ]
+                                          : [
+                                              const BoxShadow(
+                                                color: Color(0x14000000),
+                                                blurRadius: 16,
+                                                offset: Offset(0, 5),
+                                              ),
+                                            ],
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? (appState.amoledMode ? const Color(0xFF0D0F12) : const Color(0xFF181B20))
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(31),
+                                  border: Border.all(
+                                    color: isDark ? const Color(0x24FFFFFF) : const Color(0x15000000),
+                                    width: 1.0,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(isDark ? 0.36 : 0.08),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
                       ),
                     ),
 
                     // ==============================================================
-                    // LAYER 2: RESTING LIQUID GLASS MENISCUS (LastWave Native 1:1 Parity)
-                    // Placed AT THE EXACT SAME pillLeft, pillTop, dynamicPillWidth, dynamicPillHeight!
-                    // Features luminous frosted core, 0.95px razor specular hairline,
-                    // and grounded contact drop shadow. Seamlessly morphs into flight lens as material rises.
-                    // ZERO jumps, ZERO teleportation, ZERO disconnected cuts!
+                    // LAYER 2: RESTING LIQUID GLASS MENISCUS / MATTE PILL
+                    // When Glass is ON: Resting Liquid Glass Meniscus
+                    // When Glass is OFF: Clean High-Efficiency Matte Pill
                     // ==============================================================
-                    if (restingAlpha > 0.002)
+                    if (useGlass && restingAlpha > 0.002)
                       Positioned(
                         left: pillLeft,
                         top: pillTop,
@@ -639,13 +650,31 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         ),
                       ),
 
+                    if (!useGlass)
+                      Positioned(
+                        left: pillLeft,
+                        top: pillTop,
+                        width: dynamicPillWidth,
+                        height: dynamicPillHeight,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: activeAccent.withOpacity(isDark ? 0.24 : 0.14),
+                            borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
+                            border: Border.all(
+                              color: activeAccent.withOpacity(isDark ? 0.50 : 0.35),
+                              width: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+
                     // ==============================================================
                     // LAYER 2B: FLOATING LENS DROP SHADOW (Outside-Only Ambient Elevation)
                     // Placed UNDER the tab icons so the icons are NEVER obscured by shadow!
                     // Uses ClipOp.difference so ZERO shadow is drawn inside the lens body.
                     // Completely eliminates the black smoky eclipse defect!
                     // ==============================================================
-                    if (shadowAlpha > 0.002)
+                    if (useGlass && shadowAlpha > 0.002)
                       Positioned(
                         left: pillLeft,
                         top: pillTop,
@@ -776,7 +805,7 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                     // Sits unclipped OVER the tabs. Specular hairline, luminous crystal core.
                     // ZERO black shadow bleed-through. 100% water-clear optical refraction!
                     // ==============================================================
-                    if (lensGradientAlpha > 0.002 || highlightAlpha > 0.002)
+                    if (useGlass && (lensGradientAlpha > 0.002 || highlightAlpha > 0.002))
                       Positioned(
                         left: pillLeft,
                         top: pillTop,
