@@ -1,9 +1,14 @@
 package com.example.flac_toolkit
 
+import android.app.usage.StorageStatsManager
+import android.content.Context
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaPlayer
+import android.os.Build
+import android.os.Process
+import android.os.storage.StorageManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -254,12 +259,27 @@ class MainActivity: FlutterActivity() {
                     thread(name = "CacheSizeThread") {
                         try {
                             var totalBytes = 0L
-                            cacheDir?.let { totalBytes += getDirSize(it) }
-                            codeCacheDir?.let { totalBytes += getDirSize(it) }
-                            externalCacheDir?.let { totalBytes += getDirSize(it) }
-                            externalCacheDirs?.forEach { dir ->
-                                if (dir != null && dir != externalCacheDir) {
-                                    totalBytes += getDirSize(dir)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                try {
+                                    val storageStatsManager = getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
+                                    if (storageStatsManager != null) {
+                                        val stats = storageStatsManager.queryStatsForPackage(
+                                            StorageManager.UUID_DEFAULT,
+                                            packageName,
+                                            Process.myUserHandle()
+                                        )
+                                        totalBytes = stats.cacheBytes
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                            if (totalBytes <= 0L) {
+                                cacheDir?.let { totalBytes += getDirSize(it) }
+                                codeCacheDir?.let { totalBytes += getDirSize(it) }
+                                externalCacheDir?.let { totalBytes += getDirSize(it) }
+                                externalCacheDirs?.forEach { dir ->
+                                    if (dir != null && dir != externalCacheDir) {
+                                        totalBytes += getDirSize(dir)
+                                    }
                                 }
                             }
                             runOnUiThread {

@@ -4,6 +4,9 @@
 
 set -e
 
+export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
+export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"
+
 echo "=========================================="
 echo "⚡ AcoustiQ 1-Click Local Deploy"
 echo "=========================================="

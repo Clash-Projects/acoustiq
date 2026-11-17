@@ -9,6 +9,7 @@ build/
 .gradle/
 local.properties
 **/android/**/gradle-wrapper.jar
+**/GeneratedPluginRegistrant.java
 
 # Legacy
 .buildozer/
