@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
-import '../models/flac_info.dart';
 import '../services/mock_flac_factory.dart';
 import '../services/audio_playback_service.dart';
 import '../ui/theme/colors.dart';

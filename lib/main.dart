@@ -184,10 +184,6 @@ class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
 
   @override
-  MultitouchDragStrategy get multitouchDragStrategy =>
-      MultitouchDragStrategy.latestPointer;
-
-  @override
   ScrollPhysics getScrollPhysics(BuildContext context) =>
       const BoundedBouncingScrollPhysics();
 

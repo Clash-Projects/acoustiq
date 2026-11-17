@@ -58,6 +58,10 @@ class AppColors {
   static const Color badgeEmerald = Color(0xFF143324);
   static const Color badgeAmber = Color(0xFF382D16);
 
+  // Hairline subtle borders
+  static const Color darkHairline = Color(0x1FFFFFFF);
+  static const Color lightHairline = Color(0x14000000);
+
   // Soft Ambient Drop Shadows (Never harsh outlines)
   static List<BoxShadow> softElevation({double elevation = 4.0}) {
     return [

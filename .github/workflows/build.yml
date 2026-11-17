@@ -37,7 +37,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
 
@@ -51,6 +51,17 @@ jobs:
         run: |
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk dist/AcoustiQ-v1.1.0-build${{ github.run_number }}.apk
+
+      - name: Prune Obsolete Nightly Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view nightly --json assets --jq '.assets[].name' 2>/dev/null | while read -r asset; do
+            if [ -n "$asset" ]; then
+              echo "Pruning obsolete nightly asset: $asset"
+              gh release delete-asset nightly "$asset" -y || true
+            fi
+          done || true
 
       - name: Publish to GitHub Releases (Quota-Free Direct Download)
         uses: softprops/action-gh-release@v2

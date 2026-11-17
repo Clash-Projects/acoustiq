@@ -155,7 +155,7 @@ class FlacParser {
       final hasLyrics = lyrics != null && lyrics.trim().isNotEmpty;
 
       // Close random access file before running decoder on the file
-      await raf?.close();
+      await raf.close();
       raf = null;
 
       // Real DSP Forensic Frequency & Cutoff Analysis (Desktop Parity)

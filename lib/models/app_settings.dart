@@ -16,7 +16,6 @@ class AppState extends ChangeNotifier {
   String _wallpaperPreset = 'cloud'; // 'cloud', 'vinyl', 'emerald', 'solid', 'custom'
   String? _customWallpaperPath;
   String _motionPreset = 'full'; // 'full' (120Hz micro-interactions), 'reduced' (transitions only), 'off' (static battery saver)
-
   bool _audiophileMode = false; // false = Everyday Music Lover, true = Acoustic Engineer / Pro
   String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
 
@@ -32,7 +31,7 @@ class AppState extends ChangeNotifier {
   bool get liquidGlassEnabled => _isLiquidGlass;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get amoledMode => _amoledMode;
-  bool get audiophileMode => true; // Unified mode: full precision always available
+  bool get audiophileMode => _audiophileMode;
   String get visualizerMode => _visualizerMode;
   bool get devModeEnabled => _devModeEnabled;
   FlacInfo? get injectedMockTrack => _injectedMockTrack;

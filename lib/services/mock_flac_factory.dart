@@ -1,6 +1,4 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import '../models/flac_info.dart';
 
 /// AcoustiQ Developer Laboratory & QA Factory

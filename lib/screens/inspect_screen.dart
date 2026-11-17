@@ -7,7 +7,6 @@ import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
 import '../services/audio_playback_service.dart';
 import '../ui/theme/colors.dart';
-import '../ui/theme/shape.dart';
 import '../widgets/audio_spectrum_stage.dart';
 import '../widgets/audio_preview_bar.dart';
 import '../widgets/expressive_group.dart';
@@ -18,7 +17,6 @@ import '../widgets/dev_lab_sheet.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/app_glass_dialog.dart';
 import '../widgets/bounded_scroll_physics.dart';
-import 'settings_screen.dart';
 
 /// 1:1 Port of LastWave Studio-Grade Audio Inspector Architecture
 ///
