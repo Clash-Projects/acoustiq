@@ -56,8 +56,8 @@ class AcoustiQApp extends StatelessWidget {
               ? ThemeMode.light
               : (appState.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.system),
           theme: ThemeData(
-            fontFamily: 'Inter',
-            textTheme: ThemeData.light().textTheme.apply(fontFamily: 'Inter'),
+            fontFamily: appState.fontFamily,
+            textTheme: ThemeData.light().textTheme.apply(fontFamily: appState.fontFamily),
             brightness: Brightness.light,
             scaffoldBackgroundColor: AppColors.lightCanvas,
             colorScheme: const ColorScheme.light(
@@ -67,8 +67,8 @@ class AcoustiQApp extends StatelessWidget {
             ),
           ),
           darkTheme: ThemeData(
-            fontFamily: 'Inter',
-            textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'Inter'),
+            fontFamily: appState.fontFamily,
+            textTheme: ThemeData.dark().textTheme.apply(fontFamily: appState.fontFamily),
             brightness: Brightness.dark,
             scaffoldBackgroundColor: bg,
             colorScheme: ColorScheme.dark(
@@ -148,9 +148,12 @@ class _MainShellState extends State<MainShell> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 860),
-                    child: IndexedStack(
-                      index: _currentIndex,
-                      children: _screens,
+                    child: DefaultTextStyle(
+                      style: TextStyle(fontFamily: appState.fontFamily),
+                      child: IndexedStack(
+                        index: _currentIndex,
+                        children: _screens,
+                      ),
                     ),
                   ),
                 ),

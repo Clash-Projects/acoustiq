@@ -170,7 +170,6 @@ class _InspectScreenState extends State<InspectScreen> {
                     Text(
                       'Choose FLAC Track',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: textColor,
@@ -196,7 +195,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             Text(
                               'Browse Files',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: activeAccent,
@@ -219,7 +217,6 @@ class _InspectScreenState extends State<InspectScreen> {
                           child: Text(
                             'RECENT TRACKS',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.6,
@@ -253,7 +250,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                           Text(
                                             name,
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                               color: textColor,
@@ -264,7 +260,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                           Text(
                                             path,
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
                                               fontSize: 10.5,
                                               color: subTextColor,
                                             ),
@@ -289,7 +284,6 @@ class _InspectScreenState extends State<InspectScreen> {
                           child: Text(
                             'FROM AUDITED LIBRARY (${library.length})',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.6,
@@ -340,7 +334,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                           Text(
                                             t.title.isNotEmpty ? t.title : t.fileName,
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                               color: textColor,
@@ -351,7 +344,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                           Text(
                                             t.artist.isNotEmpty ? t.artist : '${t.bitDepth}-bit • ${(t.sampleRate / 1000).toStringAsFixed(1)}k',
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
                                               fontSize: 11,
                                               color: subTextColor,
                                             ),
@@ -470,7 +462,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             Text(
                               'Inspect',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 28,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.6,
@@ -524,7 +515,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                   Text(
                                     'Dev Lab',
                                     style: TextStyle(
-                                      fontFamily: 'Inter',
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                       color: activeAccent,
@@ -627,7 +617,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             ? (_info!.title.isNotEmpty ? _info!.title : _info!.fileName)
                             : 'Select FLAC Track',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: textColor,
@@ -645,7 +634,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                 : _info!.filePath.split('/').last)
                             : 'Tap to inspect audio authenticity & spectral cutoff',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 12,
                           height: 1.35,
                           color: subTextColor,
@@ -679,7 +667,6 @@ class _InspectScreenState extends State<InspectScreen> {
                         Text(
                           _info != null ? 'Change' : 'Browse',
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                             color: activeAccent,
@@ -725,7 +712,6 @@ class _InspectScreenState extends State<InspectScreen> {
                 child: Text(
                   _info!.verdict,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 11.5,
                     height: 1.35,
                     color: subTextColor,
@@ -779,7 +765,6 @@ class _InspectScreenState extends State<InspectScreen> {
             Text(
               label.toUpperCase(),
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
@@ -1027,7 +1012,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             child: RichText(
                               text: TextSpan(
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 12.5,
                                   color: textColor,
                                   height: 1.35,
@@ -1057,7 +1041,6 @@ class _InspectScreenState extends State<InspectScreen> {
                         Text(
                           'STUDIO FILE SIGNATURE',
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 9.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
@@ -1089,7 +1072,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             ],
                           ),
                           textStyle: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 11.5,
                             height: 1.45,
                             color: textColor,
@@ -1112,7 +1094,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                 Text(
                                   'What is this?',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
                                     color: activeAccent,
@@ -1168,7 +1149,6 @@ class _InspectScreenState extends State<InspectScreen> {
                           Text(
                             'NO CHECKSUM STORED',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.8,
@@ -1181,7 +1161,6 @@ class _InspectScreenState extends State<InspectScreen> {
                       Text(
                         'The encoder that created this file omitted the optional MD5 checksum block. The audio will still play normally, but cannot be cryptographically verified against the studio master.',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 11.5,
                           color: subTextColor,
                           height: 1.45,
@@ -1273,7 +1252,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             Text(
                               'Artwork Preview',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: textColor,
@@ -1282,7 +1260,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             Text(
                               'Embedded Album Cover',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 11.5,
                                 color: subTextColor,
                               ),
@@ -1333,7 +1310,6 @@ class _InspectScreenState extends State<InspectScreen> {
                               Text(
                                 'FILE SIZE',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 9.0,
                                   fontWeight: FontWeight.w700,
                                   color: subTextColor,
@@ -1365,7 +1341,6 @@ class _InspectScreenState extends State<InspectScreen> {
                               Text(
                                 'FORMAT',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 9.0,
                                   fontWeight: FontWeight.w700,
                                   color: subTextColor,
@@ -1397,7 +1372,6 @@ class _InspectScreenState extends State<InspectScreen> {
                               Text(
                                 'TYPE',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 9.0,
                                   fontWeight: FontWeight.w700,
                                   color: subTextColor,
@@ -1407,7 +1381,6 @@ class _InspectScreenState extends State<InspectScreen> {
                               Text(
                                 'Front Cover',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 12.0,
                                   fontWeight: FontWeight.w700,
                                   color: textColor,
@@ -1443,7 +1416,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             child: Text(
                               'Cancel',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
                                 color: subTextColor,
@@ -1483,7 +1455,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                 Text(
                                   'Save to Downloads',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                     color: onAccentColor,
@@ -1572,7 +1543,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             Text(
                               'Lyrics Pre-Export Preview',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: textColor,
@@ -1581,7 +1551,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             Text(
                               isSynced ? 'Vorbis Synced LRC Timestamps' : 'Plain Text Lyrics Block',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 11.5,
                                 color: subTextColor,
                               ),
@@ -1608,7 +1577,6 @@ class _InspectScreenState extends State<InspectScreen> {
                               Text(
                                 'TOTAL LINES',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 9.0,
                                   fontWeight: FontWeight.w700,
                                   color: subTextColor,
@@ -1640,7 +1608,6 @@ class _InspectScreenState extends State<InspectScreen> {
                               Text(
                                 'TYPE',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 9.0,
                                   fontWeight: FontWeight.w700,
                                   color: subTextColor,
@@ -1672,7 +1639,6 @@ class _InspectScreenState extends State<InspectScreen> {
                               Text(
                                 'ENCODING',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 9.0,
                                   fontWeight: FontWeight.w700,
                                   color: subTextColor,
@@ -1742,7 +1708,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             child: Text(
                               'Cancel',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
                                 color: subTextColor,
@@ -1782,7 +1747,6 @@ class _InspectScreenState extends State<InspectScreen> {
                                 Text(
                                   'Export .LRC File',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                     color: onAccentColor,

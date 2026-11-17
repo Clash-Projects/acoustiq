@@ -258,7 +258,6 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                             Text(
                               widget.track.title.isNotEmpty ? widget.track.title : widget.track.fileName,
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontFamilyFallback: fontFallbacks,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -271,7 +270,6 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                             Text(
                               widget.track.artist.isNotEmpty ? widget.track.artist : 'Embedded FLAC Lyrics',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontFamilyFallback: fontFallbacks,
                                 fontSize: 12.5,
                                 color: subTextColor,
@@ -422,7 +420,6 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                                 Text(
                                   'No lyrics metadata found in this FLAC file',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 13,
                                     color: subTextColor,
                                   ),
@@ -512,7 +509,6 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                                                 duration: const Duration(milliseconds: 320),
                                                 curve: Curves.easeOutCubic,
                                                 style: TextStyle(
-                                                  fontFamily: 'Inter',
                                                   fontFamilyFallback: fontFallbacks,
                                                   fontSize: isActive ? 17.0 : 14.5,
                                                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
@@ -540,7 +536,6 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                                 child: SelectableText(
                                   rawLyrics,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontFamilyFallback: fontFallbacks,
                                     fontSize: 14.5,
                                     height: 1.6,
@@ -578,7 +573,6 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                         child: Text(
                           _inSheetToast!,
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
                             color: textColor,

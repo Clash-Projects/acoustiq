@@ -43,7 +43,6 @@ class ExpressiveHeader extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.3,
@@ -55,7 +54,6 @@ class ExpressiveHeader extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           color: subTextColor,

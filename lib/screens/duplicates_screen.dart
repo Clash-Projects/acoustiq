@@ -182,7 +182,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 Text(
                   'Scan Audio Duplicates',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: textColor,
@@ -192,7 +191,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 Text(
                   'Select a music source to find redundant and lossy duplicates',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12,
                     color: subTextColor,
                   ),
@@ -229,7 +227,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                 Text(
                                   'Re-scan Recent Folder',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: textColor,
@@ -239,7 +236,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                 Text(
                                   lastFolder,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 11,
                                     color: subTextColor,
                                   ),
@@ -287,7 +283,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               Text(
                                 'Quick Scan Device Music',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: textColor,
@@ -297,7 +292,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               Text(
                                 '/storage/emulated/0/Music • 1-Tap direct scan',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 11,
                                   color: subTextColor,
                                 ),
@@ -342,7 +336,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               Text(
                                 'Quick Scan Downloads',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: textColor,
@@ -352,7 +345,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               Text(
                                 '/storage/emulated/0/Download • FLAC downloads',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 11,
                                   color: subTextColor,
                                 ),
@@ -397,7 +389,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               Text(
                                 'Browse Custom Folder...',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: textColor,
@@ -407,7 +398,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               Text(
                                 'Select any directory using system file picker',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 11,
                                   color: subTextColor,
                                 ),
@@ -547,7 +537,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     child: Text(
                       'Duplicates',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.6,
@@ -595,7 +584,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                   : 'No duplicate FLAC sets found in library!\nYour collection has zero redundant audio files',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 13,
                                 color: subTextColor,
                               ),
@@ -622,7 +610,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                           Text(
                                             'Quick Scan Music',
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
                                               fontSize: 13,
                                               fontWeight: FontWeight.w700,
                                               color: activeAccent,
@@ -649,7 +636,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                           Text(
                                             'Browse',
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                               color: textColor,
@@ -737,7 +723,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           Text(
                             'Duplicate Sets',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: subTextColor,
@@ -756,7 +741,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 12,
                           color: subTextColor,
                         ),
@@ -823,7 +807,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             Text(
               label.toUpperCase(),
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 8.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
@@ -866,7 +849,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 child: Text(
                   '${group.title} • ${group.artist}',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -932,7 +914,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             Text(
                               item.isBest ? 'BEST VERSION' : 'REDUNDANT COPY',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.6,
@@ -957,7 +938,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                         Text(
                           '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k • ${item.info.fileSizeMb.toStringAsFixed(1)} MB',
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 11.5,
                             color: subTextColor,
                           ),
@@ -969,7 +949,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 10.5,
                             color: subTextColor.withOpacity(0.7),
                           ),

@@ -751,7 +751,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                                           child: Text(
                                             tab.label,
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
                                               fontSize: 11.5,
                                               fontWeight: FontWeight.w700,
                                               letterSpacing: -0.3,

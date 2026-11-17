@@ -159,7 +159,6 @@ class _AuditScreenState extends State<AuditScreen> {
                 Text(
                   'Scan Audio Library',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: textColor,
@@ -169,7 +168,6 @@ class _AuditScreenState extends State<AuditScreen> {
                 Text(
                   'Select a music source for deep forensic audio audit',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12,
                     color: subTextColor,
                   ),
@@ -206,7 +204,6 @@ class _AuditScreenState extends State<AuditScreen> {
                                 Text(
                                   'Re-scan Recent Folder',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: textColor,
@@ -216,7 +213,6 @@ class _AuditScreenState extends State<AuditScreen> {
                                 Text(
                                   lastFolder,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 11,
                                     color: subTextColor,
                                   ),
@@ -264,7 +260,6 @@ class _AuditScreenState extends State<AuditScreen> {
                               Text(
                                 'Quick Scan Device Music',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: textColor,
@@ -274,7 +269,6 @@ class _AuditScreenState extends State<AuditScreen> {
                               Text(
                                 '/storage/emulated/0/Music • 1-Tap direct scan',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 11,
                                   color: subTextColor,
                                 ),
@@ -319,7 +313,6 @@ class _AuditScreenState extends State<AuditScreen> {
                               Text(
                                 'Quick Scan Downloads',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: textColor,
@@ -329,7 +322,6 @@ class _AuditScreenState extends State<AuditScreen> {
                               Text(
                                 '/storage/emulated/0/Download • FLAC downloads',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 11,
                                   color: subTextColor,
                                 ),
@@ -374,7 +366,6 @@ class _AuditScreenState extends State<AuditScreen> {
                               Text(
                                 'Browse Custom Folder...',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: textColor,
@@ -384,7 +375,6 @@ class _AuditScreenState extends State<AuditScreen> {
                               Text(
                                 'Select any directory using system file picker',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 11,
                                   color: subTextColor,
                                 ),
@@ -468,7 +458,6 @@ class _AuditScreenState extends State<AuditScreen> {
                         Text(
                           'Audit Library',
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.6,
@@ -538,7 +527,6 @@ class _AuditScreenState extends State<AuditScreen> {
                           Text(
                             'No Audited Tracks Yet',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: textColor,
@@ -548,7 +536,6 @@ class _AuditScreenState extends State<AuditScreen> {
                           Text(
                             'Tap the card above or choose a quick option below',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 13,
                               color: subTextColor,
                             ),
@@ -574,7 +561,6 @@ class _AuditScreenState extends State<AuditScreen> {
                                       Text(
                                         'Quick Scan Music',
                                         style: TextStyle(
-                                          fontFamily: 'Inter',
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
                                           color: activeAccent,
@@ -601,7 +587,6 @@ class _AuditScreenState extends State<AuditScreen> {
                                       Text(
                                         'Browse',
                                         style: TextStyle(
-                                          fontFamily: 'Inter',
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: textColor,
@@ -692,7 +677,6 @@ class _AuditScreenState extends State<AuditScreen> {
                           Text(
                             'Audited Tracks',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: subTextColor,
@@ -711,7 +695,6 @@ class _AuditScreenState extends State<AuditScreen> {
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 12,
                           color: subTextColor,
                         ),
@@ -808,7 +791,6 @@ class _AuditScreenState extends State<AuditScreen> {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 8.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
@@ -857,7 +839,6 @@ class _AuditScreenState extends State<AuditScreen> {
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
               color: isSelected ? (isDark ? Colors.white : activeAccent) : fg,
@@ -931,7 +912,6 @@ class _AuditScreenState extends State<AuditScreen> {
                       Text(
                         track.title.isNotEmpty ? track.title : track.fileName,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 14.5,
                           fontWeight: FontWeight.w600,
                           color: textColor,
@@ -947,7 +927,6 @@ class _AuditScreenState extends State<AuditScreen> {
                             ? '${track.artist} • ${(track.sampleRate / 1000).toStringAsFixed(0)}k/${track.bitDepth}b'
                             : '${(track.sampleRate / 1000).toStringAsFixed(0)}k/${track.bitDepth}b • ${track.bitrateKbps}k',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 12.0,
                           color: subTextColor,
                         ),
@@ -1079,7 +1058,6 @@ class _TrackDetailModal extends StatelessWidget {
                           child: Text(
                             track.title.isNotEmpty ? track.title : track.fileName,
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: textColor,
@@ -1105,7 +1083,6 @@ class _TrackDetailModal extends StatelessWidget {
                     Text(
                       track.artist.isNotEmpty ? '${track.artist} • ${track.album}' : 'Unknown Artist',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 12.5,
                         color: subTextColor,
                       ),
@@ -1142,7 +1119,6 @@ class _TrackDetailModal extends StatelessWidget {
             child: Text(
               track.verdict,
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 11.5,
                 height: 1.35,
                 color: subTextColor,
@@ -1190,7 +1166,6 @@ class _TrackDetailModal extends StatelessWidget {
                       child: Text(
                         'Integrated Lyrics Present • Tap to View',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF38BDF8),
@@ -1220,7 +1195,6 @@ class _TrackDetailModal extends StatelessWidget {
                   child: Text(
                     track.filePath,
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 11,
                       color: subTextColor,
                     ),
@@ -1249,7 +1223,6 @@ class _TrackDetailModal extends StatelessWidget {
             Text(
               label.toUpperCase(),
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 8.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,

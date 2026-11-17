@@ -311,7 +311,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 Text(
                   'Settings & System',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
@@ -322,7 +321,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 Text(
                   'AcoustiQ High-Res Audio Engine • v1.1.0',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: subTextColor,
@@ -345,6 +343,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             subtitle: 'Accent colors, ambient wallpapers, theme modes & smooth animations',
             badges: [
               appState.accentPreset.toUpperCase(),
+              _fontBadgeLabel(appState.fontFamily),
               appState.amoledMode && isDark ? 'PURE BLACK' : (isDark ? 'DARK' : 'LIGHT'),
               if (appState.isLiquidGlass) 'GLASS BLUR',
               motionLabel.toUpperCase(),
@@ -421,6 +420,20 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     );
   }
 
+  String _fontBadgeLabel(String key) {
+    switch (key) {
+      case 'Geist':
+        return 'GEIST';
+      case 'PlusJakartaSans':
+        return 'JAKARTA';
+      case 'Inter':
+        return 'INTER';
+      case 'SF-Pro':
+      default:
+        return 'SF PRO';
+    }
+  }
+
   Widget _buildHubCard({
     required BuildContext context,
     required bool isDark,
@@ -486,7 +499,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           Text(
                             title,
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 16.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.3,
@@ -497,7 +509,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           Text(
                             subtitle,
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 11.5,
                               color: subTextColor,
                               height: 1.35,
@@ -613,7 +624,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     Text(
                       'Settings',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: textColor,
@@ -633,7 +643,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
@@ -645,7 +654,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 11,
                     color: subTextColor,
                   ),
@@ -693,13 +701,19 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
           const SizedBox(height: 16),
 
-          // 2. AMBIENT WALLPAPER
+          // 2. TYPOGRAPHY ENGINE
+          buildSectionHeader('Typography Engine', subTextColor),
+          _buildTypographySection(context, isDark, textColor, subTextColor, activeAccent),
+
+          const SizedBox(height: 16),
+
+          // 3. AMBIENT WALLPAPER
           buildSectionHeader('Ambient Wallpaper', subTextColor),
           _buildWallpaperSection(context, isDark, textColor, subTextColor, activeAccent),
 
           const SizedBox(height: 16),
 
-          // 3. DISPLAY & SURFACES
+          // 4. DISPLAY & SURFACES
           buildSectionHeader('Display & Surfaces', subTextColor),
           ExpressiveGroup(
             rowCount: 3,
@@ -758,6 +772,77 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           _buildMotionHubSection(context, isDark, textColor, subTextColor, activeAccent),
         ],
       ),
+    );
+  }
+
+  Widget _buildTypographySection(
+    BuildContext context,
+    bool isDark,
+    Color textColor,
+    Color subTextColor,
+    Color activeAccent,
+  ) {
+    final fonts = [
+      {'key': 'SF-Pro', 'title': 'SF Pro', 'desc': 'Apple visionOS (Sleek Luxury)', 'icon': Icons.apple_rounded},
+      {'key': 'Geist', 'title': 'Geist Sans', 'desc': 'Vercel / Linear (Razor-Sharp Tech)', 'icon': Icons.bolt_rounded},
+      {'key': 'PlusJakartaSans', 'title': 'Plus Jakarta Sans', 'desc': 'Modern Geometric Grotesque', 'icon': Icons.waves_rounded},
+      {'key': 'Inter', 'title': 'Inter', 'desc': 'Tuned Compact Neo-Grotesque', 'icon': Icons.tune_rounded},
+    ];
+
+    return ExpressiveGroup(
+      rowCount: fonts.length,
+      itemBuilder: (context, index, position) {
+        final font = fonts[index];
+        final isSelected = appState.fontFamily == font['key'];
+        final fontKey = font['key'] as String;
+
+        return ExpressiveGroupRow(
+          icon: font['icon'] as IconData,
+          iconColor: isSelected ? activeAccent : subTextColor,
+          iconBgColor: isSelected
+              ? activeAccent.withOpacity(isDark ? 0.22 : 0.14)
+              : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
+          title: font['title'] as String,
+          titleFontFamily: fontKey,
+          subtitle: font['desc'] as String,
+          position: position,
+          trailing: isSelected
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: activeAccent.withOpacity(0.4), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_rounded, size: 13, color: activeAccent),
+                      const SizedBox(width: 4),
+                      Text(
+                        'ACTIVE',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: activeAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : null,
+          onTap: () {
+            if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+            appState.setFontFamily(fontKey);
+            showThemedSnackBar(
+              context,
+              'Active font: ${font['title']}',
+              icon: Icons.font_download_rounded,
+            );
+          },
+        );
+      },
     );
   }
 
@@ -848,7 +933,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           Text(
                             'Motion Smoothness',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: textColor,
@@ -857,7 +941,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           Text(
                             'Animation refresh rate & power balance',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 11,
                               color: subTextColor,
                             ),
@@ -915,7 +998,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                                 Text(
                                   statusBadge,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.5,
@@ -930,7 +1012,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                             child: Text(
                               statusTitle,
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: textColor,
@@ -959,7 +1040,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                             child: Text(
                               statusBody1,
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
                                 color: subTextColor,
@@ -987,7 +1067,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                             child: Text(
                               statusBody2,
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
                                 color: subTextColor,
@@ -1058,7 +1137,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 Text(
                   label,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected ? textColor : textColor.withOpacity(0.65),
@@ -1223,7 +1301,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                             Text(
                               'How Lossless Verification Works',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: textColor,
@@ -1232,7 +1309,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                             Text(
                               'How AcoustiQ detects genuine FLAC vs fake upsamples',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 11,
                                 color: subTextColor,
                               ),
@@ -1337,7 +1413,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -1352,7 +1427,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           RichText(
             text: TextSpan(
               style: TextStyle(
-                fontFamily: 'Inter',
                 fontSize: 11.5,
                 color: subTextColor,
                 height: 1.35,
@@ -1630,7 +1704,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       child: Text(
                         'Open Lab',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
                           color: activeAccent,
@@ -1929,7 +2002,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       Text(
                         title,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: isSelected ? textColor : textColor.withOpacity(0.9),
@@ -1942,7 +2014,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       Text(
                         subtitle,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 10.5,
                           fontWeight: FontWeight.w500,
                           color: isSelected ? color : subTextColor,
@@ -2084,7 +2155,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           Text(
                             'Custom Wallpaper',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 13.5,
                               fontWeight: FontWeight.w700,
                               color: textColor,
@@ -2100,7 +2170,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                                     ? 'Saved photo • Tap to apply'
                                     : 'Choose personal photo for ambient glass'),
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 11.0,
                               color: isCustom ? activeAccent : subTextColor,
                               fontWeight: isCustom ? FontWeight.w600 : FontWeight.w400,
@@ -2171,7 +2240,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                         child: Text(
                           'Apply',
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: activeAccent,
@@ -2280,7 +2348,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             name,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 10.5,
               height: 1.15,
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -2419,7 +2486,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     Text(
                       'Theme',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
                         color: textColor,
@@ -2429,7 +2495,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     Text(
                       'Choose system default, light, or dark look',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 11.5,
                         color: subTextColor,
                       ),
@@ -2497,7 +2562,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 Text(
                   label,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12.5,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     color: isSelected ? selectedFg : unselectedFg,
@@ -2695,7 +2759,6 @@ class _CustomColorCardState extends State<_CustomColorCard> {
                                 Text(
                                   'Custom Color',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                     color: widget.isSelected
@@ -2728,7 +2791,6 @@ class _CustomColorCardState extends State<_CustomColorCard> {
                                       child: Text(
                                         _isExpanded ? 'Adjust hue below' : 'Tap Tune to adjust',
                                         style: TextStyle(
-                                          fontFamily: 'Inter',
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.w500,
                                           color: widget.subTextColor,
@@ -2783,7 +2845,6 @@ class _CustomColorCardState extends State<_CustomColorCard> {
                           Text(
                             _isExpanded ? 'DONE' : 'TUNE',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
@@ -2814,7 +2875,6 @@ class _CustomColorCardState extends State<_CustomColorCard> {
                           Text(
                             'CURATED PALETTE PRESETS',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.8,
@@ -2846,7 +2906,6 @@ class _CustomColorCardState extends State<_CustomColorCard> {
                               Text(
                                 'SPECTRUM HUE',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.8,

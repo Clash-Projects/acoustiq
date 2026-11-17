@@ -80,7 +80,6 @@ Future<T?> showAppGlassDialog<T>({
                       child: Text(
                         title,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: textColor,
@@ -100,7 +99,6 @@ Future<T?> showAppGlassDialog<T>({
                   Text(
                     content,
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 13.5,
                       height: 1.45,
                       color: subTextColor,
@@ -136,7 +134,6 @@ Future<T?> showAppGlassDialog<T>({
                             child: Text(
                               cancelLabel,
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: subTextColor,
@@ -175,7 +172,6 @@ Future<T?> showAppGlassDialog<T>({
                             child: Text(
                               confirmLabel,
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: onAccentColor,
@@ -212,7 +208,6 @@ Future<T?> showAppGlassDialog<T>({
                       child: Text(
                         confirmLabel,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: onAccentColor,

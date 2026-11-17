@@ -205,7 +205,6 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                           Text(
                             'Acoustic Spectrum',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: textColor,
@@ -313,7 +312,6 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                                 Text(
                                   'Spectrogram',
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: activeAccent,
@@ -425,7 +423,6 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                       Text(
                         'PURITY',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 7.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
@@ -464,7 +461,6 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                       ? 'Lossless Acoustic Fidelity'
                       : 'Compression Signature Detected',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: subTextColor,
@@ -532,7 +528,6 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                       Text(
                         'PURITY',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 7.0,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.6,
@@ -908,7 +903,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                           Text(
                             'Audio Deep-Dive',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
                               color: textColor,
@@ -972,7 +966,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                   labelColor: isDark ? Colors.white : activeAccent,
                   unselectedLabelColor: subTextColor,
                   labelStyle: const TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1177,7 +1170,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                             ? 'Full audio bandwidth is preserved. No compression cutoff detected.'
                             : 'Audio frequencies drop sharply at ${widget.cutoffKhz} kHz, characteristic of lossy MP3/AAC compression.'),
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 12,
                       height: 1.35,
                       color: textColor,
@@ -1215,7 +1207,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
             body: Text.rich(
               TextSpan(
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 12.5,
                   height: 1.5,
                   color: subTextColor,
@@ -1252,7 +1243,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
             body: Text.rich(
               TextSpan(
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 12.5,
                   height: 1.5,
                   color: subTextColor,
@@ -1315,7 +1305,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 Text(
                   'Want to test our DSP engine with a known fake? You can create an upsampled FLAC on your computer using FFmpeg in two simple commands, then inspect it in AcoustiQ:',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 12.5,
                     height: 1.45,
                     color: subTextColor,
@@ -1432,7 +1421,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                               Text(
                                 'Copy',
                                 style: TextStyle(
-                                  fontFamily: 'Inter',
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF38BDF8),
@@ -1609,7 +1597,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -1656,7 +1643,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 Text(
                   'VISUAL GUIDE',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
@@ -1758,7 +1744,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
           Text(
             'The spectrogram plots audio frequency (height) against time (left to right). Colors and marker lines explain the audio authenticity:',
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
               color: textColor,
@@ -1837,7 +1822,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: textColor,
@@ -1847,7 +1831,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               Text(
                 desc,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 11,
                   color: subTextColor,
                   height: 1.35,
@@ -1950,7 +1933,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   color: textColor,
@@ -1962,7 +1944,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               Text(
                 desc,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 9.0,
                   color: subTextColor,
                 ),
@@ -2140,7 +2121,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                       Text(
                         label,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 9.5,
                           fontWeight: FontWeight.w500,
                           color: isDark ? const Color(0x99FFFFFF) : const Color(0x88000000),
@@ -2209,7 +2189,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -2222,7 +2201,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
           Text(
             content,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 11.5,
               height: 1.4,
               color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
@@ -2610,7 +2588,6 @@ class _MetricExplanationDialogContent extends StatelessWidget {
         Text(
           summary,
           style: TextStyle(
-            fontFamily: 'Inter',
             fontSize: 13,
             fontWeight: FontWeight.w500,
             color: textColor,
@@ -2665,7 +2642,6 @@ class _MetricExplanationDialogContent extends StatelessWidget {
                     Text(
                       statusDesc,
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 11,
                         color: subTextColor,
                         height: 1.3,
@@ -2696,7 +2672,6 @@ class _MetricExplanationDialogContent extends StatelessWidget {
           child: Text(
             number,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 11,
               fontWeight: FontWeight.w800,
               color: badgeColor,
@@ -2712,7 +2687,6 @@ class _MetricExplanationDialogContent extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: textColor,
@@ -2722,7 +2696,6 @@ class _MetricExplanationDialogContent extends StatelessWidget {
               Text(
                 desc,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 11.5,
                   color: subTextColor,
                   height: 1.35,

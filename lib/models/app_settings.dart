@@ -18,6 +18,7 @@ class AppState extends ChangeNotifier {
   String _motionPreset = 'full'; // 'full' (120Hz micro-interactions), 'reduced' (transitions only), 'off' (static battery saver)
   bool _audiophileMode = false; // false = Everyday Music Lover, true = Acoustic Engineer / Pro
   String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
+  String _fontFamily = 'SF-Pro'; // 'SF-Pro', 'Geist', 'PlusJakartaSans', 'Inter'
 
   // AcoustiQ Developer Laboratory & QA Mode (Enabled for active QA cycle)
   bool _devModeEnabled = true;
@@ -33,6 +34,7 @@ class AppState extends ChangeNotifier {
   bool get amoledMode => _amoledMode;
   bool get audiophileMode => _audiophileMode;
   String get visualizerMode => _visualizerMode;
+  String get fontFamily => _fontFamily;
   bool get devModeEnabled => _devModeEnabled;
   FlacInfo? get injectedMockTrack => _injectedMockTrack;
   String get themeMode => _themeMode;
@@ -95,7 +97,8 @@ class AppState extends ChangeNotifier {
 
       _audiophileMode = _prefs?.getBool('audiophile_mode') ?? false;
       _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
-      _devModeEnabled = _prefs?.getBool('dev_mode_enabled') ?? true;
+      _fontFamily = _prefs?.getString('font_family') ?? 'SF-Pro';
+      _devModeEnabled = true; // Always active for instant Dev Lab QA and live font testing
 
       // Verify custom wallpaper file still exists on disk
       if (_customWallpaperPath != null && !File(_customWallpaperPath!).existsSync()) {
@@ -230,6 +233,14 @@ class AppState extends ChangeNotifier {
     _visualizerMode = mode;
     _prefs?.setString('visualizer_mode', mode);
     notifyListeners();
+  }
+
+  void setFontFamily(String family) {
+    if (_fontFamily != family) {
+      _fontFamily = family;
+      _prefs?.setString('font_family', family);
+      notifyListeners();
+    }
   }
 
   void setMotionPreset(String preset) {

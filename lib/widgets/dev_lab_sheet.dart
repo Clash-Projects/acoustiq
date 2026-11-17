@@ -287,6 +287,84 @@ class DevLabSheet extends StatelessWidget {
 
                           const SizedBox(height: 16),
 
+                          // Typography Engine (All 4 Designer Fonts)
+                          _buildSectionTitle('🔤 Typography Engine (Instant Live Switch)', activeAccent),
+                          Text(
+                            'Compare all 4 studio fonts live across the entire interface:',
+                            style: TextStyle(fontSize: 11.5, color: subTextColor),
+                          ),
+                          const SizedBox(height: 8),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _fontSegmentPill(
+                                  label: '🍏 SF Pro',
+                                  subLabel: 'Apple visionOS',
+                                  fontKey: 'SF-Pro',
+                                  isSelected: appState.fontFamily == 'SF-Pro',
+                                  isDark: isDark,
+                                  activeAccent: activeAccent,
+                                  onTap: () {
+                                    appState.setFontFamily('SF-Pro');
+                                    _showLabFeedback(context, 'Active Font: SF Pro (Apple visionOS)');
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _fontSegmentPill(
+                                  label: '⚡ Geist',
+                                  subLabel: 'Vercel / Linear',
+                                  fontKey: 'Geist',
+                                  isSelected: appState.fontFamily == 'Geist',
+                                  isDark: isDark,
+                                  activeAccent: activeAccent,
+                                  onTap: () {
+                                    appState.setFontFamily('Geist');
+                                    _showLabFeedback(context, 'Active Font: Geist Sans (Vercel)');
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _fontSegmentPill(
+                                  label: '🌊 Jakarta',
+                                  subLabel: 'Geometric Tech',
+                                  fontKey: 'PlusJakartaSans',
+                                  isSelected: appState.fontFamily == 'PlusJakartaSans',
+                                  isDark: isDark,
+                                  activeAccent: activeAccent,
+                                  onTap: () {
+                                    appState.setFontFamily('PlusJakartaSans');
+                                    _showLabFeedback(context, 'Active Font: Plus Jakarta Sans');
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _fontSegmentPill(
+                                  label: '🎛️ Inter',
+                                  subLabel: 'Tuned Sleek',
+                                  fontKey: 'Inter',
+                                  isSelected: appState.fontFamily == 'Inter',
+                                  isDark: isDark,
+                                  activeAccent: activeAccent,
+                                  onTap: () {
+                                    appState.setFontFamily('Inter');
+                                    _showLabFeedback(context, 'Active Font: Inter');
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
                           // 3. Modal & Toast Trigger Matrix
                           _buildSectionTitle('🪟 Instant Modal & Contrast QA', activeAccent),
                           Text(
@@ -630,6 +708,78 @@ class DevLabSheet extends StatelessWidget {
               color: activeAccent,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _fontSegmentPill({
+    required String label,
+    required String subLabel,
+    required String fontKey,
+    required bool isSelected,
+    required bool isDark,
+    required Color activeAccent,
+    required VoidCallback onTap,
+  }) {
+    return LuminousFeedback(
+      onTap: () {
+        if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? activeAccent.withOpacity(isDark ? 0.28 : 0.18)
+              : (isDark ? const Color(0x14FFFFFF) : const Color(0x0C000000)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? activeAccent
+                : (isDark ? const Color(0x22FFFFFF) : const Color(0x15000000)),
+            width: isSelected ? 1.4 : 0.8,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: fontKey,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? activeAccent : (isDark ? Colors.white : Colors.black87),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isSelected)
+                  Icon(Icons.check_circle_rounded, size: 14, color: activeAccent),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subLabel,
+              style: TextStyle(
+                fontFamily: fontKey,
+                fontSize: 10,
+                color: isSelected
+                    ? activeAccent.withOpacity(0.85)
+                    : (isDark ? Colors.white54 : Colors.black54),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

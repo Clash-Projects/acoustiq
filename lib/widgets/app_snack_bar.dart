@@ -47,7 +47,6 @@ void showThemedSnackBar(
               child: Text(
                 message,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: textColor,

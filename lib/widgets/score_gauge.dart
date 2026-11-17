@@ -84,7 +84,6 @@ class ScoreGauge extends StatelessWidget {
                     child: Text(
                       status.toUpperCase(),
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: statusColor,

@@ -66,6 +66,7 @@ class ExpressiveGroupRow extends StatelessWidget {
   final Widget? trailing;
   final bool danger;
   final LuminousVariant luminousVariant;
+  final String? titleFontFamily;
 
   const ExpressiveGroupRow({
     super.key,
@@ -79,6 +80,7 @@ class ExpressiveGroupRow extends StatelessWidget {
     this.trailing,
     this.danger = false,
     this.luminousVariant = LuminousVariant.violet,
+    this.titleFontFamily,
   });
 
   @override
@@ -135,10 +137,10 @@ class ExpressiveGroupRow extends StatelessWidget {
                       Text(
                         title,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 14.5,
                           fontWeight: FontWeight.w600,
                           color: textColor,
+                          fontFamily: titleFontFamily,
                         ),
                         maxLines: 2,
                         softWrap: true,
@@ -149,7 +151,6 @@ class ExpressiveGroupRow extends StatelessWidget {
                         Text(
                           subtitle!,
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 12.0,
                             height: 1.35,
                             color: subTextColor,
@@ -188,7 +189,6 @@ Widget buildSectionHeader(String label, Color color) {
     child: Text(
       label.toUpperCase(),
       style: TextStyle(
-        fontFamily: 'Inter',
         fontSize: 11.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,

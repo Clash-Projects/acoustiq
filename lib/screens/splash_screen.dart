@@ -142,7 +142,6 @@ class _AcoustiQSplashScreenState extends State<AcoustiQSplashScreen>
                     child: const Text(
                       'ACOUSTIQ',
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 8.0,

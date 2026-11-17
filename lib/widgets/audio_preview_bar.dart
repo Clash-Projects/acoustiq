@@ -122,7 +122,6 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                           child: Text(
                             isPlaying ? 'Now Playing Lossless' : 'Audio Preview',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: textColor,
