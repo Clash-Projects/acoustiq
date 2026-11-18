@@ -17,10 +17,13 @@ import '../widgets/app_glass_dialog.dart';
 import '../widgets/bounded_scroll_physics.dart';
 
 /// Lightweight Squircle Album Art Widget with Lazy Extraction & Fallback
-class _DuplicateCoverArt extends StatelessWidget {
+/// Lightweight Squircle Album Art Widget with In-Memory Caching & Zero Jitter
+class _DuplicateCoverArt extends StatefulWidget {
   final String filePath;
   final double size;
   final double borderRadius;
+
+  static final Map<String, Uint8List?> _cache = {};
 
   const _DuplicateCoverArt({
     required this.filePath,
@@ -29,31 +32,231 @@ class _DuplicateCoverArt extends StatelessWidget {
   });
 
   @override
+  State<_DuplicateCoverArt> createState() => _DuplicateCoverArtState();
+}
+
+class _DuplicateCoverArtState extends State<_DuplicateCoverArt> {
+  Uint8List? _bytes;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCover();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DuplicateCoverArt oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filePath != widget.filePath) {
+      _loadCover();
+    }
+  }
+
+  void _loadCover() {
+    if (_DuplicateCoverArt._cache.containsKey(widget.filePath)) {
+      _bytes = _DuplicateCoverArt._cache[widget.filePath];
+      _loaded = true;
+      return;
+    }
+    FlacParser.extractCoverBytes(widget.filePath).then((bytes) {
+      _DuplicateCoverArt._cache[widget.filePath] = bytes;
+      if (mounted) {
+        setState(() {
+          _bytes = bytes;
+          _loaded = true;
+        });
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       decoration: BoxDecoration(
         color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
         boxShadow: isDark
             ? AppColors.softElevation(elevation: 2.0)
             : AppColors.lightSoftElevation(elevation: 2.0),
       ),
       clipBehavior: Clip.antiAlias,
-      child: FutureBuilder<Uint8List?>(
-        future: FlacParser.extractCoverBytes(filePath),
-        builder: (context, snapshot) {
-          if (snapshot.hasData && snapshot.data != null) {
-            return Image.memory(snapshot.data!, fit: BoxFit.cover);
-          }
-          return Icon(
-            Icons.album_rounded,
-            size: size * 0.55,
-            color: isDark ? const Color(0x80FFFFFF) : AppColors.lightTextMuted,
-          );
-        },
+      child: _loaded && _bytes != null
+          ? Image.memory(_bytes!, fit: BoxFit.cover)
+          : Icon(
+              Icons.album_rounded,
+              size: widget.size * 0.55,
+              color: isDark ? const Color(0x80FFFFFF) : AppColors.lightTextMuted,
+            ),
+    );
+  }
+}
+
+/// Interactive Inline Audio Progress Bar with Seek & Real-Time Counter
+class _InlineAudioProgressStrip extends StatefulWidget {
+  final String filePath;
+  final double durationSec;
+
+  const _InlineAudioProgressStrip({
+    required this.filePath,
+    required this.durationSec,
+  });
+
+  @override
+  State<_InlineAudioProgressStrip> createState() => _InlineAudioProgressStripState();
+}
+
+class _InlineAudioProgressStripState extends State<_InlineAudioProgressStrip> {
+  final _player = AudioPlaybackService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.addListener(_onPlayerUpdate);
+  }
+
+  @override
+  void dispose() {
+    _player.removeListener(_onPlayerUpdate);
+    super.dispose();
+  }
+
+  void _onPlayerUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  String _formatTime(int ms) {
+    final s = ms ~/ 1000;
+    final m = s ~/ 60;
+    final remS = s % 60;
+    return '${m.toString().padLeft(2, '0')}:${remS.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrent = _player.currentFilePath == widget.filePath;
+    if (!isCurrent || !_player.isPlaying) {
+      return const SizedBox.shrink();
+    }
+
+    final pos = _player.positionMs;
+    final dur = _player.durationMs > 0 ? _player.durationMs : (widget.durationSec * 1000).toInt();
+    final progress = dur > 0 ? (pos / dur).clamp(0.0, 1.0) : 0.0;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeAccent = appState.getAccentColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: activeAccent.withValues(alpha: 0.25),
+            width: 0.6,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Mini Pause / Play button
+            LuminousFeedback(
+              onTap: () {
+                if (_player.isPlaying) {
+                  _player.pause();
+                } else {
+                  _player.resume();
+                }
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: activeAccent.withValues(alpha: isDark ? 0.25 : 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: 14,
+                  color: activeAccent,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Interactive Scrub / Progress Bar
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragUpdate: (details) {
+                      if (dur > 0 && constraints.maxWidth > 0) {
+                        final localX = details.localPosition.dx.clamp(0.0, constraints.maxWidth);
+                        final ratio = (localX / constraints.maxWidth).clamp(0.0, 1.0);
+                        _player.seek((ratio * dur).toInt());
+                      }
+                    },
+                    onTapDown: (details) {
+                      if (dur > 0 && constraints.maxWidth > 0) {
+                        final localX = details.localPosition.dx.clamp(0.0, constraints.maxWidth);
+                        final ratio = (localX / constraints.maxWidth).clamp(0.0, 1.0);
+                        _player.seek((ratio * dur).toInt());
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x30FFFFFF) : const Color(0x20000000),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: progress,
+                            child: Container(
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: activeAccent,
+                                borderRadius: BorderRadius.circular(2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: activeAccent.withValues(alpha: 0.4),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Real-Time Position / Duration Counter
+            Text(
+              '${_formatTime(pos)} / ${_formatTime(dur)}',
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: subTextColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -101,8 +304,16 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     super.dispose();
   }
 
+  String? _lastPlayingFile;
+  bool _lastIsPlaying = false;
+
   void _onPlaybackStateChanged() {
-    if (mounted) setState(() {});
+    final service = AudioPlaybackService.instance;
+    if (_lastPlayingFile != service.currentFilePath || _lastIsPlaying != service.isPlaying) {
+      _lastPlayingFile = service.currentFilePath;
+      _lastIsPlaying = service.isPlaying;
+      if (mounted) setState(() {});
+    }
   }
 
   void _onAppStateChanged() {
@@ -589,6 +800,38 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     );
   }
 
+  void _confirmDeleteSingleTrack(FlacInfo track, DuplicateGroup group) {
+    showAppGlassDialog(
+      context: context,
+      title: 'Delete Duplicate File?',
+      icon: Icons.delete_outline_rounded,
+      iconColor: AppColors.fakeCoral,
+      isDestructive: true,
+      content: 'Permanently delete "${track.fileName}" (${track.fileSizeMb.toStringAsFixed(1)} MB)?\n\nYour preserved version will remain safe.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Delete (${track.fileSizeMb.toStringAsFixed(1)} MB)',
+      onConfirm: () async {
+        try {
+          await _deleteTrackWithMediaStoreSync(track.filePath);
+          appState.removeTrackFromLibrary(track.filePath);
+          _analyzeDuplicates(appState.sharedLibrary);
+          if (mounted) {
+            showThemedSnackBar(
+              context,
+              'Deleted "${track.fileName}"',
+              icon: Icons.delete_sweep_rounded,
+              accentColor: AppColors.genuineEmerald,
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            showThemedSnackBar(context, 'Delete failed: $e', icon: Icons.error_outline_rounded);
+          }
+        }
+      },
+    );
+  }
+
   void _confirmCleanAllRedundant(List<DuplicateGroup> groups) {
     final redundantTracks = <FlacInfo>[];
     double totalWasted = 0.0;
@@ -837,94 +1080,89 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     required Color activeAccent,
   }) {
     return GlassSurface(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(26),
       style: GlassStyle.frosted,
       borderless: false,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
-                    width: 0.8,
-                  ),
-                ),
-                child: Icon(
-                  Icons.copy_all_rounded,
-                  color: activeAccent,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      groupsCount > 0
-                          ? '$groupsCount Duplicate ${groupsCount == 1 ? 'Set' : 'Sets'} Found'
-                          : 'No Duplicates Found',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: textColor,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '$groupsCount',
+                          style: TextStyle(
+                            fontFamily: 'JetBrainsMono',
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.8,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Duplicate Sets',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: subTextColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       _isScanning
                           ? 'Scanning... $_scannedCount of $_totalFiles tracks'
                           : (groupsCount > 0
-                              ? '$duplicatesCount redundant files · ${wastedMb.toStringAsFixed(1)} MB reclaimable'
-                              : 'Your collection has zero redundant audio files'),
+                              ? '$groupsCount duplicate sets ($duplicatesCount redundant files)'
+                              : 'Tap to scan music folders and keep the purest FLAC'),
+                      maxLines: 2,
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 12,
                         color: subTextColor,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
               LuminousFeedback(
                 onTap: _isScanning ? null : _showScanOptions,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  width: 36,
-                  height: 36,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
-                      width: 0.8,
-                    ),
+                    color: isDark
+                        ? activeAccent.withValues(alpha: 0.20)
+                        : activeAccent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: _isScanning
                       ? Center(
                           child: SizedBox(
-                            width: 16,
-                            height: 16,
+                            width: 20,
+                            height: 20,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                              strokeWidth: 2.2,
                               color: activeAccent,
                             ),
                           ),
                         )
                       : Icon(
-                          Icons.folder_open_rounded,
-                          color: subTextColor,
-                          size: 18,
+                          Icons.search_rounded,
+                          color: activeAccent,
+                          size: 22,
                         ),
                 ),
               ),
@@ -965,10 +1203,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.12),
+                      color: AppColors.fakeCoral.withValues(alpha: isDark ? 0.20 : 0.12),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.fakeCoral.withOpacity(0.40),
+                        color: AppColors.fakeCoral.withValues(alpha: 0.40),
                         width: 0.8,
                       ),
                     ),
@@ -993,6 +1231,19 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             ),
           ],
 
+          const SizedBox(height: 16),
+
+          // The 3 High-Contrast Telemetry Stat Capsules
+          Row(
+            children: [
+              _buildStatPill('Sets', '$groupsCount', activeAccent, isDark),
+              const SizedBox(width: 6),
+              _buildStatPill('Redundant', '$duplicatesCount', AppColors.suspiciousAmber, isDark),
+              const SizedBox(width: 6),
+              _buildStatPill('Storage to Free', '${wastedMb.toStringAsFixed(0)} MB', AppColors.genuineEmerald, isDark),
+            ],
+          ),
+
           if (duplicatesCount > 0) ...[
             const SizedBox(height: 14),
             LuminousFeedback(
@@ -1000,13 +1251,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 width: double.infinity,
-                height: 42,
-                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.fakeCoral.withOpacity(isDark ? 0.20 : 0.12),
+                  color: AppColors.fakeCoral.withValues(alpha: isDark ? 0.20 : 0.12),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.fakeCoral.withOpacity(0.35),
+                    color: AppColors.fakeCoral.withValues(alpha: 0.35),
                     width: 0.8,
                   ),
                 ),
@@ -1016,9 +1266,9 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     const Icon(Icons.delete_sweep_rounded, size: 16, color: AppColors.fakeCoral),
                     const SizedBox(width: 8),
                     Text(
-                      'Clean All $duplicatesCount Redundant Copies (${wastedMb.toStringAsFixed(1)} MB)',
+                      'Clean All Redundant Copies (${wastedMb.toStringAsFixed(1)} MB)',
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.fakeCoral,
                       ),
@@ -1029,6 +1279,41 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatPill(String label, String value, Color color, bool isDark) {
+    return Expanded(
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(14),
+        style: GlassStyle.clear,
+        borderless: false,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+        child: Column(
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 8.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: isDark ? const Color(0x80FFFFFF) : AppColors.lightTextMuted,
+              ),
+              maxLines: 1,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1200,7 +1485,15 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
+
+                // Live Audio Progress Strip (Active seek & time counter when playing)
+                _InlineAudioProgressStrip(
+                  filePath: info.filePath,
+                  durationSec: info.durationSec,
+                ),
+
+                const SizedBox(height: 10),
 
                 // Specs & Quality Overview (Calm, non-screaming text)
                 Container(
@@ -1619,7 +1912,37 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              if (group.isMd5Identical) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: AppColors.genuineEmerald.withValues(alpha: isDark ? 0.20 : 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.genuineEmerald.withValues(alpha: 0.35),
+                      width: 0.6,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fingerprint_rounded, size: 11, color: AppColors.genuineEmerald),
+                      SizedBox(width: 3.5),
+                      Text(
+                        'MD5 EXACT',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                          color: AppColors.genuineEmerald,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(width: 6),
               LuminousFeedback(
                 onTap: () => _showComparisonSheet(group),
                 borderRadius: BorderRadius.circular(10),
@@ -1654,7 +1977,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
           ),
         ),
 
-        // Connected Rows with Frosted Glass & Luminous Feedback (Apple Photos Style)
+        // Connected Rows with Frosted Glass & Luminous Feedback (Hybrid Gold Standard)
         ExpressiveGroup(
           rowCount: group.items.length,
           itemBuilder: (context, index, position) {
@@ -1677,91 +2000,166 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 style: item.isUserKept ? GlassStyle.frosted : GlassStyle.clear,
                 borderless: false,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Radio / Check Selection Indicator (1-tap toggle)
-                    LuminousFeedback(
-                      onTap: () => _setUserKeepTrack(group, item.info.filePath),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: item.isUserKept
-                              ? AppColors.genuineEmerald.withOpacity(isDark ? 0.25 : 0.15)
-                              : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          item.isUserKept
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          size: 18,
-                          color: item.isUserKept
-                              ? AppColors.genuineEmerald
-                              : (isDark ? const Color(0x50FFFFFF) : const Color(0x40000000)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Line 1: File Name (Clean, full width, ZERO badges!)
-                          Text(
-                            item.info.fileName,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: textColor,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // 1. Tactile Squircle Status Badge (1-tap selection toggle!)
+                        LuminousFeedback(
+                          onTap: () => _setUserKeepTrack(group, item.info.filePath),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: item.isUserKept
+                                  ? AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.15)
+                                  : AppColors.fakeCoral.withValues(alpha: isDark ? 0.18 : 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: item.isUserKept
+                                    ? AppColors.genuineEmerald.withValues(alpha: 0.45)
+                                    : AppColors.fakeCoral.withValues(alpha: 0.35),
+                                width: 0.8,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            child: Icon(
+                              item.isUserKept
+                                  ? Icons.verified_rounded
+                                  : Icons.copy_rounded,
+                              size: 19,
+                              color: item.isUserKept
+                                  ? AppColors.genuineEmerald
+                                  : AppColors.fakeCoral,
+                            ),
                           ),
-                          const SizedBox(height: 3),
-                          // Line 2: Specs & Status (Calm typography, dot separators, zero italics)
-                          Text(
-                            '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k · ${item.info.fileSizeMb.toStringAsFixed(1)} MB${item.info.hasLyrics ? ' · Lyrics' : ''}${item.isUserKept ? ' · Preserved Master' : ' · Redundant'}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: item.isUserKept ? subTextColor : AppColors.fakeCoral.withOpacity(0.85),
+                        ),
+                        const SizedBox(width: 12),
+
+                        // 2. Middle Content (3 Clean Breathable Layers)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Layer 1: Status Pill & Purity Score
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    item.isUserKept
+                                        ? (group.isAllFake ? 'SPACE-SAVER' : 'BEST VERSION')
+                                        : 'REDUNDANT COPY',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                      color: item.isUserKept
+                                          ? (group.isAllFake ? activeAccent : AppColors.genuineEmerald)
+                                          : AppColors.fakeCoral,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item.info.score}% purity',
+                                    style: TextStyle(
+                                      fontFamily: 'JetBrainsMono',
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: item.info.score >= 80
+                                          ? AppColors.genuineEmerald
+                                          : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+
+                              // Layer 2: Audio Specs with Dot Separators & Lyrics Indicator
+                              Text(
+                                '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k · ${item.info.fileSizeMb.toStringAsFixed(1)} MB${item.info.hasLyrics ? ' · Lyrics' : ''}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: subTextColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+
+                              // Layer 3: File Name (Clean, full width, zero truncation!)
+                              Text(
+                                item.info.fileName,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // 3. Audio Preview Icon Button
+                        LuminousFeedback(
+                          onTap: () async {
+                            if (isPlaying) {
+                              await AudioPlaybackService.instance.stop();
+                            } else {
+                              await AudioPlaybackService.instance.play(item.info.filePath);
+                            }
+                            setState(() {});
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: isPlaying
+                                  ? activeAccent.withValues(alpha: 0.30)
+                                  : (isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000)),
+                              shape: BoxShape.circle,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            child: Icon(
+                              isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                              size: 16,
+                              color: isPlaying ? activeAccent : textColor,
+                            ),
+                          ),
+                        ),
+
+                        // If Redundant: Dedicated 1-tap delete trash can!
+                        if (!item.isUserKept) ...[
+                          const SizedBox(width: 6),
+                          LuminousFeedback(
+                            onTap: () => _confirmDeleteSingleTrack(item.info, group),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.fakeCoral.withValues(alpha: isDark ? 0.15 : 0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 16,
+                                color: AppColors.fakeCoral,
+                              ),
+                            ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
 
-                    // Audio Preview Icon Button (Symmetric on all rows)
-                    LuminousFeedback(
-                      onTap: () async {
-                        if (isPlaying) {
-                          await AudioPlaybackService.instance.stop();
-                        } else {
-                          await AudioPlaybackService.instance.play(item.info.filePath);
-                        }
-                        setState(() {});
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: isPlaying
-                              ? activeAccent.withOpacity(0.30)
-                              : (isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000)),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                          size: 16,
-                          color: isPlaying ? activeAccent : textColor,
-                        ),
-                      ),
+                    // Layer 4: Live Audio Progress Strip (Active seek & real-time counter when playing)
+                    _InlineAudioProgressStrip(
+                      filePath: item.info.filePath,
+                      durationSec: item.info.durationSec,
                     ),
                   ],
                 ),
