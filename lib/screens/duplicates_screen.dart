@@ -525,41 +525,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     }
   }
 
-  void _confirmDeleteTrack(FlacInfo track) {
-    showAppGlassDialog(
-      context: context,
-      title: 'Delete Redundant Copy?',
-      icon: Icons.delete_outline_rounded,
-      iconColor: AppColors.fakeCoral,
-      content: 'This will permanently delete:\n${track.fileName}\n(${track.fileSizeMb.toStringAsFixed(1)} MB)\n\nYour highest quality version will be preserved, and Android MediaStore will be updated.',
-      cancelLabel: 'Cancel',
-      confirmLabel: 'Delete',
-      isDestructive: true,
-      onConfirm: () async {
-        try {
-          await _deleteTrackWithMediaStoreSync(track.filePath);
-          appState.removeTrackFromLibrary(track.filePath);
-          _analyzeDuplicates(appState.sharedLibrary);
-          if (mounted) {
-            showThemedSnackBar(
-              context,
-              'Redundant file deleted & MediaStore refreshed',
-              icon: Icons.delete_sweep_rounded,
-            );
-          }
-        } catch (e) {
-          if (mounted) {
-            showThemedSnackBar(
-              context,
-              'Failed to delete file: $e',
-              icon: Icons.error_outline_rounded,
-            );
-          }
-        }
-      },
-    );
-  }
-
   void _setUserKeepTrack(DuplicateGroup group, String targetFilePath) {
     final groupIndex = _groups.indexWhere((g) => g.key == group.key);
     if (groupIndex != -1) {
@@ -572,7 +537,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       final chosen = _groups[groupIndex].items.firstWhere((it) => it.info.filePath == targetFilePath);
       showThemedSnackBar(
         context,
-        'Keeping "${chosen.info.fileName}" • Other copies marked redundant',
+        'Keeping "${chosen.info.fileName}" · Other copies marked redundant',
         icon: Icons.check_circle_rounded,
         accentColor: AppColors.genuineEmerald,
       );
@@ -594,7 +559,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       icon: Icons.delete_sweep_rounded,
       iconColor: AppColors.fakeCoral,
       isDestructive: true,
-      content: 'Permanently remove ${redundantTracks.length} redundant copies of "${group.title}" (${groupWasted.toStringAsFixed(1)} MB)?\n\nYour preferred version will be preserved.',
+      content: 'Permanently remove ${redundantTracks.length} redundant ${redundantTracks.length == 1 ? 'copy' : 'copies'} of "${group.title}" (${groupWasted.toStringAsFixed(1)} MB)?\n\nYour preferred version will be preserved.',
       cancelLabel: 'Cancel',
       confirmLabel: 'Clean (${groupWasted.toStringAsFixed(1)} MB)',
       onConfirm: () async {
@@ -643,7 +608,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       title: 'Clean All Redundant Copies?',
       icon: Icons.auto_delete_rounded,
       iconColor: AppColors.fakeCoral,
-      content: 'Permanently delete ${redundantTracks.length} redundant copies to reclaim ${totalWasted.toStringAsFixed(1)} MB?\n\nYour highest authenticity copy of each track will be preserved, and Android MediaStore will be updated.',
+      content: 'Permanently delete ${redundantTracks.length} redundant ${redundantTracks.length == 1 ? 'copy' : 'copies'} to reclaim ${totalWasted.toStringAsFixed(1)} MB?\n\nYour preferred version of each track will be preserved, and Android MediaStore will be updated.',
       cancelLabel: 'Cancel',
       confirmLabel: 'Delete All (${totalWasted.toStringAsFixed(1)} MB)',
       isDestructive: true,
@@ -1131,6 +1096,502 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     return path;
   }
 
+  String _formatExactDuration(double durationSec) {
+    if (durationSec <= 0) return '0:00.00';
+    final int totalMs = (durationSec * 1000).round();
+    final int minutes = totalMs ~/ 60000;
+    final int seconds = (totalMs % 60000) ~/ 1000;
+    final int hundredths = (totalMs % 1000) ~/ 10;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildSpecSheetTable({
+    required BuildContext context,
+    required DuplicateGroup currentGroup,
+    required bool isDark,
+    required Color textColor,
+    required Color subTextColor,
+    required Color activeAccent,
+    required void Function(void Function()) setSheetState,
+  }) {
+    final items = currentGroup.items;
+
+    Widget buildTableRow({
+      required String label,
+      required List<Widget> cells,
+      bool isHeader = false,
+      bool isAction = false,
+    }) {
+      return Container(
+        decoration: BoxDecoration(
+          color: isHeader
+              ? (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000))
+              : Colors.transparent,
+          border: Border(
+            bottom: BorderSide(
+              color: isDark ? const Color(0x12FFFFFF) : const Color(0x0A000000),
+              width: 0.6,
+            ),
+          ),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: isHeader ? 8 : (isAction ? 8 : 7)),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 115,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: isHeader ? 10 : 11,
+                  fontWeight: isHeader ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: isHeader ? 0.6 : 0,
+                  color: isHeader ? subTextColor : subTextColor.withOpacity(0.9),
+                ),
+              ),
+            ),
+            ...List.generate(cells.length, (idx) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: cells[idx],
+                ),
+              );
+            }),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0x1A000000) : const Color(0x08000000),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0x18FFFFFF) : const Color(0x12000000),
+          width: 0.8,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BoundedBouncingScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: MediaQuery.of(context).size.width - 36,
+          ),
+          child: IntrinsicWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Header Row
+                buildTableRow(
+                  label: 'ATTRIBUTE',
+                  isHeader: true,
+                  cells: items.map((item) {
+                    final isKept = item.isUserKept;
+                    final badgeColor = isKept
+                        ? (item.isAcoustiqPick
+                            ? (currentGroup.isAllFake ? const Color(0xFF38BDF8) : AppColors.genuineEmerald)
+                            : AppColors.suspiciousAmber)
+                        : AppColors.fakeCoral;
+                    final badgeText = isKept
+                        ? (item.isAcoustiqPick
+                            ? (currentGroup.isAllFake ? 'SPACE-SAVER' : 'PRESERVED MASTER')
+                            : 'USER KEPT')
+                        : 'DUPLICATE COPY';
+
+                    return Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            badgeText,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                              color: badgeColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+
+                // 2. Recommendation / Verdict Row
+                buildTableRow(
+                  label: 'Recommendation',
+                  cells: items.map((item) {
+                    return Text(
+                      item.reason,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: item.isUserKept ? FontWeight.w600 : FontWeight.w500,
+                        color: item.isUserKept
+                            ? (item.isAcoustiqPick
+                                ? (currentGroup.isAllFake ? const Color(0xFF38BDF8) : AppColors.genuineEmerald)
+                                : AppColors.suspiciousAmber)
+                            : subTextColor,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  }).toList(),
+                ),
+
+                // 3. Synced Lyrics Row
+                buildTableRow(
+                  label: 'Synced Lyrics',
+                  cells: items.map((item) {
+                    if (item.info.hasLyrics) {
+                      return const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lyrics_rounded, size: 12, color: Color(0xFFD8B4FE)),
+                          SizedBox(width: 4),
+                          Text(
+                            'Synced (.lrc)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFD8B4FE),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return Text(
+                      'None (Missing)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: subTextColor.withOpacity(0.65),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 4. Album Artwork Row
+                buildTableRow(
+                  label: 'Cover Artwork',
+                  cells: items.map((item) {
+                    if (item.info.hasCover) {
+                      return const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.image_rounded, size: 12, color: Color(0xFFF472B6)),
+                          SizedBox(width: 4),
+                          Text(
+                            'Embedded Cover',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFF472B6),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return Text(
+                      'None (Missing)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: subTextColor.withOpacity(0.65),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 5. Audio Waveform (MD5 Signature)
+                buildTableRow(
+                  label: 'Waveform MD5',
+                  cells: items.map((item) {
+                    if (currentGroup.isMd5Identical) {
+                      return const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.fingerprint_rounded, size: 12, color: Color(0xFF38BDF8)),
+                          SizedBox(width: 4),
+                          Text(
+                            '100% Bit-Identical',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF38BDF8),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return Text(
+                      'Unique Waveform',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: subTextColor,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 6. Lossless Purity Diagnosis
+                buildTableRow(
+                  label: 'Lossless Purity',
+                  cells: items.map((item) {
+                    if (item.info.status == 'untested') {
+                      return Text('Untested', style: TextStyle(fontSize: 11, color: subTextColor));
+                    }
+                    final scoreColor = item.info.score >= 80
+                        ? AppColors.genuineEmerald
+                        : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber);
+                    return Text(
+                      '${item.info.score}% (${item.info.shortBadge})',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: scoreColor,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 7. Frequency Cutoff
+                buildTableRow(
+                  label: 'Frequency Reach',
+                  cells: items.map((item) {
+                    final reach = item.info.cutoffKhz > 0
+                        ? '${item.info.cutoffKhz.toStringAsFixed(1)} kHz'
+                        : '${item.info.maxKhz.toStringAsFixed(1)} kHz';
+                    final tag = item.info.score < 50 ? ' (Lossy)' : '';
+                    return Text(
+                      '$reach$tag',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 8. Format & Depth
+                buildTableRow(
+                  label: 'Format & Depth',
+                  cells: items.map((item) {
+                    return Text(
+                      '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)} kHz',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 9. Average Bitrate
+                buildTableRow(
+                  label: 'Average Bitrate',
+                  cells: items.map((item) {
+                    return Text(
+                      item.info.bitrateKbps > 0 ? '${item.info.bitrateKbps} kbps' : 'N/A',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: textColor,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 10. Exact Duration
+                buildTableRow(
+                  label: 'Exact Duration',
+                  cells: items.map((item) {
+                    return Text(
+                      _formatExactDuration(item.info.durationSec),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 11. File Size & Storage
+                buildTableRow(
+                  label: 'File Size',
+                  cells: items.map((item) {
+                    return Text(
+                      '${item.info.fileSizeMb.toStringAsFixed(1)} MB',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: item.isUserKept ? textColor : AppColors.fakeCoral,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 12. Storage Location
+                buildTableRow(
+                  label: 'Location',
+                  cells: items.map((item) {
+                    return Text(
+                      _formatCleanLocation(item.info.filePath),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: subTextColor.withOpacity(0.8),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  }).toList(),
+                ),
+
+                // 13. In-Table Audio Preview
+                buildTableRow(
+                  label: 'Audio Preview',
+                  cells: items.map((item) {
+                    final isPlaying = AudioPlaybackService.instance.isPlaying &&
+                        AudioPlaybackService.instance.currentFilePath == item.info.filePath;
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: LuminousFeedback(
+                        onTap: () async {
+                          if (isPlaying) {
+                            await AudioPlaybackService.instance.stop();
+                          } else {
+                            await AudioPlaybackService.instance.play(item.info.filePath);
+                          }
+                          setSheetState(() {});
+                          if (mounted) setState(() {});
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: isPlaying
+                                ? activeAccent.withOpacity(0.25)
+                                : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isPlaying
+                                  ? activeAccent.withOpacity(0.4)
+                                  : (isDark ? const Color(0x20FFFFFF) : const Color(0x14000000)),
+                              width: 0.6,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                                size: 13,
+                                color: isPlaying ? activeAccent : textColor,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                isPlaying ? 'Stop' : 'Listen',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: isPlaying ? activeAccent : textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // 14. Action / Override Button
+                buildTableRow(
+                  label: 'Action',
+                  isAction: true,
+                  cells: items.map((item) {
+                    if (item.isUserKept) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.genuineEmerald.withOpacity(0.35),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_rounded, size: 12, color: AppColors.genuineEmerald),
+                            SizedBox(width: 3),
+                            Text(
+                              'Preserved',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.genuineEmerald,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return LuminousFeedback(
+                      onTap: () {
+                        _setUserKeepTrack(currentGroup, item.info.filePath);
+                        setSheetState(() {});
+                      },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: activeAccent.withOpacity(0.35),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.swap_horiz_rounded, size: 12, color: activeAccent),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Keep This Instead',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: activeAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showComparisonSheet(DuplicateGroup group) {
     final isDark = appState.isCurrentDark(context);
     final textColor = appState.getTextColor(context);
@@ -1173,6 +1634,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               bannerTitle = 'Forensic Multi-Vector Quality Diagnosis';
               bannerDetail = 'AcoustiQ evaluated audio purity, bit depth, sampling rates, and metadata completeness to determine the superior studio copy.';
             }
+
+            final redundantCount = currentGroup.items.where((it) => !it.isUserKept).length;
 
             return GlassSurface(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -1316,356 +1779,20 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Scrollable Versions List (Diff Matrix)
+                      // Forensic Comparative Spec Sheet Table
                       Flexible(
-                        child: ListView.separated(
-                          shrinkWrap: true,
+                        child: SingleChildScrollView(
                           physics: const BoundedBouncingScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-                          itemCount: currentGroup.items.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (context, i) {
-                            final item = currentGroup.items[i];
-                            final info = item.info;
-                            final isPlaying = AudioPlaybackService.instance.isPlaying &&
-                                AudioPlaybackService.instance.currentFilePath == info.filePath;
-
-                            // Badge label and color determination
-                            String badgeLabel;
-                            Color badgeColor;
-                            IconData badgeIcon;
-
-                            if (item.isUserKept) {
-                              if (item.isAcoustiqPick) {
-                                if (currentGroup.isAllFake) {
-                                  badgeLabel = 'SPACE-SAVER PICK';
-                                  badgeColor = const Color(0xFF38BDF8);
-                                  badgeIcon = Icons.compress_rounded;
-                                } else {
-                                  badgeLabel = 'ACOUSTIQ PICK';
-                                  badgeColor = AppColors.genuineEmerald;
-                                  badgeIcon = Icons.verified_rounded;
-                                }
-                              } else {
-                                badgeLabel = 'USER SELECTED';
-                                badgeColor = AppColors.suspiciousAmber;
-                                badgeIcon = Icons.check_circle_rounded;
-                              }
-                            } else {
-                              badgeLabel = 'REDUNDANT';
-                              badgeColor = AppColors.fakeCoral;
-                              badgeIcon = Icons.copy_rounded;
-                            }
-
-                            return GlassSurface(
-                              borderRadius: BorderRadius.circular(16),
-                              style: item.isUserKept ? GlassStyle.frosted : GlassStyle.clear,
-                              borderless: false,
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Top Row: Status badge & Purity Score
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: badgeColor.withOpacity(isDark ? 0.22 : 0.12),
-                                          borderRadius: BorderRadius.circular(7),
-                                          border: Border.all(
-                                            color: badgeColor.withOpacity(0.35),
-                                            width: 0.8,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(badgeIcon, size: 12, color: badgeColor),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              badgeLabel,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 0.5,
-                                                color: badgeColor,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (item.isAcoustiqPick && !item.isUserKept) ...[
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.genuineEmerald.withOpacity(isDark ? 0.15 : 0.08),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: AppColors.genuineEmerald.withOpacity(0.30),
-                                              width: 0.6,
-                                            ),
-                                          ),
-                                          child: const Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(Icons.verified_outlined, size: 10.5, color: AppColors.genuineEmerald),
-                                              SizedBox(width: 3),
-                                              Text(
-                                                'ACOUSTIQ CHOICE',
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.genuineEmerald,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                      const Spacer(),
-                                      if (info.status != 'untested')
-                                        Text(
-                                          '${info.score}% purity',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                            color: info.score >= 80
-                                                ? AppColors.genuineEmerald
-                                                : (info.score < 50
-                                                    ? AppColors.fakeCoral
-                                                    : AppColors.suspiciousAmber),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 7),
-
-                                  // Specs Matrix (Clean Proportional Typography)
-                                  Text(
-                                    '${info.bitDepth}-bit / ${(info.sampleRate / 1000).toStringAsFixed(1)}k • ${info.fileSizeMb.toStringAsFixed(1)} MB • ${item.qualityTitle}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: textColor,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-
-                                  // Concrete Forensic Advantages Container
-                                  if (item.advantages.isNotEmpty) ...[
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.genuineEmerald.withOpacity(isDark ? 0.12 : 0.07),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: AppColors.genuineEmerald.withOpacity(0.25),
-                                          width: 0.6,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: item.advantages.map((adv) => Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 1.5),
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.check_circle_outline_rounded, size: 12, color: AppColors.genuineEmerald),
-                                              const SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  adv,
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: isDark ? const Color(0xEEFFFFFF) : const Color(0xEE000000),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )).toList(),
-                                      ),
-                                    ),
-                                  ] else if (item.disadvantages.isNotEmpty) ...[
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.fakeCoral.withOpacity(isDark ? 0.10 : 0.06),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: AppColors.fakeCoral.withOpacity(0.25),
-                                          width: 0.6,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: item.disadvantages.map((dis) => Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 1.5),
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.remove_circle_outline_rounded, size: 12, color: AppColors.fakeCoral),
-                                              const SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  dis,
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: subTextColor,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )).toList(),
-                                      ),
-                                    ),
-                                  ],
-
-                                  // Clean Origin Location
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.folder_open_rounded, size: 13, color: subTextColor.withOpacity(0.70)),
-                                      const SizedBox(width: 5),
-                                      Expanded(
-                                        child: Text(
-                                          _formatCleanLocation(info.filePath),
-                                          style: TextStyle(
-                                            fontSize: 10.5,
-                                            color: subTextColor.withOpacity(0.70),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 10),
-
-                                  // Action Row: Audio Preview & Keep button
-                                  Row(
-                                    children: [
-                                      // Audio Preview button
-                                      LuminousFeedback(
-                                        onTap: () async {
-                                          if (isPlaying) {
-                                            await AudioPlaybackService.instance.stop();
-                                          } else {
-                                            await AudioPlaybackService.instance.play(info.filePath);
-                                          }
-                                          setSheetState(() {});
-                                          if (mounted) setState(() {});
-                                        },
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                          decoration: BoxDecoration(
-                                            color: isPlaying
-                                                ? activeAccent.withOpacity(0.3)
-                                                : (isDark ? const Color(0x20FFFFFF) : const Color(0x10000000)),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                                                size: 14,
-                                                color: isPlaying ? activeAccent : textColor,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                isPlaying ? 'Stop' : 'Listen',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: isPlaying ? activeAccent : textColor,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      const Spacer(),
-
-                                      if (!item.isUserKept) ...[
-                                        LuminousFeedback(
-                                          onTap: () {
-                                            _setUserKeepTrack(currentGroup, info.filePath);
-                                            setSheetState(() {});
-                                          },
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                            decoration: BoxDecoration(
-                                              color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(
-                                                color: activeAccent.withOpacity(0.35),
-                                                width: 0.8,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.check_rounded, size: 13, color: activeAccent),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  'Keep This File',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: activeAccent,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        IconButton(
-                                          onPressed: () => _confirmDeleteTrack(item.info),
-                                          icon: const Icon(
-                                            Icons.delete_outline_rounded,
-                                            size: 18,
-                                            color: AppColors.fakeCoral,
-                                          ),
-                                          splashRadius: 18,
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                                        ),
-                                      ] else
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(Icons.check_circle_rounded, size: 14, color: badgeColor),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Selected to Keep',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: badgeColor,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+                          child: _buildSpecSheetTable(
+                            context: sheetCtx,
+                            currentGroup: currentGroup,
+                            isDark: isDark,
+                            textColor: textColor,
+                            subTextColor: subTextColor,
+                            activeAccent: activeAccent,
+                            setSheetState: setSheetState,
+                          ),
                         ),
                       ),
 
@@ -1703,7 +1830,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                 const Icon(Icons.delete_sweep_rounded, size: 16, color: AppColors.fakeCoral),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Clean Redundant Copies (${currentGroup.wastedMb.toStringAsFixed(1)} MB)',
+                                  'Clean $redundantCount Redundant ${redundantCount == 1 ? 'Copy' : 'Copies'} (${currentGroup.wastedMb.toStringAsFixed(1)} MB)',
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -1730,7 +1857,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     });
   }
 
-  /// Connected Group representation of a Duplicate Track Set (3dp gaps, 28dp/6dp continuous curvature)
+  /// Connected Group representation of a Duplicate Track Set (Style B: 2-Line Minimal)
   Widget _buildDuplicateGroup(
     DuplicateGroup group,
     bool isDark,
@@ -1738,6 +1865,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     Color subTextColor,
   ) {
     final activeAccent = appState.getAccentColor(context);
+    final redundantCount = group.items.where((it) => !it.isUserKept).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1770,7 +1898,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      group.artist,
+                      '${group.artist} · $redundantCount redundant ${redundantCount == 1 ? 'copy' : 'copies'} (${group.wastedMb.toStringAsFixed(1)} MB)',
                       style: TextStyle(
                         fontSize: 11.5,
                         color: subTextColor,
@@ -1796,7 +1924,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       Icon(Icons.fingerprint_rounded, size: 11, color: AppColors.genuineEmerald),
                       SizedBox(width: 3),
                       Text(
-                        'MD5 EXACT',
+                        'MD5 MATCH',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -1867,7 +1995,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
           ),
         ),
 
-        // Connected Rows with Frosted Glass & Luminous Feedback
+        // Connected Rows with Frosted Glass & Luminous Feedback (Style B: 2-Line Minimal)
         ExpressiveGroup(
           rowCount: group.items.length,
           itemBuilder: (context, index, position) {
@@ -1882,10 +2010,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             if (item.isUserKept) {
               if (item.isAcoustiqPick) {
                 if (group.isAllFake) {
-                  statusLabel = 'SPACE-SAVER PICK';
+                  statusLabel = 'SPACE-SAVER';
                   statusColor = const Color(0xFF38BDF8);
                 } else {
-                  statusLabel = 'ACOUSTIQ PICK';
+                  statusLabel = 'PRESERVED';
                   statusColor = isDark ? AppColors.genuineEmerald : AppColors.lightEmeraldText;
                 }
               } else {
@@ -1918,8 +2046,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       onTap: () => _setUserKeepTrack(group, item.info.filePath),
                       borderRadius: BorderRadius.circular(14),
                       child: Container(
-                        width: 28,
-                        height: 28,
+                        width: 26,
+                        height: 26,
                         decoration: BoxDecoration(
                           color: item.isUserKept
                               ? statusColor.withOpacity(isDark ? 0.25 : 0.15)
@@ -1942,95 +2070,106 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Line 1: File Name + Status Capsule + Badges
                           Row(
                             children: [
-                              Text(
-                                statusLabel,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.6,
-                                  color: statusColor,
+                              Flexible(
+                                child: Text(
+                                  item.info.fileName,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (item.isAcoustiqPick && !item.isUserKept) ...[
-                                const SizedBox(width: 6),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withOpacity(isDark ? 0.20 : 0.12),
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: Border.all(
+                                    color: statusColor.withOpacity(0.35),
+                                    width: 0.6,
+                                  ),
+                                ),
+                                child: Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                    color: statusColor,
+                                  ),
+                                ),
+                              ),
+                              if (item.info.hasLyrics) ...[
+                                const SizedBox(width: 4),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                   decoration: BoxDecoration(
-                                    color: AppColors.genuineEmerald.withOpacity(isDark ? 0.15 : 0.08),
-                                    borderRadius: BorderRadius.circular(4),
+                                    color: const Color(0xFFA855F7).withOpacity(isDark ? 0.20 : 0.12),
+                                    borderRadius: BorderRadius.circular(5),
                                     border: Border.all(
-                                      color: AppColors.genuineEmerald.withOpacity(0.30),
+                                      color: const Color(0xFFA855F7).withOpacity(0.35),
+                                      width: 0.6,
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.lyrics_rounded, size: 9.5, color: Color(0xFFD8B4FE)),
+                                      SizedBox(width: 2.5),
+                                      Text(
+                                        'Lyrics',
+                                        style: TextStyle(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFD8B4FE),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              if (item.info.hasCover) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEC4899).withOpacity(isDark ? 0.20 : 0.12),
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      color: const Color(0xFFEC4899).withOpacity(0.35),
                                       width: 0.6,
                                     ),
                                   ),
                                   child: const Text(
-                                    'ACOUSTIQ PICK',
+                                    'Art',
                                     style: TextStyle(
                                       fontSize: 8.5,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.genuineEmerald,
+                                      color: Color(0xFFF472B6),
                                     ),
                                   ),
                                 ),
                               ],
-                              const Spacer(),
-                              Text(
-                                item.info.status == 'untested' ? 'UNTESTED' : '${item.info.score}% purity',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: item.info.status == 'untested'
-                                      ? subTextColor
-                                      : (item.info.score >= 80
-                                          ? AppColors.genuineEmerald
-                                          : (item.info.score < 50
-                                              ? AppColors.fakeCoral
-                                              : AppColors.suspiciousAmber)),
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 3),
+                          // Line 2: Specs & Why Keep (Upright Roman font, dot separator, zero italics, zero bullets)
                           Text(
-                            '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k • ${item.info.fileSizeMb.toStringAsFixed(1)} MB • ${item.qualityTitle}',
+                            '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k · ${item.info.fileSizeMb.toStringAsFixed(1)} MB${item.info.bitrateKbps > 0 ? ' · ${item.info.bitrateKbps} kbps' : ''} · ${item.reason}',
                             style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: textColor,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.reason,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontStyle: FontStyle.italic,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
                               color: subTextColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(Icons.insert_drive_file_outlined, size: 11, color: subTextColor.withOpacity(0.60)),
-                              const SizedBox(width: 3),
-                              Expanded(
-                                child: Text(
-                                  item.info.fileName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    color: subTextColor.withOpacity(0.65),
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
@@ -2047,37 +2186,23 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                         }
                         setState(() {});
                       },
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: const EdgeInsets.all(7),
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           color: isPlaying
-                              ? activeAccent.withOpacity(0.3)
-                              : (isDark ? const Color(0x20FFFFFF) : const Color(0x10000000)),
+                              ? activeAccent.withOpacity(0.30)
+                              : (isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000)),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                          size: 17,
-                          color: isPlaying ? activeAccent : subTextColor,
+                          size: 16,
+                          color: isPlaying ? activeAccent : textColor,
                         ),
                       ),
                     ),
-
-                    if (!item.isUserKept) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        onPressed: () => _confirmDeleteTrack(item.info),
-                        icon: const Icon(
-                          Icons.delete_outline_rounded,
-                          size: 18,
-                          color: AppColors.fakeCoral,
-                        ),
-                        splashRadius: 18,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                      ),
-                    ],
                   ],
                 ),
               ),

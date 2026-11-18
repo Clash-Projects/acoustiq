@@ -358,25 +358,25 @@ class DuplicateDetector {
       if (isPick) {
         if (isMd5) {
           if (allSameSize) {
-            reason = 'Bit-identical waveforms • Primary library master';
+            reason = 'Primary library master · 100% bit-identical';
           } else {
             final diff = (otherTracks.isNotEmpty ? (otherTracks.first.fileSizeMb - item.fileSizeMb) : 0.0);
             reason = diff > 0.05
-                ? 'Bit-identical audio • Saves ${diff.toStringAsFixed(1)} MB'
-                : 'Bit-identical audio • Best compression';
+                ? 'Saves ${diff.toStringAsFixed(1)} MB · 100% bit-identical'
+                : 'Optimal compression · 100% bit-identical';
           }
         } else if (allFake) {
-          reason = 'Identical lossy cutoff • Preserving space-saving copy';
+          reason = 'Space-saving transcode · Identical audio cutoff';
         } else if (item.hasLyrics && otherLacksLyrics) {
-          reason = 'Embedded synced lyrics & highest metadata fidelity';
+          reason = 'Preserves synced lyrics (.lrc) and metadata';
         } else if (item.status == 'genuine' && otherTracks.any((t) => t.status == 'fake')) {
-          reason = 'Authentic lossless audio with full studio harmonics';
+          reason = 'Genuine Lossless (${item.score}% purity) · Full studio harmonics';
         } else if (otherTracks.isNotEmpty && item.bitDepth > otherTracks.first.bitDepth) {
-          reason = 'Higher resolution (${item.bitDepth}-bit Studio Master)';
+          reason = 'Studio Master (${item.bitDepth}-bit container)';
         } else if (otherTracks.isNotEmpty && item.sampleRate > otherTracks.first.sampleRate) {
-          reason = 'Higher sample rate (${(item.sampleRate / 1000).toStringAsFixed(1)}k vs ${(otherTracks.first.sampleRate / 1000).toStringAsFixed(1)}k)';
+          reason = 'High-Res sampling (${(item.sampleRate / 1000).toStringAsFixed(1)} kHz)';
         } else {
-          reason = 'Highest resolution and metadata fidelity';
+          reason = 'Highest quality master and metadata';
         }
       } else if (isMd5) {
         if (allSameSize) {
@@ -384,13 +384,13 @@ class DuplicateDetector {
         } else {
           final extra = item.fileSizeMb - best.fileSizeMb;
           reason = extra > 0.05
-              ? 'Bit-identical clone • ${extra.toStringAsFixed(1)} MB extra storage'
+              ? 'Bit-identical clone · ${extra.toStringAsFixed(1)} MB extra storage'
               : 'Bit-identical clone (${item.fileSizeMb.toStringAsFixed(1)} MB redundant)';
         }
       } else if (!item.hasLyrics && best.hasLyrics) {
-        reason = 'Missing synced lyrics (.lrc) & lower metadata';
+        reason = 'Missing synced lyrics (.lrc)';
       } else if (best.score > item.score && item.score > 0) {
-        reason = 'Lower purity (${item.score}% vs ${best.score}%) • Lossy transcode';
+        reason = 'Lower purity (${item.score}% vs ${best.score}%) · Lossy transcode';
       } else if (best.bitDepth > item.bitDepth) {
         reason = 'Lower bit depth (${item.bitDepth}-bit vs ${best.bitDepth}-bit)';
       } else if (best.sampleRate > item.sampleRate) {
