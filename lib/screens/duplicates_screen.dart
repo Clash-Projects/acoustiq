@@ -1047,8 +1047,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   )
                 else
                   SliverPadding(
-                    // 96dp bottom padding: content glides behind the liquid glass dock!
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    // 140dp bottom padding: content glides behind the liquid glass dock without overlapping the last card!
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -1318,283 +1318,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     );
   }
 
-  String _formatCleanLocation(String path) {
-    final parts = path.split('/');
-    if (parts.length >= 2) {
-      final folder = parts[parts.length - 2];
-      final file = parts.last;
-      return '$folder / $file';
-    }
-    return path;
-  }
-
-  String _formatExactDuration(double durationSec) {
-    if (durationSec <= 0) return '0:00.00';
-    final int totalMs = (durationSec * 1000).round();
-    final int minutes = totalMs ~/ 60000;
-    final int seconds = (totalMs % 60000) ~/ 1000;
-    final int hundredths = (totalMs % 1000) ~/ 10;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildComparisonCards({
-    required BuildContext context,
-    required DuplicateGroup currentGroup,
-    required bool isDark,
-    required Color textColor,
-    required Color subTextColor,
-    required Color activeAccent,
-    required void Function(void Function()) setSheetState,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: currentGroup.items.map((item) {
-        final info = item.info;
-        final isPlaying = AudioPlaybackService.instance.isPlaying &&
-            AudioPlaybackService.instance.currentFilePath == info.filePath;
-        final isKept = item.isUserKept;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: GlassSurface(
-            borderRadius: BorderRadius.circular(18),
-            style: isKept ? GlassStyle.frosted : GlassStyle.clear,
-            borderless: false,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Top Header Row: Status Badge & Audio Preview Button
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isKept
-                            ? AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12)
-                            : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isKept
-                              ? AppColors.genuineEmerald.withOpacity(0.35)
-                              : (isDark ? const Color(0x25FFFFFF) : const Color(0x18000000)),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isKept ? Icons.check_circle_rounded : Icons.copy_rounded,
-                            size: 13,
-                            color: isKept ? AppColors.genuineEmerald : subTextColor,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            isKept ? 'Preserved Master' : 'Duplicate Copy',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isKept ? AppColors.genuineEmerald : subTextColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    // Audio Preview button
-                    LuminousFeedback(
-                      onTap: () async {
-                        if (isPlaying) {
-                          await AudioPlaybackService.instance.stop();
-                        } else {
-                          await AudioPlaybackService.instance.play(info.filePath);
-                        }
-                        setSheetState(() {});
-                        if (mounted) setState(() {});
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: isPlaying
-                              ? activeAccent.withOpacity(0.25)
-                              : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isPlaying
-                                ? activeAccent.withOpacity(0.4)
-                                : (isDark ? const Color(0x20FFFFFF) : const Color(0x12000000)),
-                            width: 0.6,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                              size: 14,
-                              color: isPlaying ? activeAccent : textColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isPlaying ? 'Stop' : 'Listen',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: isPlaying ? activeAccent : textColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // File Name (Multi-line wrap, ZERO truncation!)
-                Text(
-                  info.fileName,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                    height: 1.25,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const SizedBox(height: 4),
-
-                // Folder Location
-                Row(
-                  children: [
-                    Icon(Icons.folder_open_rounded, size: 12, color: subTextColor),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _formatCleanLocation(info.filePath),
-                        style: TextStyle(fontSize: 11, color: subTextColor),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                // Live Audio Progress Strip (Active seek & time counter when playing)
-                _InlineAudioProgressStrip(
-                  filePath: info.filePath,
-                  durationSec: info.durationSec,
-                ),
-
-                const SizedBox(height: 10),
-
-                // Specs & Quality Overview (Calm, non-screaming text)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0x14000000) : const Color(0x06000000),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? const Color(0x10FFFFFF) : const Color(0x0A000000),
-                      width: 0.6,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildSpecRow('Format', '${info.bitDepth}-bit / ${(info.sampleRate / 1000).toStringAsFixed(1)} kHz FLAC', textColor, subTextColor),
-                      const SizedBox(height: 7),
-                      _buildSpecRow('Duration', _formatExactDuration(info.durationSec), textColor, subTextColor),
-                      const SizedBox(height: 7),
-                      _buildSpecRow('File Size', '${info.fileSizeMb.toStringAsFixed(1)} MB${!isKept ? ' (redundant)' : ''}', isKept ? textColor : AppColors.fakeCoral, subTextColor),
-                      const SizedBox(height: 7),
-                      _buildSpecRow('Audio Bitrate', info.bitrateKbps > 0 ? '${info.bitrateKbps} kbps' : 'N/A', textColor, subTextColor),
-                      const SizedBox(height: 7),
-                      _buildSpecRow(
-                        'Synced Lyrics',
-                        info.hasLyrics ? 'Embedded (.lrc)' : 'Missing',
-                        info.hasLyrics ? textColor : subTextColor,
-                        subTextColor,
-                      ),
-                      const SizedBox(height: 7),
-                      _buildSpecRow(
-                        'Album Artwork',
-                        info.hasCover ? 'Embedded artwork' : 'Missing',
-                        info.hasCover ? textColor : subTextColor,
-                        subTextColor,
-                      ),
-                      const SizedBox(height: 7),
-                      _buildSpecRow(
-                        'Authenticity',
-                        info.status == 'untested' ? 'Untested' : (info.score >= 80 ? 'Genuine lossless (${info.score}%)' : '${info.score}% lossy transcode'),
-                        info.score >= 80 ? AppColors.genuineEmerald : (info.score < 50 ? subTextColor : AppColors.suspiciousAmber),
-                        subTextColor,
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (!isKept) ...[
-                  const SizedBox(height: 12),
-                  LuminousFeedback(
-                    onTap: () {
-                      _setUserKeepTrack(currentGroup, info.filePath);
-                      setSheetState(() {});
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      height: 38,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: activeAccent.withOpacity(0.35),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.swap_horiz_rounded, size: 15, color: activeAccent),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Keep This Version Instead',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: activeAccent,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildSpecRow(String label, String value, Color valueColor, Color labelColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(fontSize: 11.5, color: labelColor)),
-        Text(value, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: valueColor)),
-      ],
-    );
-  }
-
   void _showComparisonSheet(DuplicateGroup group) {
     final isDark = appState.isCurrentDark(context);
     final textColor = appState.getTextColor(context);
@@ -1812,19 +1535,25 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Vertical Stacked Comparison Cards (ZERO horizontal scroll, 100% responsive)
+                      // Unified Side-by-Side Diff Matrix (Zero Scroll)
                       Flexible(
                         child: SingleChildScrollView(
                           physics: const BoundedBouncingScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
-                          child: _buildComparisonCards(
-                            context: sheetCtx,
-                            currentGroup: currentGroup,
+                          child: _SideBySideDiffMatrix(
+                            group: currentGroup,
                             isDark: isDark,
                             textColor: textColor,
                             subTextColor: subTextColor,
                             activeAccent: activeAccent,
-                            setSheetState: setSheetState,
+                            onSelectKeep: (path) {
+                              _setUserKeepTrack(currentGroup, path);
+                              setSheetState(() {});
+                            },
+                            onRefresh: () {
+                              setSheetState(() {});
+                              if (mounted) setState(() {});
+                            },
                           ),
                         ),
                       ),
@@ -2104,34 +1833,56 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: (item.info.score >= 80
-                                              ? AppColors.genuineEmerald
-                                              : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber))
-                                          .withValues(alpha: isDark ? 0.15 : 0.10),
-                                      borderRadius: BorderRadius.circular(5),
-                                      border: Border.all(
+                                  if (item.info.status == 'untested' || item.info.score <= 0)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0x14FFFFFF) : const Color(0x0C000000),
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(
+                                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x15000000),
+                                          width: 0.6,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Untested',
+                                        style: TextStyle(
+                                          fontFamily: 'JetBrainsMono',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: subTextColor,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
+                                      decoration: BoxDecoration(
                                         color: (item.info.score >= 80
                                                 ? AppColors.genuineEmerald
                                                 : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber))
-                                            .withValues(alpha: 0.30),
-                                        width: 0.6,
+                                            .withValues(alpha: isDark ? 0.15 : 0.10),
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(
+                                          color: (item.info.score >= 80
+                                                  ? AppColors.genuineEmerald
+                                                  : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber))
+                                              .withValues(alpha: 0.30),
+                                          width: 0.6,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${item.info.score}% purity',
+                                        style: TextStyle(
+                                          fontFamily: 'JetBrainsMono',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: item.info.score >= 80
+                                              ? AppColors.genuineEmerald
+                                              : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber),
+                                        ),
                                       ),
                                     ),
-                                    child: Text(
-                                      '${item.info.score}% purity',
-                                      style: TextStyle(
-                                        fontFamily: 'JetBrainsMono',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: item.info.score >= 80
-                                            ? AppColors.genuineEmerald
-                                            : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                               const SizedBox(height: 3),
@@ -2302,258 +2053,6 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
     _group = widget.group;
   }
 
-  String _formatExactDuration(double durationSec) {
-    if (durationSec <= 0) return '0:00.00';
-    final int totalMs = (durationSec * 1000).round();
-    final int minutes = totalMs ~/ 60000;
-    final int seconds = (totalMs % 60000) ~/ 1000;
-    final int hundredths = (totalMs % 1000) ~/ 10;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
-  }
-
-  String _formatCleanLocation(String path) {
-    final parts = path.split('/');
-    if (parts.length >= 2) {
-      final folder = parts[parts.length - 2];
-      final file = parts.last;
-      return '$folder / $file';
-    }
-    return path;
-  }
-
-  Widget _buildSpecRow(String label, String value, Color valueColor, Color labelColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(fontSize: 11.5, color: labelColor)),
-        Text(value, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: valueColor)),
-      ],
-    );
-  }
-
-  Widget _buildComparisonCard({
-    required DuplicateItem item,
-    required bool isDark,
-    required Color textColor,
-    required Color subTextColor,
-    required Color activeAccent,
-  }) {
-    final info = item.info;
-    final isPlaying = AudioPlaybackService.instance.isPlaying &&
-        AudioPlaybackService.instance.currentFilePath == info.filePath;
-    final isKept = item.isUserKept;
-
-    return GlassSurface(
-      borderRadius: BorderRadius.circular(20),
-      style: isKept ? GlassStyle.frosted : GlassStyle.clear,
-      borderless: false,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Top Header: Status Badge & Audio Preview
-          Row(
-            children: [
-              GlassSurface(
-                borderRadius: BorderRadius.circular(8),
-                style: GlassStyle.clear,
-                borderless: false,
-                tintColor: isKept
-                    ? AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.14)
-                    : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isKept ? Icons.check_circle_rounded : Icons.copy_rounded,
-                      size: 13,
-                      color: isKept ? AppColors.genuineEmerald : subTextColor,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      isKept ? 'Preserved Master' : 'Duplicate Copy',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: isKept ? AppColors.genuineEmerald : subTextColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              // Audio Preview Button
-              LuminousFeedback(
-                onTap: () async {
-                  if (isPlaying) {
-                    await AudioPlaybackService.instance.stop();
-                  } else {
-                    await AudioPlaybackService.instance.play(info.filePath);
-                  }
-                  setState(() {});
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: GlassSurface(
-                  borderRadius: BorderRadius.circular(20),
-                  style: GlassStyle.clear,
-                  borderless: false,
-                  tintColor: isPlaying
-                      ? activeAccent.withValues(alpha: 0.25)
-                      : (isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                        size: 14,
-                        color: isPlaying ? activeAccent : textColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isPlaying ? 'Stop' : 'Listen',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isPlaying ? activeAccent : textColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // File Name
-          Text(
-            info.fileName,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-              height: 1.25,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-
-          const SizedBox(height: 4),
-
-          // Folder Location
-          Row(
-            children: [
-              Icon(Icons.folder_open_rounded, size: 12, color: subTextColor),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  _formatCleanLocation(info.filePath),
-                  style: TextStyle(fontSize: 11, color: subTextColor),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Live Audio Progress Strip
-          _InlineAudioProgressStrip(
-            filePath: info.filePath,
-            durationSec: info.durationSec,
-          ),
-
-          const SizedBox(height: 8),
-
-          // Specs Table
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0x14000000) : const Color(0x06000000),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? const Color(0x10FFFFFF) : const Color(0x0A000000),
-                width: 0.6,
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildSpecRow('Format', '${info.bitDepth}-bit / ${(info.sampleRate / 1000).toStringAsFixed(1)} kHz FLAC', textColor, subTextColor),
-                const SizedBox(height: 7),
-                _buildSpecRow('Duration', _formatExactDuration(info.durationSec), textColor, subTextColor),
-                const SizedBox(height: 7),
-                _buildSpecRow('File Size', '${info.fileSizeMb.toStringAsFixed(1)} MB${!isKept ? ' (redundant)' : ''}', isKept ? textColor : AppColors.fakeCoral, subTextColor),
-                const SizedBox(height: 7),
-                _buildSpecRow('Audio Bitrate', info.bitrateKbps > 0 ? '${info.bitrateKbps} kbps' : 'N/A', textColor, subTextColor),
-                const SizedBox(height: 7),
-                _buildSpecRow(
-                  'Synced Lyrics',
-                  info.hasLyrics ? 'Embedded (.lrc)' : 'Missing',
-                  info.hasLyrics ? textColor : subTextColor,
-                  subTextColor,
-                ),
-                const SizedBox(height: 7),
-                _buildSpecRow(
-                  'Album Artwork',
-                  info.hasCover ? 'Embedded artwork' : 'Missing',
-                  info.hasCover ? textColor : subTextColor,
-                  subTextColor,
-                ),
-                const SizedBox(height: 7),
-                _buildSpecRow(
-                  'Authenticity',
-                  info.status == 'untested' ? 'Untested' : (info.score >= 80 ? 'Genuine lossless (${info.score}%)' : '${info.score}% lossy transcode'),
-                  info.score >= 80 ? AppColors.genuineEmerald : (info.score < 50 ? subTextColor : AppColors.suspiciousAmber),
-                  subTextColor,
-                ),
-              ],
-            ),
-          ),
-
-          if (!isKept) ...[
-            const SizedBox(height: 12),
-            LuminousFeedback(
-              onTap: () {
-                widget.onSetUserKeepTrack(_group, info.filePath);
-                setState(() {
-                  _group = _group.withUserSelection(info.filePath);
-                });
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: GlassSurface(
-                borderRadius: BorderRadius.circular(12),
-                style: GlassStyle.clear,
-                borderless: false,
-                tintColor: activeAccent.withValues(alpha: isDark ? 0.20 : 0.12),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.swap_horiz_rounded, size: 15, color: activeAccent),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Keep This Version Instead',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: activeAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isDark = widget.appState.isCurrentDark(context);
     final textColor = widget.appState.getTextColor(context);
@@ -2712,46 +2211,27 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
               ),
             ),
 
-            // Main Content: Side-by-Side Dual-Column on Tablets / Wide screens!
+            // Main Content: Unified Side-by-Side Diff Matrix (Zero Scroll)
             Expanded(
-              child: LayoutBuilder(
-                builder: (ctx, constraints) {
-                  final isWide = constraints.maxWidth >= 520;
-                  final cards = _group.items.map((item) {
-                    return _buildComparisonCard(
-                      item: item,
-                      isDark: isDark,
-                      textColor: textColor,
-                      subTextColor: subTextColor,
-                      activeAccent: activeAccent,
-                    );
-                  }).toList();
-
-                  if (isWide) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: cards.map((card) {
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: card,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    );
-                  } else {
-                    return SingleChildScrollView(
-                      physics: const BoundedBouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      child: Column(
-                        children: cards.map((c) => Padding(padding: const EdgeInsets.only(bottom: 12), child: c)).toList(),
-                      ),
-                    );
-                  }
-                },
+              child: SingleChildScrollView(
+                physics: const BoundedBouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: _SideBySideDiffMatrix(
+                  group: _group,
+                  isDark: isDark,
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                  activeAccent: activeAccent,
+                  onSelectKeep: (path) {
+                    widget.onSetUserKeepTrack(_group, path);
+                    setState(() {
+                      _group = _group.withUserSelection(path);
+                    });
+                  },
+                  onRefresh: () {
+                    setState(() {});
+                  },
+                ),
               ),
             ),
 
@@ -2808,3 +2288,670 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
   }
 }
 
+
+/// Unified Side-by-Side Forensic Diff Matrix
+/// Displays Preserved Master and Redundant Copy side-by-side on a single screen
+/// with ZERO vertical scroll required on tablets and modern mobile screens.
+class _SideBySideDiffMatrix extends StatefulWidget {
+  final DuplicateGroup group;
+  final bool isDark;
+  final Color textColor;
+  final Color subTextColor;
+  final Color activeAccent;
+  final void Function(String filePath) onSelectKeep;
+  final VoidCallback onRefresh;
+
+  const _SideBySideDiffMatrix({
+    required this.group,
+    required this.isDark,
+    required this.textColor,
+    required this.subTextColor,
+    required this.activeAccent,
+    required this.onSelectKeep,
+    required this.onRefresh,
+  });
+
+  @override
+  State<_SideBySideDiffMatrix> createState() => _SideBySideDiffMatrixState();
+}
+
+class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
+  int _selectedCopyIndex = 0;
+
+  String _formatExactDuration(double durationSec) {
+    if (durationSec <= 0) return '0:00.00';
+    final int totalMs = (durationSec * 1000).round();
+    final int minutes = totalMs ~/ 60000;
+    final int seconds = (totalMs % 60000) ~/ 1000;
+    final int hundredths = (totalMs % 1000) ~/ 10;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
+  }
+
+  String _formatCleanLocation(String path) {
+    final parts = path.split('/');
+    if (parts.length >= 2) {
+      final folder = parts[parts.length - 2];
+      final file = parts.last;
+      return '$folder / $file';
+    }
+    return path;
+  }
+
+  Widget _buildDiffRow({
+    required String label,
+    required Widget masterChild,
+    required Widget copyChild,
+    required bool isDark,
+    required Color subTextColor,
+    bool isAlt = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+      decoration: BoxDecoration(
+        color: isAlt
+            ? (isDark ? const Color(0x0AFFFFFF) : const Color(0x06000000))
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 76,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: subTextColor,
+              ),
+            ),
+          ),
+          Expanded(child: masterChild),
+          Container(
+            width: 1,
+            height: 12,
+            color: isDark ? const Color(0x14FFFFFF) : const Color(0x0E000000),
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+          ),
+          Expanded(child: copyChild),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final masterItem = widget.group.items.firstWhere(
+      (it) => it.isUserKept,
+      orElse: () => widget.group.items.first,
+    );
+    final redundantCopies = widget.group.items.where((it) => !it.isUserKept).toList();
+    if (_selectedCopyIndex >= redundantCopies.length && redundantCopies.isNotEmpty) {
+      _selectedCopyIndex = 0;
+    }
+    final copyItem = redundantCopies.isNotEmpty
+        ? redundantCopies[_selectedCopyIndex]
+        : widget.group.items.last;
+
+    final isPlayingMaster = AudioPlaybackService.instance.isPlaying &&
+        AudioPlaybackService.instance.currentFilePath == masterItem.info.filePath;
+    final isPlayingCopy = AudioPlaybackService.instance.isPlaying &&
+        AudioPlaybackService.instance.currentFilePath == copyItem.info.filePath;
+
+    return GlassSurface(
+      borderRadius: BorderRadius.circular(18),
+      style: GlassStyle.clear,
+      borderless: false,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // If more than 1 redundant copy, show selector pill
+          if (redundantCopies.length > 1) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: widget.isDark ? const Color(0x10FFFFFF) : const Color(0x08000000),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Comparing Master with Copy ${_selectedCopyIndex + 1} of ${redundantCopies.length}',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: widget.subTextColor),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        icon: Icon(Icons.chevron_left_rounded, size: 18, color: _selectedCopyIndex > 0 ? widget.textColor : widget.subTextColor.withValues(alpha: 0.3)),
+                        onPressed: _selectedCopyIndex > 0 ? () => setState(() => _selectedCopyIndex--) : null,
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        icon: Icon(Icons.chevron_right_rounded, size: 18, color: _selectedCopyIndex < redundantCopies.length - 1 ? widget.textColor : widget.subTextColor.withValues(alpha: 0.3)),
+                        onPressed: _selectedCopyIndex < redundantCopies.length - 1 ? () => setState(() => _selectedCopyIndex++) : null,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Top Header Row: Dual Columns (Master vs Copy)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Column 1: Preserved Master Header
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        GlassSurface(
+                          borderRadius: BorderRadius.circular(7),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          tintColor: AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.22 : 0.14),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 11, color: AppColors.genuineEmerald),
+                              SizedBox(width: 3.5),
+                              Text(
+                                'Preserved Master',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.genuineEmerald,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        LuminousFeedback(
+                          onTap: () async {
+                            if (isPlayingMaster) {
+                              await AudioPlaybackService.instance.stop();
+                            } else {
+                              await AudioPlaybackService.instance.play(masterItem.info.filePath);
+                            }
+                            setState(() {});
+                            widget.onRefresh();
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: GlassSurface(
+                            borderRadius: BorderRadius.circular(14),
+                            style: GlassStyle.clear,
+                            borderless: false,
+                            tintColor: isPlayingMaster
+                                ? widget.activeAccent.withValues(alpha: 0.25)
+                                : (widget.isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isPlayingMaster ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                                  size: 13,
+                                  color: isPlayingMaster ? widget.activeAccent : widget.textColor,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  isPlayingMaster ? 'Stop' : 'Listen',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isPlayingMaster ? widget.activeAccent : widget.textColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      masterItem.info.fileName,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: widget.textColor,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatCleanLocation(masterItem.info.filePath),
+                      style: TextStyle(fontSize: 9.5, color: widget.subTextColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    _InlineAudioProgressStrip(
+                      filePath: masterItem.info.filePath,
+                      durationSec: masterItem.info.durationSec,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Vertical Divider
+              Container(
+                width: 1,
+                height: 65,
+                color: widget.isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+
+              // Column 2: Duplicate Copy Header
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        GlassSurface(
+                          borderRadius: BorderRadius.circular(7),
+                          style: GlassStyle.clear,
+                          borderless: false,
+                          tintColor: widget.isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.copy_rounded, size: 11, color: widget.subTextColor),
+                              const SizedBox(width: 3.5),
+                              Text(
+                                'Duplicate Copy',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: widget.subTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        LuminousFeedback(
+                          onTap: () async {
+                            if (isPlayingCopy) {
+                              await AudioPlaybackService.instance.stop();
+                            } else {
+                              await AudioPlaybackService.instance.play(copyItem.info.filePath);
+                            }
+                            setState(() {});
+                            widget.onRefresh();
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: GlassSurface(
+                            borderRadius: BorderRadius.circular(14),
+                            style: GlassStyle.clear,
+                            borderless: false,
+                            tintColor: isPlayingCopy
+                                ? widget.activeAccent.withValues(alpha: 0.25)
+                                : (widget.isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isPlayingCopy ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                                  size: 13,
+                                  color: isPlayingCopy ? widget.activeAccent : widget.textColor,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  isPlayingCopy ? 'Stop' : 'Listen',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isPlayingCopy ? widget.activeAccent : widget.textColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      copyItem.info.fileName,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: widget.textColor,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatCleanLocation(copyItem.info.filePath),
+                      style: TextStyle(fontSize: 9.5, color: widget.subTextColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    _InlineAudioProgressStrip(
+                      filePath: copyItem.info.filePath,
+                      durationSec: copyItem.info.durationSec,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // Specs Table Container
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: widget.isDark ? const Color(0x12000000) : const Color(0x06000000),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: widget.isDark ? const Color(0x10FFFFFF) : const Color(0x0A000000),
+                width: 0.6,
+              ),
+            ),
+            child: Column(
+              children: [
+                // 1. Format
+                _buildDiffRow(
+                  label: 'Format',
+                  masterChild: Text(
+                    '${masterItem.info.bitDepth}-bit / ${(masterItem.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: widget.textColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  copyChild: Text(
+                    '${copyItem.info.bitDepth}-bit / ${(copyItem.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: widget.textColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  isDark: widget.isDark,
+                  subTextColor: widget.subTextColor,
+                  isAlt: false,
+                ),
+                // 2. Duration
+                _buildDiffRow(
+                  label: 'Duration',
+                  masterChild: Text(
+                    _formatExactDuration(masterItem.info.durationSec),
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: widget.textColor),
+                  ),
+                  copyChild: Text(
+                    _formatExactDuration(copyItem.info.durationSec),
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: widget.textColor),
+                  ),
+                  isDark: widget.isDark,
+                  subTextColor: widget.subTextColor,
+                  isAlt: true,
+                ),
+                // 3. File Size
+                _buildDiffRow(
+                  label: 'File Size',
+                  masterChild: Text(
+                    '${masterItem.info.fileSizeMb.toStringAsFixed(1)} MB',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: widget.textColor),
+                  ),
+                  copyChild: Text(
+                    '${copyItem.info.fileSizeMb.toStringAsFixed(1)} MB (redundant)',
+                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.fakeCoral),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  isDark: widget.isDark,
+                  subTextColor: widget.subTextColor,
+                  isAlt: false,
+                ),
+                // 4. Audio Bitrate
+                _buildDiffRow(
+                  label: 'Bitrate',
+                  masterChild: Text(
+                    masterItem.info.bitrateKbps > 0 ? '${masterItem.info.bitrateKbps} kbps' : 'N/A',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: widget.textColor),
+                  ),
+                  copyChild: Text(
+                    copyItem.info.bitrateKbps > 0 ? '${copyItem.info.bitrateKbps} kbps' : 'N/A',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: widget.textColor),
+                  ),
+                  isDark: widget.isDark,
+                  subTextColor: widget.subTextColor,
+                  isAlt: true,
+                ),
+                // 5. Synced Lyrics
+                _buildDiffRow(
+                  label: 'Lyrics',
+                  masterChild: Row(
+                    children: [
+                      Icon(
+                        masterItem.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                        size: 11,
+                        color: masterItem.info.hasLyrics ? AppColors.genuineEmerald : widget.subTextColor,
+                      ),
+                      const SizedBox(width: 3.5),
+                      Expanded(
+                        child: Text(
+                          masterItem.info.hasLyrics ? 'Embedded (.lrc)' : 'Missing',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: masterItem.info.hasLyrics ? widget.textColor : widget.subTextColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  copyChild: Row(
+                    children: [
+                      Icon(
+                        copyItem.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                        size: 11,
+                        color: copyItem.info.hasLyrics ? AppColors.genuineEmerald : widget.subTextColor,
+                      ),
+                      const SizedBox(width: 3.5),
+                      Expanded(
+                        child: Text(
+                          copyItem.info.hasLyrics ? 'Embedded (.lrc)' : 'Missing',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: copyItem.info.hasLyrics ? widget.textColor : widget.subTextColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  isDark: widget.isDark,
+                  subTextColor: widget.subTextColor,
+                  isAlt: false,
+                ),
+                // 6. Album Artwork
+                _buildDiffRow(
+                  label: 'Artwork',
+                  masterChild: Row(
+                    children: [
+                      Icon(
+                        masterItem.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                        size: 11,
+                        color: masterItem.info.hasCover ? AppColors.genuineEmerald : widget.subTextColor,
+                      ),
+                      const SizedBox(width: 3.5),
+                      Expanded(
+                        child: Text(
+                          masterItem.info.hasCover ? 'Embedded' : 'Missing',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: masterItem.info.hasCover ? widget.textColor : widget.subTextColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  copyChild: Row(
+                    children: [
+                      Icon(
+                        copyItem.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                        size: 11,
+                        color: copyItem.info.hasCover ? AppColors.genuineEmerald : widget.subTextColor,
+                      ),
+                      const SizedBox(width: 3.5),
+                      Expanded(
+                        child: Text(
+                          copyItem.info.hasCover ? 'Embedded' : 'Missing',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: copyItem.info.hasCover ? widget.textColor : widget.subTextColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  isDark: widget.isDark,
+                  subTextColor: widget.subTextColor,
+                  isAlt: true,
+                ),
+                // 7. Authenticity
+                _buildDiffRow(
+                  label: 'Purity',
+                  masterChild: Text(
+                    masterItem.info.status == 'untested' || masterItem.info.score <= 0
+                        ? 'Untested'
+                        : (masterItem.info.score >= 80 ? 'Genuine (${masterItem.info.score}%)' : '${masterItem.info.score}% lossy'),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: masterItem.info.status == 'untested' || masterItem.info.score <= 0
+                          ? widget.subTextColor
+                          : (masterItem.info.score >= 80 ? AppColors.genuineEmerald : (masterItem.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  copyChild: Text(
+                    copyItem.info.status == 'untested' || copyItem.info.score <= 0
+                        ? 'Untested'
+                        : (copyItem.info.score >= 80 ? 'Genuine (${copyItem.info.score}%)' : '${copyItem.info.score}% lossy'),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: copyItem.info.status == 'untested' || copyItem.info.score <= 0
+                          ? widget.subTextColor
+                          : (copyItem.info.score >= 80 ? AppColors.genuineEmerald : (copyItem.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  isDark: widget.isDark,
+                  subTextColor: widget.subTextColor,
+                  isAlt: false,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Bottom Action Buttons: Master status + Keep This Version button
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.18 : 0.10),
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(
+                      color: AppColors.genuineEmerald.withValues(alpha: 0.35),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_rounded, size: 13, color: AppColors.genuineEmerald),
+                      SizedBox(width: 4),
+                      Text(
+                        'Preserved Master',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.genuineEmerald,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: LuminousFeedback(
+                  onTap: () {
+                    widget.onSelectKeep(copyItem.info.filePath);
+                  },
+                  borderRadius: BorderRadius.circular(9),
+                  child: GlassSurface(
+                    borderRadius: BorderRadius.circular(9),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    tintColor: widget.activeAccent.withValues(alpha: widget.isDark ? 0.22 : 0.14),
+                    padding: const EdgeInsets.symmetric(vertical: 7.5),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.swap_horiz_rounded, size: 14, color: widget.activeAccent),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Keep This Instead',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: widget.activeAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
