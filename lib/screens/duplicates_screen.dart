@@ -1901,7 +1901,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${group.artist} · $redundantCount redundant ${redundantCount == 1 ? 'copy' : 'copies'} (${group.wastedMb.toStringAsFixed(1)} MB)',
+                      '${group.artist} · $redundantCount extra (${group.wastedMb.toStringAsFixed(1)} MB)',
                       style: TextStyle(
                         fontSize: 11.5,
                         color: subTextColor,
@@ -1915,7 +1915,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               if (group.isMd5Identical) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.genuineEmerald.withValues(alpha: isDark ? 0.20 : 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -1927,10 +1927,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.fingerprint_rounded, size: 11, color: AppColors.genuineEmerald),
-                      SizedBox(width: 3.5),
+                      Icon(Icons.fingerprint_rounded, size: 12, color: AppColors.genuineEmerald),
+                      SizedBox(width: 3),
                       Text(
-                        'MD5 EXACT',
+                        'EXACT',
                         style: TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w700,
@@ -2043,9 +2043,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Layer 1: Status Pill & Purity Score
+                              // Layer 1: Status Pill & Purity Capsule (Symmetrical Telemetry)
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     item.isUserKept
@@ -2060,15 +2059,33 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                           : AppColors.fakeCoral,
                                     ),
                                   ),
-                                  Text(
-                                    '${item.info.score}% purity',
-                                    style: TextStyle(
-                                      fontFamily: 'JetBrainsMono',
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: item.info.score >= 80
-                                          ? AppColors.genuineEmerald
-                                          : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: (item.info.score >= 80
+                                              ? AppColors.genuineEmerald
+                                              : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber))
+                                          .withValues(alpha: isDark ? 0.15 : 0.10),
+                                      borderRadius: BorderRadius.circular(5),
+                                      border: Border.all(
+                                        color: (item.info.score >= 80
+                                                ? AppColors.genuineEmerald
+                                                : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber))
+                                            .withValues(alpha: 0.30),
+                                        width: 0.6,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${item.info.score}% purity',
+                                      style: TextStyle(
+                                        fontFamily: 'JetBrainsMono',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: item.info.score >= 80
+                                            ? AppColors.genuineEmerald
+                                            : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -2088,15 +2105,17 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               ),
                               const SizedBox(height: 3),
 
-                              // Layer 3: File Name (Clean, full width, zero truncation!)
+                              // Layer 3: File Name (Clean 2-line wrap with zero truncation!)
                               Text(
                                 item.info.fileName,
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
                                   color: textColor,
+                                  height: 1.25,
                                 ),
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
@@ -2104,55 +2123,105 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                         ),
                         const SizedBox(width: 10),
 
-                        // 3. Audio Preview Icon Button
-                        LuminousFeedback(
-                          onTap: () async {
-                            if (isPlaying) {
-                              await AudioPlaybackService.instance.stop();
-                            } else {
-                              await AudioPlaybackService.instance.play(item.info.filePath);
-                            }
-                            setState(() {});
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: isPlaying
-                                  ? activeAccent.withValues(alpha: 0.30)
-                                  : (isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000)),
-                              shape: BoxShape.circle,
+                        // Symmetrical 2-Slot Dock: Play on Left [▶], KEPT / DELETE on Right!
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Slot 1 (Left): Audio Preview Play/Stop (100% Column Aligned on all rows!)
+                            LuminousFeedback(
+                              onTap: () async {
+                                if (isPlaying) {
+                                  await AudioPlaybackService.instance.stop();
+                                } else {
+                                  await AudioPlaybackService.instance.play(item.info.filePath);
+                                }
+                                setState(() {});
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: isPlaying
+                                      ? activeAccent.withValues(alpha: 0.30)
+                                      : (isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000)),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                                  size: 16,
+                                  color: isPlaying ? activeAccent : textColor,
+                                ),
+                              ),
                             ),
-                            child: Icon(
-                              isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                              size: 16,
-                              color: isPlaying ? activeAccent : textColor,
-                            ),
-                          ),
-                        ),
 
-                        // If Redundant: Dedicated 1-tap delete trash can!
-                        if (!item.isUserKept) ...[
-                          const SizedBox(width: 6),
-                          LuminousFeedback(
-                            onTap: () => _confirmDeleteSingleTrack(item.info, group),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppColors.fakeCoral.withValues(alpha: isDark ? 0.15 : 0.08),
-                                shape: BoxShape.circle,
+                            const SizedBox(width: 8),
+
+                            // Slot 2 (Right): KEPT Badge for Master, DELETE Button for Redundant
+                            if (item.isUserKept)
+                              Container(
+                                height: 30,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.genuineEmerald.withValues(alpha: isDark ? 0.18 : 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.genuineEmerald.withValues(alpha: 0.35),
+                                    width: 0.6,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_rounded, size: 12, color: AppColors.genuineEmerald),
+                                    SizedBox(width: 3.5),
+                                    Text(
+                                      'KEPT',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.4,
+                                        color: AppColors.genuineEmerald,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              LuminousFeedback(
+                                onTap: () => _confirmDeleteSingleTrack(item.info, group),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  height: 30,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.fakeCoral.withValues(alpha: isDark ? 0.18 : 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.fakeCoral.withValues(alpha: 0.35),
+                                      width: 0.6,
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.delete_outline_rounded, size: 13, color: AppColors.fakeCoral),
+                                      SizedBox(width: 3.5),
+                                      Text(
+                                        'DELETE',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.4,
+                                          color: AppColors.fakeCoral,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.delete_outline_rounded,
-                                size: 16,
-                                color: AppColors.fakeCoral,
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ],
                     ),
 
