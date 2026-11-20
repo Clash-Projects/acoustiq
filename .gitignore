@@ -11,6 +11,22 @@ local.properties
 **/android/**/gradle-wrapper.jar
 **/GeneratedPluginRegistrant.java
 
+# Release Artifacts & Keystores (Security)
+*.apk
+*.aab
+*.jks
+*.keystore
+key.properties
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.log
+
 # Legacy
 .buildozer/
 bin/

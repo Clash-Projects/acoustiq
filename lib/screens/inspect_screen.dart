@@ -502,37 +502,6 @@ class _InspectScreenState extends State<InspectScreen> {
                             ],
                           ],
                         ),
-                        if (appState.devModeEnabled)
-                          LuminousFeedback(
-                            onTap: () => showDevLabSheet(context),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: activeAccent.withOpacity(isDark ? 0.24 : 0.14),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: activeAccent.withOpacity(0.4),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.science_rounded, size: 15, color: activeAccent),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Dev Lab',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: activeAccent,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
@@ -660,7 +629,7 @@ class _InspectScreenState extends State<InspectScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: GlassSurface(
                     borderRadius: BorderRadius.circular(12),
-                    style: GlassStyle.clear,
+                    style: GlassStyle.frosted,
                     borderless: false,
                     tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.12),
                     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
@@ -712,6 +681,7 @@ class _InspectScreenState extends State<InspectScreen> {
                 sampleRate: _info!.sampleRate,
                 bitDepth: _info!.bitDepth,
                 verdict: _info!.verdict,
+                filePath: _info!.filePath,
                 height: 140,
               ),
 
@@ -766,7 +736,7 @@ class _InspectScreenState extends State<InspectScreen> {
     return Expanded(
       child: GlassSurface(
         borderRadius: BorderRadius.circular(14),
-        style: GlassStyle.clear,
+        style: GlassStyle.frosted,
         borderless: false,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(

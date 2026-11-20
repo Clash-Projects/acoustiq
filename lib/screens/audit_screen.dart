@@ -1525,7 +1525,7 @@ class _AuditScreenState extends State<AuditScreen> {
                             borderRadius: BorderRadius.circular(12),
                             child: GlassSurface(
                               borderRadius: BorderRadius.circular(12),
-                              style: GlassStyle.clear,
+                              style: GlassStyle.frosted,
                               borderless: false,
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               child: Row(
@@ -1597,7 +1597,7 @@ class _AuditScreenState extends State<AuditScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 child: GlassSurface(
                                   borderRadius: BorderRadius.circular(12),
-                                  style: GlassStyle.clear,
+                                  style: GlassStyle.frosted,
                                   borderless: false,
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   child: Row(
@@ -2041,7 +2041,7 @@ class _AuditScreenState extends State<AuditScreen> {
     return Expanded(
       child: GlassSurface(
         borderRadius: BorderRadius.circular(16),
-        style: GlassStyle.clear,
+        style: GlassStyle.frosted,
         borderless: false,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         child: Column(
@@ -2088,7 +2088,7 @@ class _AuditScreenState extends State<AuditScreen> {
         onTap: () => setState(() => _filter = filterKey),
         child: GlassSurface(
           borderRadius: BorderRadius.circular(20),
-          style: GlassStyle.clear,
+          style: GlassStyle.frosted,
           borderless: false,
           tintColor: isSelected
               ? activeAccent.withOpacity(isDark ? 0.30 : 0.16)
@@ -2351,8 +2351,8 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
       });
     }
 
-    // If fast metadata scanned (no spectrum bands yet) or untested, trigger Deep DSP analysis on-demand
-    if ((_track.spectrumBands.isEmpty || _track.status == 'untested') && _track.error == null) {
+    // If fast metadata scanned (no spectrum bands yet) or matrix missing or untested, trigger Deep DSP analysis on-demand
+    if ((_track.spectrumBands.isEmpty || _track.spectrogramMatrix.isEmpty || _track.status == 'untested') && _track.error == null) {
       _isAnalyzingDsp = true;
       FlacParser.analyzeFile(_track.filePath, deepDsp: true, readCoverBytes: false).then((fullTrack) {
         if (mounted && fullTrack.error == null) {
@@ -2598,12 +2598,11 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
+                                    GlassSurface(
+                                      borderRadius: BorderRadius.circular(6),
+                                      style: GlassStyle.frosted,
+                                      borderless: false,
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                       child: Text(
                                         '${track.bitDepth}-bit / ${(track.sampleRate / 1000).toStringAsFixed(1)}k',
                                         style: TextStyle(
@@ -2630,12 +2629,12 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
                                           showLyricsViewerSheet(context, track);
                                         },
                                         borderRadius: BorderRadius.circular(6),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
+                                        child: GlassSurface(
+                                          borderRadius: BorderRadius.circular(6),
+                                          style: GlassStyle.frosted,
+                                          borderless: false,
+                                          tintColor: const Color(0xFF38BDF8).withOpacity(isDark ? 0.20 : 0.12),
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                           child: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
@@ -2704,6 +2703,7 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
                         sampleRate: track.sampleRate,
                         bitDepth: track.bitDepth,
                         verdict: track.verdict,
+                        filePath: track.filePath,
                         height: 110,
                       ),
 
@@ -2750,30 +2750,24 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
                           Expanded(
                             child: LuminousFeedback(
                               onTap: () => _quarantineTrack(context, track),
-                              borderRadius: BorderRadius.circular(13),
-                              child: Container(
-                                height: 42,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: AppColors.suspiciousAmber.withOpacity(isDark ? 0.22 : 0.15),
-                                  borderRadius: BorderRadius.circular(13),
-                                  border: Border.all(
-                                    color: AppColors.suspiciousAmber.withOpacity(0.45),
-                                    width: 0.8,
-                                  ),
-                                ),
+                              borderRadius: BorderRadius.circular(14),
+                              child: GlassSurface(
+                                borderRadius: BorderRadius.circular(14),
+                                style: GlassStyle.frosted,
+                                tintColor: AppColors.suspiciousAmber.withOpacity(isDark ? 0.18 : 0.12),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(Icons.shield_outlined, size: 16, color: AppColors.suspiciousAmber),
-                                    SizedBox(width: 6),
+                                    SizedBox(width: 7),
                                     Text(
                                       'Quarantine',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.suspiciousAmber,
+                                        letterSpacing: -0.2,
                                       ),
                                     ),
                                   ],
@@ -2785,30 +2779,24 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
                           Expanded(
                             child: LuminousFeedback(
                               onTap: () => _deleteTrack(context, track),
-                              borderRadius: BorderRadius.circular(13),
-                              child: Container(
-                                height: 42,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: AppColors.fakeCoral.withOpacity(isDark ? 0.22 : 0.15),
-                                  borderRadius: BorderRadius.circular(13),
-                                  border: Border.all(
-                                    color: AppColors.fakeCoral.withOpacity(0.45),
-                                    width: 0.8,
-                                  ),
-                                ),
+                              borderRadius: BorderRadius.circular(14),
+                              child: GlassSurface(
+                                borderRadius: BorderRadius.circular(14),
+                                style: GlassStyle.frosted,
+                                tintColor: AppColors.fakeCoral.withOpacity(isDark ? 0.18 : 0.12),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.fakeCoral),
-                                    SizedBox(width: 6),
+                                    SizedBox(width: 7),
                                     Text(
                                       'Delete File',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.fakeCoral,
+                                        letterSpacing: -0.2,
                                       ),
                                     ),
                                   ],

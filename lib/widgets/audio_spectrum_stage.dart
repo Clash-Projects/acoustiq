@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
+import '../services/flac_parser.dart';
 import 'glass_surface.dart';
 import 'app_snack_bar.dart';
 import 'app_glass_dialog.dart';
@@ -38,6 +39,7 @@ class AudioSpectrumStage extends StatefulWidget {
   final int? sampleRate;
   final int? bitDepth;
   final String? verdict;
+  final String? filePath;
 
   const AudioSpectrumStage({
     super.key,
@@ -53,6 +55,7 @@ class AudioSpectrumStage extends StatefulWidget {
     this.sampleRate,
     this.bitDepth,
     this.verdict,
+    this.filePath,
   });
 
   @override
@@ -148,6 +151,7 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
         sampleRate: widget.sampleRate,
         bitDepth: widget.bitDepth,
         verdict: widget.verdict,
+        filePath: widget.filePath,
       ),
     );
   }
@@ -257,13 +261,11 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                       ),
 
                       // View Mode Switcher [ ⏱️ | ⚡ | 📊 ]
-                      Container(
-                        height: 28,
+                      GlassSurface(
+                        borderRadius: BorderRadius.circular(9),
+                        style: GlassStyle.frosted,
+                        borderless: false,
                         padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x12000000),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -318,16 +320,12 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                         child: GestureDetector(
                           onTap: () => _openForensicModal(context),
                           behavior: HitTestBehavior.opaque,
-                          child: Container(
+                          child: GlassSurface(
+                            borderRadius: BorderRadius.circular(10),
+                            style: GlassStyle.frosted,
+                            borderless: false,
+                            tintColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.0),
-                            decoration: BoxDecoration(
-                              color: activeAccent.withOpacity(isDark ? 0.18 : 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: activeAccent.withOpacity(0.35),
-                                width: 0.8,
-                              ),
-                            ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -836,6 +834,7 @@ class _ForensicSpectrogramModal extends StatefulWidget {
   final int? sampleRate;
   final int? bitDepth;
   final String? verdict;
+  final String? filePath;
 
   const _ForensicSpectrogramModal({
     required this.score,
@@ -849,6 +848,7 @@ class _ForensicSpectrogramModal extends StatefulWidget {
     this.sampleRate,
     this.bitDepth,
     this.verdict,
+    this.filePath,
   });
 
   @override
@@ -858,11 +858,36 @@ class _ForensicSpectrogramModal extends StatefulWidget {
 class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late List<List<double>> _spectrogramMatrix;
+  bool _isLoadingMatrix = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _spectrogramMatrix = widget.spectrogramMatrix;
+
+    // If matrix is empty and we have a valid filePath, lazily compute real STFT matrix
+    if (_spectrogramMatrix.isEmpty && widget.filePath != null && widget.filePath!.isNotEmpty) {
+      _isLoadingMatrix = true;
+      FlacParser.analyzeFile(
+        widget.filePath!,
+        deepDsp: true,
+        readCoverBytes: false,
+      ).then((fullTrack) {
+        if (mounted && fullTrack.spectrogramMatrix.isNotEmpty) {
+          setState(() {
+            _spectrogramMatrix = fullTrack.spectrogramMatrix;
+            _isLoadingMatrix = false;
+          });
+          appState.updateTrackInLibrary(fullTrack);
+        } else if (mounted) {
+          setState(() => _isLoadingMatrix = false);
+        }
+      }).catchError((_) {
+        if (mounted) setState(() => _isLoadingMatrix = false);
+      });
+    }
   }
 
   @override
@@ -1050,16 +1075,54 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               ),
             ),
             clipBehavior: Clip.antiAlias,
-            child: CustomPaint(
-              painter: _Spectrogram2dPainter(
-                score: widget.score,
-                cutoffKhz: widget.cutoffKhz,
-                maxKhz: widget.maxKhz,
-                spectrumBands: widget.spectrumBands,
-                spectrogramMatrix: widget.spectrogramMatrix,
-                statusColor: widget.statusColor,
-                status: widget.status,
-              ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CustomPaint(
+                  painter: _Spectrogram2dPainter(
+                    score: widget.score,
+                    cutoffKhz: widget.cutoffKhz,
+                    maxKhz: widget.maxKhz,
+                    spectrumBands: widget.spectrumBands,
+                    spectrogramMatrix: _spectrogramMatrix,
+                    statusColor: widget.statusColor,
+                    status: widget.status,
+                  ),
+                ),
+                if (_isLoadingMatrix)
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12, width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: widget.statusColor,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Decoding high-res STFT...',
+                            style: TextStyle(
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 11,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
 

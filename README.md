@@ -1,95 +1,210 @@
-# AcoustiQ 🎵 High-Res Audio Toolkit & Integrity Engine
+<div align="center">
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.50.0-02569B?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.14.0-0175C2?logo=dart)](https://dart.dev)
-[![Android](https://img.shields.io/badge/Platform-Android%20API%2021--36-3DDC84?logo=android)](https://developer.android.com)
-[![Gradle](https://img.shields.io/badge/Gradle-9.3.1-02303A?logo=gradle)](https://gradle.org)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.20-7F52FF?logo=kotlin)](https://kotlinlang.org)
+<img src="assets/images/logo_acoustiq.png" width="80" alt="AcoustiQ Logo" />
 
-**AcoustiQ** is a high-performance, studio-grade lossless FLAC inspection, audio integrity verification, and library intelligence suite engineered for Android devices. Featuring a custom **120 FPS Sub-Stepped Euler Physics Liquid Glass Navigation Dock**, hardware-accelerated MediaCodec decoding, and bit-for-bit MD5 audio stream verification.
+# AcoustiQ
 
----
+**Studio-grade FLAC forensic inspector for Android.**
 
-## 🌟 Core Features
+Verify lossless authenticity · Detect fake re-encodes · Resolve smart duplicates
 
-### 1. 🔍 Acoustic Spectrum & Lossless Audio Inspector
-* **Hardware-Accelerated Decoding:** Uses native Android `MediaCodec` and `MediaExtractor` pipelines for zero-latency PCM sample analysis.
-* **Fake FLAC & Cutoff Detection:** Accurately differentiates authentic studio masters from low-bitrate MP3s re-encoded into FLAC containers using high-frequency cutoff roll-off analysis (16 kHz, 19 kHz, 20.5 kHz, 22+ kHz).
-* **Detailed Bitstream Telemetry:** Displays true sampling rates (44.1 kHz to 192 kHz), bit depths (16-bit, 24-bit studio, 32-bit float), audio channels, and bitrate.
+<br />
 
-### 2. 🛡️ Audio Integrity & Studio Hash Verification
-* **Bit-Rot & Corruption Detection:** Verifies raw decoded PCM audio samples against the unalterable 128-bit MD5 checksum embedded in the FLAC stream metadata block during studio mastering.
-* **Bit-Perfect Guarantee:** Alerts users immediately if storage degradation, incomplete transfers, or SD card sector faults flip any audio bits.
-* **Lossless Extraction Tools:** One-tap lossless export of embedded full-resolution cover art and synchronized `.LRC` lyrics files directly to device storage.
+[![Flutter](https://img.shields.io/badge/Flutter-3.50.0-02569B?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.14.0-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
+[![Android](https://img.shields.io/badge/Android-API%2021--36-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
+[![Build](https://img.shields.io/badge/Build-%2388-181717?style=flat-square&logo=github&logoColor=white)](#)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](#license)
+[![Offline](https://img.shields.io/badge/100%25-Offline-blueviolet?style=flat-square)](#privacy)
 
-### 3. 💧 Liquid Lens Navigation Dock (Phase 12 Architecture)
-* **Sub-Stepped Semi-Implicit Euler Engine:** Evaluated at 240 Hz sub-stepping inside Flutter `Ticker` (`stiffness: 280`, `damping: 31.4`) delivering true 120 FPS inertial physics.
-* **Kinematic Squash & Stretch:** Velocity-vector deformation proportional to movement acceleration ($\frac{d^2x}{dt^2}$).
-* **Concentric Island Geometry (319dp $\times$ 62dp):** Shared-arc geometry, frosted glass optical blur, and directional illumination without chromatic fringes.
+<br />
 
-### 4. ⚡ Synchronized Storage & Cache Management
-* **Native Kernel Sync:** Direct integration with Android OS `StorageStatsManager.queryStatsForPackage()` to reflect exact storage footprint down to the byte.
-* **Interactive Refresh:** One-tap manual refresh button (`[ 🔄 ]`) with animated spin and haptic feedback.
-* **Full Library Pruning:** Safe atomic purging of decoded PCM chunks, memory caches, and image buffers.
+[Features](#features) · [Screenshots](#screenshots) · [Get Started](#get-started) · [Architecture](#architecture) · [Privacy](#privacy) · [License](#license)
 
----
+</div>
 
-## 📂 Project Architecture
+<br />
 
-```
-mobile_app/
-├── android/                   # Gradle 9.3.1 + AGP 9.1.1 + Kotlin 2.2.20 configuration
-│   ├── app/src/main/kotlin/   # Native MainActivity.kt (Audio decoder & StorageStatsManager)
-│   └── build.gradle           # Root build with subprojects compileSdk 36 enforcement
-├── assets/                    # TrueType fonts (Inter, JetBrainsMono) & Curated wallpapers
-├── lib/
-│   ├── main.dart              # App bootstrap & global scroll behavior
-│   ├── models/                # AppSettings, FlacInfo data models
-│   ├── screens/
-│   │   ├── inspect_screen.dart    # Telemetry, spectrum & integrity verification
-│   │   ├── audit_screen.dart      # Library-wide batch quality scanner
-│   │   ├── duplicates_screen.dart # Smart duplicate resolver & comparison engine
-│   │   ├── settings_screen.dart   # Appearance, audio engine & cache maintenance
-│   │   └── splash_screen.dart     # Atmospheric launch branding
-│   ├── services/
-│   │   ├── flac_parser.dart           # FLAC metadata & vorbis tag parser
-│   │   ├── audio_dsp.dart             # High-frequency FFT & roll-off analyzer
-│   │   ├── audio_playback_service.dart# Android MediaPlayer bridge
-│   │   └── duplicate_detector.dart    # Multi-vector duplicate identification
-│   └── widgets/
-│       ├── liquid_lens_dock.dart      # 120 FPS Euler physics navigation dock
-│       ├── audio_spectrum_stage.dart  # Interactive visualizer stage
-│       ├── dev_lab_sheet.dart         # QA simulation & mock track injector
-│       └── glass_card.dart            # Frosted glass UI surfaces
-└── deploy.sh                  # 1-Click fast local build & wireless ADB deploy script
-```
+## Why AcoustiQ?
 
----
+Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into FLAC containers are indistinguishable by filename or metadata alone. AcoustiQ performs real-time spectral analysis and MD5 audio stream verification to separate genuine studio masters from imposters — then helps you clean up duplicates without losing the best version.
 
-## ⚡ Fast Local Development & Deployment
+<br />
 
-AcoustiQ utilizes a local PC toolchain for **17-second incremental release builds** deployed wirelessly over ADB.
+## Features
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🔬 Forensic Inspector</h3>
+      <ul>
+        <li>Bilinear Inferno spectrogram visualization</li>
+        <li>High-frequency roll-off detection (16–22+ kHz)</li>
+        <li>Spots fake FLAC re-encodes instantly</li>
+        <li>Full bitstream telemetry: sample rate, bit depth, channels, bitrate</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>🛡️ MD5 Integrity Verification</h3>
+      <ul>
+        <li>Verifies audio against FLAC STREAMINFO MD5 hash</li>
+        <li>Detects bit-rot, corruption, and incomplete transfers</li>
+        <li>One-tap lossless export of cover art and synced lyrics</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🎯 Smart Duplicate Resolver</h3>
+      <ul>
+        <li>Multi-vector duplicate detection (hash, metadata, filename)</li>
+        <li>Side-by-side forensic comparison with spec diff</li>
+        <li>AcoustiQ Pick: auto-recommends the best version to keep</li>
+        <li>A/B lossless audio preview with inline seek</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>📊 Audit & Reports</h3>
+      <ul>
+        <li>Library-wide batch quality scanner</li>
+        <li>Quarantine vault with restore lifecycle</li>
+        <li>CSV & JSON forensic audit export</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+### Also packed with
+
+- **120 FPS Liquid Lens Navigation Dock** — Sub-stepped Euler physics engine at 240 Hz, kinematic squash & stretch, frosted glass optical blur
+- **Hardware-Tiered Rendering** — Auto-detects device capability, toggles low-power mode for older hardware
+- **4 Curated Typography Fonts** — SF Pro, Geist, Plus Jakarta Sans, Inter
+- **Photographic Wallpaper Collection** — Handpicked studio-aesthetic backgrounds
+- **Responsive Layouts** — Adaptive phone (stacked cards) and tablet (side-by-side) comparison views
+
+<br />
+
+## Screenshots
+
+<div align="center">
+
+| 🔬 Forensic Inspector | 📊 STFT Spectrogram & Dead Zone | 📈 Library Audit & Health |
+| :---: | :---: | :---: |
+| <img src="screenshots/01_inspect_lossless.jpg" width="260" alt="Forensic Inspector" /> | <img src="screenshots/02_spectrogram_cutoff.jpg" width="260" alt="Spectrogram Cutoff" /> | <img src="screenshots/03_audit_library.jpg" width="260" alt="Audit Library" /> |
+| **24-bit Studio Master FLAC** | **16.6 kHz MP3 Upscale Dead-Zone** | **Batch verification & health ratio** |
+
+<br />
+
+| 🎯 Smart Duplicates Resolver | 📱 Encapsulated Comparison Sheet | 🖥️ Full Forensic Matrix |
+| :---: | :---: | :---: |
+| <img src="screenshots/04_duplicates_resolver.jpg" width="260" alt="Duplicates Resolver" /> | <img src="screenshots/05_comparison_sheet.jpg" width="260" alt="Comparison Sheet" /> | <img src="screenshots/06_comparison_matrix.jpg" width="260" alt="Comparison Matrix" /> |
+| **Bit-identical match detection** | **Side-by-side spec comparison** | **A/B playback & delta metrics** |
+
+<br />
+
+| ⚙️ System, Glass & Update Hub |
+| :---: |
+| <img src="screenshots/07_settings_system.jpg" width="280" alt="Settings & Glass" /> |
+| **WWDC25 Frosted Glass & In-App GitHub Releases** |
+
+</div>
+
+<br />
+
+## Get Started
 
 ### Prerequisites
-* Flutter 3.50.0+ (Dart 3.14.0+)
-* Android SDK 36 (Build-Tools 36.0.0, Platform 36, NDK 28.2.13676358)
-* OpenJDK 17
 
-### 1-Click Wireless ADB Deploy (Recommended)
-Connect your Android device over Wi-Fi:
+| Tool | Version |
+|------|---------|
+| Flutter | 3.50.0+ |
+| Dart | 3.14.0+ |
+| Android SDK | 36 |
+| JDK | 17 |
+| Kotlin | 2.2.20 |
+| Gradle | 9.3.1 |
+
+### Build & Run
+
+```bash
+# Clone
+git clone https://github.com/NONDEADER/acoustiq.git
+cd acoustiq
+
+# Install dependencies
+flutter pub get
+
+# Run on connected device
+flutter run
+
+# Or build release APK
+flutter build apk --release
+```
+
+### Wireless Deploy (Recommended)
+
 ```bash
 adb connect <DEVICE_IP>:5555
 ./deploy.sh
 ```
-`deploy.sh` automatically compiles the release APK locally, installs via ADB stream, and boots AcoustiQ on your device in **~17 to 20 seconds**.
 
-### Live Screen Mirroring (scrcpy)
-To mirror and control the connected device on your Linux desktop:
-```bash
-scrcpy -s <DEVICE_IP>:5555
+The deploy script compiles a release APK and installs it over wireless ADB in ~20 seconds.
+
+<br />
+
+## Architecture
+
 ```
+lib/
+├── main.dart                        # App bootstrap
+├── models/                          # Data models (AppSettings, FlacInfo)
+├── screens/
+│   ├── inspect_screen.dart          # Forensic inspector & spectrogram
+│   ├── audit_screen.dart            # Library-wide batch scanner
+│   ├── duplicates_screen.dart       # Duplicate resolver & comparison
+│   ├── settings_screen.dart         # Appearance, engine & cache
+│   └── splash_screen.dart           # Launch branding
+├── services/
+│   ├── flac_parser.dart             # FLAC metadata & Vorbis tag parser
+│   ├── audio_dsp.dart               # FFT & roll-off analysis
+│   ├── audio_playback_service.dart  # Android MediaPlayer bridge
+│   └── duplicate_detector.dart      # Multi-vector duplicate engine
+└── widgets/
+    ├── liquid_lens_dock.dart        # 120 FPS physics navigation
+    ├── audio_spectrum_stage.dart    # Spectrogram visualizer
+    ├── glass_card.dart              # Frosted glass UI surfaces
+    └── ...
+```
+
+### Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Flutter 3.50.0 / Dart 3.14.0 |
+| Native Bridge | Kotlin 2.2.20 (MediaCodec, StorageStatsManager) |
+| Build System | Gradle 9.3.1 / AGP 9.1.1 |
+| Target | Android API 21–36 |
+| Audio DSP | Custom FFT with bilinear interpolation |
+| Physics Engine | Sub-stepped semi-implicit Euler (240 Hz) |
+
+<br />
+
+## Privacy & Security
+
+AcoustiQ audio processing and forensic algorithms are **100% offline and private**. Audio samples, hashes, and metadata never leave your phone. Optional network access is exclusively reserved for transparent user-initiated GitHub update checks (`api.github.com/repos/NONDEADER/acoustiq`). Zero analytics, zero ad tracking, zero telemetry.
+
+<br />
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+<br />
+
+<div align="center">
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License.
+Built by [NONDEADER](https://github.com/NONDEADER)
+
+</div>

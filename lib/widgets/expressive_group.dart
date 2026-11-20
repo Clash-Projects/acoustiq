@@ -56,7 +56,8 @@ class ExpressiveGroup extends StatelessWidget {
 /// - High-contrast readable typography in both dark AMOLED and light modes.
 /// - Luminous subtle touch feedback ripple.
 class ExpressiveGroupRow extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? leadingWidget;
   final String title;
   final GroupPosition position;
   final VoidCallback? onTap;
@@ -70,7 +71,8 @@ class ExpressiveGroupRow extends StatelessWidget {
 
   const ExpressiveGroupRow({
     super.key,
-    required this.icon,
+    this.icon,
+    this.leadingWidget,
     required this.title,
     required this.position,
     this.onTap,
@@ -113,20 +115,21 @@ class ExpressiveGroupRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             child: Row(
               children: [
-                // 44dp Squircle Icon Badge
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 22,
-                    color: iconClr,
-                  ),
-                ),
+                // 44dp Squircle Icon Badge or Custom Leading Widget
+                leadingWidget ??
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: iconBg,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        icon ?? Icons.info_outline_rounded,
+                        size: 22,
+                        color: iconClr,
+                      ),
+                    ),
                 const SizedBox(width: 14),
                 // Title & Subtitle with Clean 2-Line Wrapping (No Truncation)
                 Expanded(

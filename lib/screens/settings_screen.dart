@@ -16,6 +16,9 @@ import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/dev_lab_sheet.dart';
 import '../widgets/bounded_scroll_physics.dart';
+import '../widgets/update_available_sheet.dart';
+import '../services/app_update_service.dart';
+import '../services/app_url_launcher.dart';
 
 /// 1:1 Port of LastWave Native's Settings Architecture (Appearance & Visuals)
 ///
@@ -45,13 +48,36 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    AppUpdateService.instance.addListener(_onUpdateServiceChanged);
     _calculateCacheSize();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    AppUpdateService.instance.removeListener(_onUpdateServiceChanged);
     super.dispose();
+  }
+
+  void _onUpdateServiceChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _checkUpdates({bool manual = true}) async {
+    if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+    final result = await AppUpdateService.instance.checkForUpdates();
+    if (!mounted) return;
+    if (result.status == UpdateStatus.updateAvailable && result.updateInfo != null) {
+      showUpdateAvailableSheet(context, result.updateInfo!);
+    } else if (manual) {
+      showThemedSnackBar(
+        context,
+        result.message,
+        icon: result.status == UpdateStatus.upToDate
+            ? Icons.check_circle_outline_rounded
+            : Icons.info_outline_rounded,
+      );
+    }
   }
 
   @override
@@ -319,7 +345,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'AcoustiQ High-Res Audio Engine • v1.1.0',
+                  'AcoustiQ High-Res Audio Engine • v${AppUpdateService.currentVersion}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -403,10 +429,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             accentColor: const Color(0xFF38BDF8),
             icon: Icons.info_outline_rounded,
             title: 'Diagnostics & About AcoustiQ',
-            subtitle: 'App version, verification standards & privacy guarantee',
+            subtitle: 'Engine v${AppUpdateService.currentVersion}, GitHub updates & developer info',
             badges: [
-              'VERSION 1.1.0',
+              'v${AppUpdateService.currentVersion} (BUILD #${AppUpdateService.currentBuild})',
               'OFFLINE & PRIVATE',
+              if (AppUpdateService.instance.hasUpdate) 'UPDATE AVAILABLE',
               if (appState.devModeEnabled) 'DEV LAB',
             ],
             onTap: () {
@@ -1498,10 +1525,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             isDark: isDark,
           ),
 
-          // 1. ENGINE & BUILD INFO
-          buildSectionHeader('Engine & Build', subTextColor),
+          // 1. ENGINE & UPDATES
+          buildSectionHeader('Engine & Updates', subTextColor),
           ExpressiveGroup(
-            rowCount: appState.devModeEnabled ? 2 : 1,
+            rowCount: appState.devModeEnabled ? 3 : 2,
             itemBuilder: (context, index, position) {
               if (index == 0) {
                 return ExpressiveGroupRow(
@@ -1509,7 +1536,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFF38BDF8),
                   iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                   title: 'Engine Version',
-                  subtitle: 'AcoustiQ Mobile • Build 64 (Sprint 3.4)',
+                  subtitle: 'AcoustiQ Mobile • v${AppUpdateService.currentVersion} (Build #${AppUpdateService.currentBuild})',
                   position: position,
                   onTap: () {
                     _devTapCount++;
@@ -1536,7 +1563,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'v1.1.0+64',
+                      'v${AppUpdateService.currentVersion}+${AppUpdateService.currentBuild}',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
                         fontSize: 11,
@@ -1545,6 +1572,71 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       ),
                     ),
                   ),
+                );
+              } else if (index == 1) {
+                final updateService = AppUpdateService.instance;
+                final isChecking = updateService.isChecking;
+                final hasUpdate = updateService.hasUpdate;
+
+                String subtitle;
+                if (isChecking) {
+                  subtitle = 'Checking GitHub for latest release...';
+                } else if (hasUpdate) {
+                  subtitle = 'Update ready: ${updateService.latestUpdate!.tagName} • Tap to view';
+                } else if (updateService.status == UpdateStatus.upToDate) {
+                  subtitle = 'AcoustiQ is up to date (v${AppUpdateService.currentVersion})';
+                } else {
+                  subtitle = 'Check GitHub for new releases & changelogs';
+                }
+
+                Widget trailingWidget;
+                if (isChecking) {
+                  trailingWidget = SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: activeAccent,
+                    ),
+                  );
+                } else if (hasUpdate) {
+                  trailingWidget = Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: activeAccent.withOpacity(isDark ? 0.25 : 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: activeAccent.withOpacity(0.5),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      'UPDATE READY',
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: activeAccent,
+                      ),
+                    ),
+                  );
+                } else {
+                  trailingWidget = Icon(
+                    Icons.chevron_right_rounded,
+                    color: subTextColor,
+                    size: 20,
+                  );
+                }
+
+                return ExpressiveGroupRow(
+                  icon: Icons.system_update_alt_rounded,
+                  iconColor: hasUpdate ? activeAccent : const Color(0xFF38BDF8),
+                  iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
+                  title: 'Check for Updates',
+                  subtitle: subtitle,
+                  position: position,
+                  onTap: isChecking ? null : () => _checkUpdates(manual: true),
+                  trailing: trailingWidget,
                 );
               } else {
                 return ExpressiveGroupRow(
@@ -1585,7 +1677,151 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
           const SizedBox(height: 16),
 
-          // 2. HARDWARE & DECODER ARCHITECTURE (De-jargoned consumer info)
+          // 2. DEVELOPER & COMMUNITY
+          buildSectionHeader('Developer & Community', subTextColor),
+          ExpressiveGroup(
+            rowCount: 4,
+            itemBuilder: (context, index, position) {
+              if (index == 0) {
+                return ExpressiveGroupRow(
+                  leadingWidget: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFFA78BFA).withOpacity(isDark ? 0.35 : 0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(13),
+                      child: Image.network(
+                        'https://github.com/NONDEADER.png',
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.person_rounded,
+                          size: 22,
+                          color: Color(0xFFA78BFA),
+                        ),
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Icon(
+                            Icons.person_rounded,
+                            size: 22,
+                            color: Color(0xFFA78BFA),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  title: 'Developer Profile',
+                  subtitle: 'NONDEADER on GitHub',
+                  position: position,
+                  onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.developerProfileUrl),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '@NONDEADER',
+                          style: TextStyle(
+                            fontFamily: 'JetBrainsMono',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.open_in_new_rounded, size: 15, color: subTextColor),
+                    ],
+                  ),
+                );
+              } else if (index == 1) {
+                return ExpressiveGroupRow(
+                  icon: Icons.code_rounded,
+                  iconColor: const Color(0xFF38BDF8),
+                  iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
+                  title: 'Source Code Repository',
+                  subtitle: '${AppUpdateService.repoOwner}/${AppUpdateService.repoName}',
+                  position: position,
+                  onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.githubRepoUrl),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'PUBLIC',
+                          style: TextStyle(
+                            fontFamily: 'JetBrainsMono',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.genuineEmerald,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.open_in_new_rounded, size: 15, color: subTextColor),
+                    ],
+                  ),
+                );
+              } else if (index == 2) {
+                return ExpressiveGroupRow(
+                  icon: Icons.bug_report_outlined,
+                  iconColor: const Color(0xFFFBBF24),
+                  iconBgColor: isDark ? const Color(0x30FBBF24) : const Color(0xFFFEF3C7),
+                  title: 'Feedback & Bug Reports',
+                  subtitle: 'Report issues or suggest audio DSP features on GitHub',
+                  position: position,
+                  onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.issuesUrl),
+                  trailing: Icon(Icons.open_in_new_rounded, size: 16, color: subTextColor),
+                );
+              } else {
+                return ExpressiveGroupRow(
+                  icon: Icons.gavel_rounded,
+                  iconColor: const Color(0xFF34D399),
+                  iconBgColor: isDark ? const Color(0x3034D399) : const Color(0xFFD1FAE5),
+                  title: 'Open Source License',
+                  subtitle: 'Free, community-driven audio forensics under MIT License',
+                  position: position,
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'MIT',
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // 3. HARDWARE & DECODER ARCHITECTURE
           buildSectionHeader('Hardware Architecture', subTextColor),
           ExpressiveGroup(
             rowCount: 3,
@@ -1676,7 +1912,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
           const SizedBox(height: 16),
 
-          // 3. PRIVACY & LOCAL-FIRST GUARANTEE
+          // 4. PRIVACY & LOCAL-FIRST GUARANTEE
           buildSectionHeader('Privacy & Data Security', subTextColor),
           ExpressiveGroup(
             rowCount: 1,
@@ -2433,7 +2669,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     return Expanded(
       child: GlassSurface(
         borderRadius: BorderRadius.circular(12),
-        style: GlassStyle.clear,
+        style: GlassStyle.frosted,
         borderless: false,
         tintColor: isSelected
             ? activeAccent.withOpacity(isDark ? 0.30 : 0.15)

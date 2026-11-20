@@ -124,11 +124,16 @@ class AppState extends ChangeNotifier {
         _visualizerMode = _prefs?.getString('visualizer_mode') ?? 'hybrid';
       }
 
+      // Restore custom wallpaper path from persistent storage
+      _customWallpaperPath = _prefs?.getString('custom_wallpaper_path');
+
       // Verify custom wallpaper file still exists on disk
       if (_customWallpaperPath != null && !File(_customWallpaperPath!).existsSync()) {
         _customWallpaperPath = null;
         if (_wallpaperPreset == 'custom') {
           _wallpaperPreset = 'cloud';
+          _prefs?.setString('wallpaper_preset', 'cloud');
+          _prefs?.remove('custom_wallpaper_path');
         }
       }
 

@@ -2,10 +2,12 @@ package com.example.flac_toolkit
 
 import android.app.usage.StorageStatsManager
 import android.content.Context
+import android.content.Intent
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.os.storage.StorageManager
@@ -372,6 +374,22 @@ class MainActivity: FlutterActivity() {
                                 result.error("DELETE_ERROR", e.localizedMessage, null)
                             }
                         }
+                    }
+                }
+                "openUrl" -> {
+                    val url = call.argument<String>("url")
+                    if (url != null) {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("ACTIVITY_NOT_FOUND", e.localizedMessage, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "url is required", null)
                     }
                 }
                 else -> result.notImplemented()
