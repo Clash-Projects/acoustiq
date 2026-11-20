@@ -1482,19 +1482,15 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Forensic Intelligence Callout Banner
+                      // Forensic Intelligence Callout Banner (Liquid Frosted Glass)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: GlassSurface(
+                          borderRadius: BorderRadius.circular(14),
+                          style: GlassStyle.frosted,
+                          borderless: false,
+                          tintColor: bannerColor.withValues(alpha: isDark ? 0.14 : 0.08),
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: bannerColor.withValues(alpha: isDark ? 0.12 : 0.07),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: bannerColor.withValues(alpha: 0.30),
-                              width: 0.8,
-                            ),
-                          ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1539,7 +1535,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       Flexible(
                         child: SingleChildScrollView(
                           physics: const BoundedBouncingScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                           child: _SideBySideDiffMatrix(
                             group: currentGroup,
                             isDark: isDark,
@@ -1558,34 +1554,23 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                         ),
                       ),
 
-                      // Sticky Bottom Action Bar
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x28000000) : const Color(0x10FFFFFF),
-                          border: Border(
-                            top: BorderSide(
-                              color: isDark ? const Color(0x15FFFFFF) : const Color(0x0E000000),
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
+                      // Sticky Bottom Action Bar (WWDC25 Liquid Frosted Glass)
+                      GlassSurface(
+                        borderRadius: BorderRadius.zero,
+                        style: GlassStyle.frosted,
+                        borderless: false,
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                         child: LuminousFeedback(
                           onTap: () {
                             _confirmDeleteGroupRedundant(currentGroup, ctx);
                           },
                           borderRadius: BorderRadius.circular(13),
-                          child: Container(
-                            height: 42,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: AppColors.fakeCoral.withOpacity(isDark ? 0.22 : 0.15),
-                              borderRadius: BorderRadius.circular(13),
-                              border: Border.all(
-                                color: AppColors.fakeCoral.withOpacity(0.45),
-                                width: 0.8,
-                              ),
-                            ),
+                          child: GlassSurface(
+                            borderRadius: BorderRadius.circular(13),
+                            style: GlassStyle.liquid,
+                            borderless: false,
+                            tintColor: AppColors.fakeCoral.withValues(alpha: isDark ? 0.22 : 0.14),
+                            padding: const EdgeInsets.symmetric(vertical: 9.5),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -2027,7 +2012,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   }
 }
 
-/// Dedicated Full-Page Comparison Screen (Audiophile Forensic Studio Lab)
+/// Dedicated Full-Page Comparison Screen (Audiophile Forensic Studio Lab - Build #87)
+/// Features:
+/// - Full-Width Forensic Comparison Matrix Table: eliminates narrow side-by-side card clipping.
+/// - Zero Truncation: all specs have full 140dp+ width.
+/// - Symmetrical Top Identity Cards with wrapped badges (no clipping of AcoustiQ Pick).
+/// - Interactive Lossless A/B Audio Player Station (looks elegant both stopped and playing).
+/// - 100% WWDC25 Liquid Frosted Glass on all buttons, tags, and action surfaces.
 class _FullPageComparisonScreen extends StatefulWidget {
   final DuplicateGroup group;
   final dynamic appState;
@@ -2064,94 +2055,51 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildForensicSpecRow(
-    String label,
-    Widget valueWidget,
-    bool isDark,
-    Color subTextColor, {
-    bool isLast = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 5.5),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(
-                  color: isDark ? const Color(0x0EFFFFFF) : const Color(0x08000000),
-                  width: 0.6,
-                ),
-              ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
-              color: subTextColor,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(child: valueWidget),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForensicCard({
+  Widget _buildIdentityCard({
     required DuplicateItem item,
     required bool isDark,
     required Color textColor,
     required Color subTextColor,
     required Color activeAccent,
-    required bool isPlaying,
-    required VoidCallback onTogglePlay,
   }) {
     return GlassSurface(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       style: item.isUserKept ? GlassStyle.frosted : GlassStyle.clear,
       borderless: false,
       tintColor: item.isUserKept
           ? AppColors.genuineEmerald.withValues(alpha: isDark ? 0.10 : 0.06)
           : (isDark ? const Color(0x12FFFFFF) : const Color(0x08000000)),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header Row: Selection Pill & AcoustiQ Pick Tag
-          Row(
+          // Badges Wrap (Zero overflow/clipping!)
+          Wrap(
+            spacing: 5,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                decoration: BoxDecoration(
-                  color: item.isUserKept
-                      ? AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.15)
-                      : AppColors.fakeCoral.withValues(alpha: isDark ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: item.isUserKept
-                        ? AppColors.genuineEmerald.withValues(alpha: 0.40)
-                        : AppColors.fakeCoral.withValues(alpha: 0.35),
-                    width: 0.8,
-                  ),
-                ),
+              GlassSurface(
+                borderRadius: BorderRadius.circular(8),
+                style: GlassStyle.frosted,
+                borderless: false,
+                tintColor: item.isUserKept
+                    ? AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.15)
+                    : AppColors.fakeCoral.withValues(alpha: isDark ? 0.18 : 0.12),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       item.isUserKept ? Icons.verified_rounded : Icons.copy_rounded,
-                      size: 12,
+                      size: 11,
                       color: item.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3.5),
                     Text(
                       item.isUserKept ? 'Preserved Master' : 'Redundant Copy',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
                         color: item.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
@@ -2160,28 +2108,22 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                   ],
                 ),
               ),
-
-              if (item.isAcoustiqPick) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: activeAccent.withValues(alpha: isDark ? 0.22 : 0.14),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: activeAccent.withValues(alpha: 0.40),
-                      width: 0.8,
-                    ),
-                  ),
+              if (item.isAcoustiqPick)
+                GlassSurface(
+                  borderRadius: BorderRadius.circular(8),
+                  style: GlassStyle.frosted,
+                  borderless: false,
+                  tintColor: activeAccent.withValues(alpha: isDark ? 0.22 : 0.14),
+                  padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 3.5),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.auto_awesome_rounded, size: 11, color: activeAccent),
+                      Icon(Icons.auto_awesome_rounded, size: 10, color: activeAccent),
                       const SizedBox(width: 3),
                       Text(
                         'AcoustiQ Pick',
                         style: TextStyle(
-                          fontSize: 9.5,
+                          fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: activeAccent,
                           letterSpacing: 0.2,
@@ -2190,13 +2132,12 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                     ],
                   ),
                 ),
-              ],
             ],
           ),
 
           const SizedBox(height: 10),
 
-          // Artwork Thumbnail + Track Name + Full Breadcrumb Path
+          // Artwork & Full Multi-line Filename
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2213,12 +2154,13 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                     Text(
                       item.info.fileName,
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: textColor,
-                        height: 1.2,
+                        height: 1.25,
                       ),
                       maxLines: 2,
+                      softWrap: true,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 3),
@@ -2227,7 +2169,7 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                       style: TextStyle(
                         fontSize: 9.5,
                         color: subTextColor,
-                        height: 1.25,
+                        height: 1.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -2238,225 +2180,25 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
             ],
           ),
 
-          const SizedBox(height: 8),
-
-          // Audio Player Controls & Live Scrubbing Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0x14FFFFFF) : const Color(0x0C000000),
-              borderRadius: BorderRadius.circular(11),
-              border: Border.all(
-                color: isPlaying ? activeAccent.withValues(alpha: 0.35) : (isDark ? const Color(0x15FFFFFF) : const Color(0x0E000000)),
-                width: 0.6,
-              ),
-            ),
-            child: Row(
-              children: [
-                LuminousFeedback(
-                  onTap: onTogglePlay,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: isPlaying ? activeAccent : (isDark ? const Color(0x25FFFFFF) : const Color(0x15000000)),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                      size: 16,
-                      color: isPlaying ? Colors.black : textColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _InlineAudioProgressStrip(
-                    filePath: item.info.filePath,
-                    durationSec: item.info.durationSec,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           const SizedBox(height: 10),
 
-          // Deep Audiophile Forensic Specs Grid
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0x14000000) : const Color(0x06000000),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? const Color(0x12FFFFFF) : const Color(0x0A000000),
-                width: 0.6,
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildForensicSpecRow(
-                  'Format / Codec',
-                  Text(
-                    '${item.info.bitDepth}-bit / ${(item.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'Audio Stream',
-                  const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.stream_rounded, size: 12, color: AppColors.genuineEmerald),
-                      SizedBox(width: 3),
-                      Text(
-                        'Native FLAC (Lossless)',
-                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.genuineEmerald),
-                      ),
-                    ],
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'Channels',
-                  Text(
-                    'Stereo (2 Channels)',
-                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor),
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'Bitrate',
-                  Text(
-                    item.info.bitrateKbps > 0 ? '${item.info.bitrateKbps} kbps' : 'N/A',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textColor),
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'Duration',
-                  Text(
-                    _formatExactDuration(item.info.durationSec),
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textColor),
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'File Size',
-                  Text(
-                    '${item.info.fileSizeMb.toStringAsFixed(1)} MB${!item.isUserKept ? ' (redundant copy)' : ''}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: item.isUserKept ? textColor : AppColors.fakeCoral,
-                    ),
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'Lyrics',
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        item.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                        size: 12,
-                        color: item.info.hasLyrics ? AppColors.genuineEmerald : subTextColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.info.hasLyrics ? 'Embedded Synchronized (.lrc)' : 'Missing',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: item.info.hasLyrics ? textColor : subTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'Artwork',
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        item.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                        size: 12,
-                        color: item.info.hasCover ? AppColors.genuineEmerald : subTextColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.info.hasCover ? 'Embedded Cover Art' : 'Missing',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: item.info.hasCover ? textColor : subTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  isDark,
-                  subTextColor,
-                ),
-                _buildForensicSpecRow(
-                  'Authenticity',
-                  Text(
-                    item.info.status == 'untested' || item.info.score <= 0
-                        ? 'Untested'
-                        : (item.info.score >= 80 ? 'Genuine FLAC (${item.info.score}%)' : '${item.info.score}% lossy'),
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: item.info.status == 'untested' || item.info.score <= 0
-                          ? subTextColor
-                          : (item.info.score >= 80 ? AppColors.genuineEmerald : (item.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)),
-                    ),
-                  ),
-                  isDark,
-                  subTextColor,
-                  isLast: true,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Bottom Action Button pinned to Card
+          // Card Action Button (Frosted Glass)
           if (item.isUserKept)
-            Container(
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.15),
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(
-                  color: AppColors.genuineEmerald.withValues(alpha: 0.45),
-                  width: 0.8,
-                ),
-              ),
+            GlassSurface(
+              borderRadius: BorderRadius.circular(10),
+              style: GlassStyle.frosted,
+              borderless: false,
+              tintColor: AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.14),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle_rounded, size: 15, color: AppColors.genuineEmerald),
+                  Icon(Icons.check_circle_rounded, size: 14, color: AppColors.genuineEmerald),
                   SizedBox(width: 5),
                   Text(
-                    'Preserved Master Version',
+                    'Selected Master',
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.genuineEmerald,
                     ),
@@ -2472,22 +2214,22 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                   _group = _group.withUserSelection(item.info.filePath);
                 });
               },
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(10),
               child: GlassSurface(
-                borderRadius: BorderRadius.circular(11),
-                style: GlassStyle.clear,
+                borderRadius: BorderRadius.circular(10),
+                style: GlassStyle.frosted,
                 borderless: false,
-                tintColor: activeAccent.withValues(alpha: isDark ? 0.22 : 0.14),
-                padding: const EdgeInsets.symmetric(vertical: 9.5),
+                tintColor: activeAccent.withValues(alpha: isDark ? 0.24 : 0.16),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.swap_horiz_rounded, size: 16, color: activeAccent),
-                    const SizedBox(width: 5),
+                    Icon(Icons.swap_horiz_rounded, size: 15, color: activeAccent),
+                    const SizedBox(width: 4),
                     Text(
-                      'Keep This Version Instead',
+                      'Keep This Instead',
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: activeAccent,
                       ),
@@ -2496,6 +2238,54 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatrixRow({
+    required String label,
+    required Widget valueA,
+    required Widget valueB,
+    required bool isDark,
+    required Color subTextColor,
+    bool isLast = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        border: isLast
+            ? null
+            : Border(
+                bottom: BorderSide(
+                  color: isDark ? const Color(0x0EFFFFFF) : const Color(0x08000000),
+                  width: 0.6,
+                ),
+              ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 105,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: subTextColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(child: valueA),
+          Container(
+            width: 1,
+            height: 18,
+            color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          Expanded(child: valueB),
         ],
       ),
     );
@@ -2604,7 +2394,7 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                 Center(
                   child: GlassSurface(
                     borderRadius: BorderRadius.circular(8),
-                    style: GlassStyle.clear,
+                    style: GlassStyle.frosted,
                     borderless: false,
                     tintColor: AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.14),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2633,166 +2423,378 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
           body: SafeArea(
             child: Column(
               children: [
-                // Forensic Certificate Banner
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: bannerColor.withValues(alpha: isDark ? 0.12 : 0.07),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: bannerColor.withValues(alpha: 0.30),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(bannerIcon, size: 20, color: bannerColor),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                bannerTitle,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: bannerColor,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                bannerDetail,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  height: 1.3,
-                                  color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Version Switcher if > 2 items
-                if (remainingItems.length > 1) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Comparing Version 1 with Version ${_selectedCopyIndex + 2} of ${_group.items.length}',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: subTextColor),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                                icon: Icon(Icons.chevron_left_rounded, size: 20, color: _selectedCopyIndex > 0 ? textColor : subTextColor.withValues(alpha: 0.3)),
-                                onPressed: _selectedCopyIndex > 0 ? () => setState(() => _selectedCopyIndex--) : null,
-                              ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                                icon: Icon(Icons.chevron_right_rounded, size: 20, color: _selectedCopyIndex < remainingItems.length - 1 ? textColor : subTextColor.withValues(alpha: 0.3)),
-                                onPressed: _selectedCopyIndex < remainingItems.length - 1 ? () => setState(() => _selectedCopyIndex++) : null,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-
-                // Main Content: Dual Forensic Cards Side-by-Side
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BoundedBouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: _buildForensicCard(
-                            item: itemA,
-                            isDark: isDark,
-                            textColor: textColor,
-                            subTextColor: subTextColor,
-                            activeAccent: activeAccent,
-                            isPlaying: isPlayingA,
-                            onTogglePlay: () async {
-                              if (isPlayingA) {
-                                await AudioPlaybackService.instance.stop();
-                              } else {
-                                await AudioPlaybackService.instance.play(itemA.info.filePath);
-                              }
-                              setState(() {});
-                            },
+                        // Forensic Certificate Banner (Frosted Glass)
+                        GlassSurface(
+                          borderRadius: BorderRadius.circular(14),
+                          style: GlassStyle.frosted,
+                          borderless: false,
+                          tintColor: bannerColor.withValues(alpha: isDark ? 0.14 : 0.08),
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(bannerIcon, size: 20, color: bannerColor),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      bannerTitle,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: bannerColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      bannerDetail,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        height: 1.3,
+                                        color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildForensicCard(
-                            item: itemB,
-                            isDark: isDark,
-                            textColor: textColor,
-                            subTextColor: subTextColor,
-                            activeAccent: activeAccent,
-                            isPlaying: isPlayingB,
-                            onTogglePlay: () async {
-                              if (isPlayingB) {
-                                await AudioPlaybackService.instance.stop();
-                              } else {
-                                await AudioPlaybackService.instance.play(itemB.info.filePath);
-                              }
-                              setState(() {});
-                            },
+
+                        const SizedBox(height: 10),
+
+                        // Version Switcher if > 2 items
+                        if (remainingItems.length > 1) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Comparing Version 1 with Version ${_selectedCopyIndex + 2} of ${_group.items.length}',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: subTextColor),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                                      icon: Icon(Icons.chevron_left_rounded, size: 20, color: _selectedCopyIndex > 0 ? textColor : subTextColor.withValues(alpha: 0.3)),
+                                      onPressed: _selectedCopyIndex > 0 ? () => setState(() => _selectedCopyIndex--) : null,
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                                      icon: Icon(Icons.chevron_right_rounded, size: 20, color: _selectedCopyIndex < remainingItems.length - 1 ? textColor : subTextColor.withValues(alpha: 0.3)),
+                                      onPressed: _selectedCopyIndex < remainingItems.length - 1 ? () => setState(() => _selectedCopyIndex++) : null,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // Top Identity Cards: Track A & Track B Side-by-Side
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _buildIdentityCard(
+                                item: itemA,
+                                isDark: isDark,
+                                textColor: textColor,
+                                subTextColor: subTextColor,
+                                activeAccent: activeAccent,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildIdentityCard(
+                                item: itemB,
+                                isDark: isDark,
+                                textColor: textColor,
+                                subTextColor: subTextColor,
+                                activeAccent: activeAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Interactive A/B Audio Player Station (Zero Empty Hole!)
+                        GlassSurface(
+                          borderRadius: BorderRadius.circular(14),
+                          style: GlassStyle.frosted,
+                          borderless: false,
+                          tintColor: isDark ? const Color(0x14FFFFFF) : const Color(0x0A000000),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.headphones_rounded, size: 15, color: activeAccent),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'A/B Lossless Audio Preview',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor),
+                                  ),
+                                  const Spacer(),
+                                  if (isPlayingA || isPlayingB)
+                                    Text(
+                                      'Playing: ${isPlayingA ? 'Version 1' : 'Version 2'}',
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: activeAccent),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  // Play Track 1 Pill
+                                  Expanded(
+                                    child: LuminousFeedback(
+                                      onTap: () async {
+                                        if (isPlayingA) {
+                                          await AudioPlaybackService.instance.stop();
+                                        } else {
+                                          await AudioPlaybackService.instance.play(itemA.info.filePath);
+                                        }
+                                        setState(() {});
+                                      },
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: GlassSurface(
+                                        borderRadius: BorderRadius.circular(10),
+                                        style: GlassStyle.clear,
+                                        borderless: false,
+                                        tintColor: isPlayingA
+                                            ? activeAccent.withValues(alpha: 0.28)
+                                            : (isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000)),
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(isPlayingA ? Icons.stop_rounded : Icons.play_arrow_rounded, size: 14, color: isPlayingA ? activeAccent : textColor),
+                                            const SizedBox(width: 4),
+                                            Text(isPlayingA ? 'Stop Track 1' : 'Play Track 1', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isPlayingA ? activeAccent : textColor)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Play Track 2 Pill
+                                  Expanded(
+                                    child: LuminousFeedback(
+                                      onTap: () async {
+                                        if (isPlayingB) {
+                                          await AudioPlaybackService.instance.stop();
+                                        } else {
+                                          await AudioPlaybackService.instance.play(itemB.info.filePath);
+                                        }
+                                        setState(() {});
+                                      },
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: GlassSurface(
+                                        borderRadius: BorderRadius.circular(10),
+                                        style: GlassStyle.clear,
+                                        borderless: false,
+                                        tintColor: isPlayingB
+                                            ? activeAccent.withValues(alpha: 0.28)
+                                            : (isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000)),
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(isPlayingB ? Icons.stop_rounded : Icons.play_arrow_rounded, size: 14, color: isPlayingB ? activeAccent : textColor),
+                                            const SizedBox(width: 4),
+                                            Text(isPlayingB ? 'Stop Track 2' : 'Play Track 2', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isPlayingB ? activeAccent : textColor)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isPlayingA || isPlayingB) ...[
+                                const SizedBox(height: 8),
+                                _InlineAudioProgressStrip(
+                                  filePath: isPlayingA ? itemA.info.filePath : itemB.info.filePath,
+                                  durationSec: isPlayingA ? itemA.info.durationSec : itemB.info.durationSec,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
+
+                        const SizedBox(height: 12),
+
+                        // Full-Width Forensic Comparison Matrix Table (Zero Truncation!)
+                        GlassSurface(
+                          borderRadius: BorderRadius.circular(16),
+                          style: GlassStyle.frosted,
+                          borderless: false,
+                          tintColor: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
+                          padding: const EdgeInsets.all(4),
+                          child: Column(
+                            children: [
+                              // Table Header Row
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0x15FFFFFF) : const Color(0x0C000000),
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 105,
+                                      child: Text(
+                                        'AUDIOPHILE SPEC',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                          color: subTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'VERSION 1 (MASTER)',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                          color: itemA.isUserKept ? AppColors.genuineEmerald : subTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Text(
+                                        'VERSION 2 (COPY)',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                          color: itemB.isUserKept ? AppColors.genuineEmerald : subTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Spec Rows
+                              _buildMatrixRow(
+                                label: 'Format & Res',
+                                valueA: Text('${itemA.info.bitDepth}-bit / ${(itemA.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: textColor)),
+                                valueB: Text('${itemB.info.bitDepth}-bit / ${(itemB.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: textColor)),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'Audio Stream',
+                                valueA: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.stream_rounded, size: 11, color: AppColors.genuineEmerald), SizedBox(width: 3), Text('Native FLAC', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.genuineEmerald))]),
+                                valueB: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.stream_rounded, size: 11, color: AppColors.genuineEmerald), SizedBox(width: 3), Text('Native FLAC', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.genuineEmerald))]),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'Channels',
+                                valueA: Text('Stereo (2 Ch)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                valueB: Text('Stereo (2 Ch)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'Bitrate',
+                                valueA: Text(itemA.info.bitrateKbps > 0 ? '${itemA.info.bitrateKbps} kbps' : 'N/A', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                valueB: Text(itemB.info.bitrateKbps > 0 ? '${itemB.info.bitrateKbps} kbps' : 'N/A', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'Duration',
+                                valueA: Text(_formatExactDuration(itemA.info.durationSec), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                valueB: Text(_formatExactDuration(itemB.info.durationSec), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'File Size',
+                                valueA: Text('${itemA.info.fileSizeMb.toStringAsFixed(1)} MB${!itemA.isUserKept ? ' (redundant)' : ''}', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: itemA.isUserKept ? textColor : AppColors.fakeCoral)),
+                                valueB: Text('${itemB.info.fileSizeMb.toStringAsFixed(1)} MB${!itemB.isUserKept ? ' (redundant)' : ''}', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: itemB.isUserKept ? textColor : AppColors.fakeCoral)),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'Synced Lyrics',
+                                valueA: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemA.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemA.info.hasLyrics ? AppColors.genuineEmerald : subTextColor), const SizedBox(width: 3), Text(itemA.info.hasLyrics ? 'Embedded (.lrc)' : 'Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemA.info.hasLyrics ? textColor : subTextColor))]),
+                                valueB: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemB.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemB.info.hasLyrics ? AppColors.genuineEmerald : subTextColor), const SizedBox(width: 3), Text(itemB.info.hasLyrics ? 'Embedded (.lrc)' : 'Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemB.info.hasLyrics ? textColor : subTextColor))]),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'Cover Art',
+                                valueA: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemA.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemA.info.hasCover ? AppColors.genuineEmerald : subTextColor), const SizedBox(width: 3), Text(itemA.info.hasCover ? 'Embedded' : 'Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemA.info.hasCover ? textColor : subTextColor))]),
+                                valueB: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemB.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemB.info.hasCover ? AppColors.genuineEmerald : subTextColor), const SizedBox(width: 3), Text(itemB.info.hasCover ? 'Embedded' : 'Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemB.info.hasCover ? textColor : subTextColor))]),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                              ),
+                              _buildMatrixRow(
+                                label: 'Authenticity',
+                                valueA: Text(itemA.info.status == 'untested' || itemA.info.score <= 0 ? 'Untested' : (itemA.info.score >= 80 ? 'Genuine (${itemA.info.score}%)' : '${itemA.info.score}% lossy'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: itemA.info.status == 'untested' || itemA.info.score <= 0 ? subTextColor : (itemA.info.score >= 80 ? AppColors.genuineEmerald : (itemA.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)))),
+                                valueB: Text(itemB.info.status == 'untested' || itemB.info.score <= 0 ? 'Untested' : (itemB.info.score >= 80 ? 'Genuine (${itemB.info.score}%)' : '${itemB.info.score}% lossy'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: itemB.info.status == 'untested' || itemB.info.score <= 0 ? subTextColor : (itemB.info.score >= 80 ? AppColors.genuineEmerald : (itemB.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)))),
+                                isDark: isDark,
+                                subTextColor: subTextColor,
+                                isLast: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ),
 
-                // Sticky Bottom Cleanup Action Bar
+                // Sticky Bottom Cleanup Action Bar (Frosted Glass)
                 GlassSurface(
                   borderRadius: BorderRadius.zero,
                   style: GlassStyle.frosted,
                   borderless: false,
-                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                   child: LuminousFeedback(
                     onTap: () {
                       widget.onConfirmDeleteGroupRedundant(_group, context);
                     },
                     borderRadius: BorderRadius.circular(13),
-                    child: Container(
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.fakeCoral.withValues(alpha: isDark ? 0.22 : 0.15),
-                        borderRadius: BorderRadius.circular(13),
-                        border: Border.all(
-                          color: AppColors.fakeCoral.withValues(alpha: 0.45),
-                          width: 0.8,
-                        ),
-                      ),
+                    child: GlassSurface(
+                      borderRadius: BorderRadius.circular(13),
+                      style: GlassStyle.liquid,
+                      borderless: false,
+                      tintColor: AppColors.fakeCoral.withValues(alpha: isDark ? 0.22 : 0.14),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -2820,13 +2822,11 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
   }
 }
 
-/// Unified Side-by-Side Dual-Card Diff Matrix (Build #86 - Option B)
+/// Unified Side-by-Side Dual-Card Diff Matrix (Build #87 - Zero Truncation Polish)
 /// Features:
-/// - Option B: Dual Encapsulated Cards side-by-side with clean 8dp separation gutter.
-/// - Zero line offset, zero stray 14dp ticks.
-/// - Uncramped 2-tier header: Line 1 for Badges (Preserved / Redundant & AcoustiQ Pick), Line 2 for Art + Title + Right-aligned Listen button.
-/// - Fixed-slot columns (Song A on left, Song B on right; zero physical swapping).
-/// - Symmetrical spec rows inside each card with independent key-value layout.
+/// - Tier 1: Cover Art + 2-Line Filename gets 100% card width (zero truncation!).
+/// - Tier 2: Wrap Badges + Right-Aligned Listen Pill.
+/// - Authentic WWDC25 Frosted Glass on all badges, action buttons, and spec surfaces.
 class _SideBySideDiffMatrix extends StatefulWidget {
   final DuplicateGroup group;
   final bool isDark;
@@ -2874,7 +2874,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
 
   Widget _buildSpecRow(String label, Widget valueWidget, {bool isLast = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3.5),
       decoration: BoxDecoration(
         border: isLast
             ? null
@@ -2896,7 +2896,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
               color: widget.subTextColor,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Flexible(child: valueWidget),
         ],
       ),
@@ -2915,93 +2915,21 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
       tintColor: item.isUserKept
           ? AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.08 : 0.05)
           : (widget.isDark ? const Color(0x10FFFFFF) : const Color(0x06000000)),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Tier 1: Badges Row (Preserved/Redundant + AcoustiQ Pick)
+          // Tier 1: Cover Art + File Title (100% card width - zero truncation!)
           Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: item.isUserKept
-                      ? AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.22 : 0.15)
-                      : AppColors.fakeCoral.withValues(alpha: widget.isDark ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(7),
-                  border: Border.all(
-                    color: item.isUserKept
-                        ? AppColors.genuineEmerald.withValues(alpha: 0.40)
-                        : AppColors.fakeCoral.withValues(alpha: 0.35),
-                    width: 0.7,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      item.isUserKept ? Icons.check_circle_rounded : Icons.copy_rounded,
-                      size: 10,
-                      color: item.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      item.isUserKept ? 'Preserved' : 'Redundant',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: item.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              if (item.isAcoustiqPick) ...[
-                const SizedBox(width: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: widget.activeAccent.withValues(alpha: widget.isDark ? 0.20 : 0.14),
-                    borderRadius: BorderRadius.circular(7),
-                    border: Border.all(
-                      color: widget.activeAccent.withValues(alpha: 0.40),
-                      width: 0.7,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.auto_awesome_rounded, size: 9.5, color: widget.activeAccent),
-                      const SizedBox(width: 2.5),
-                      Text(
-                        'AcoustiQ Pick',
-                        style: TextStyle(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w700,
-                          color: widget.activeAccent,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-
-          const SizedBox(height: 7),
-
-          // Tier 2: Squircle Art + Title + Right-aligned Listen Button
-          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _DuplicateCoverArt(
                 filePath: item.info.filePath,
-                size: 32,
-                borderRadius: 8,
+                size: 36,
+                borderRadius: 9,
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3009,15 +2937,16 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                     Text(
                       item.info.fileName,
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: widget.textColor,
-                        height: 1.15,
+                        height: 1.2,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
+                      softWrap: true,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 1.5),
+                    const SizedBox(height: 2),
                     Text(
                       _formatCleanLocation(item.info.filePath),
                       style: TextStyle(fontSize: 8.5, color: widget.subTextColor),
@@ -3027,24 +2956,93 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                   ],
                 ),
               ),
-              const SizedBox(width: 5),
+            ],
+          ),
+
+          const SizedBox(height: 7),
+
+          // Tier 2: Wrap Badges on Left + Listen Pill on Right
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Status Badge (Frosted Glass)
+                    GlassSurface(
+                      borderRadius: BorderRadius.circular(7),
+                      style: GlassStyle.frosted,
+                      borderless: false,
+                      tintColor: item.isUserKept
+                          ? AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.22 : 0.15)
+                          : AppColors.fakeCoral.withValues(alpha: widget.isDark ? 0.18 : 0.12),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.isUserKept ? Icons.check_circle_rounded : Icons.copy_rounded,
+                            size: 10,
+                            color: item.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            item.isUserKept ? 'Preserved' : 'Redundant',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: item.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // AcoustiQ Pick Tag (Frosted Glass)
+                    if (item.isAcoustiqPick)
+                      GlassSurface(
+                        borderRadius: BorderRadius.circular(7),
+                        style: GlassStyle.frosted,
+                        borderless: false,
+                        tintColor: widget.activeAccent.withValues(alpha: widget.isDark ? 0.22 : 0.14),
+                        padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2.5),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.auto_awesome_rounded, size: 9.5, color: widget.activeAccent),
+                            const SizedBox(width: 2.5),
+                            Text(
+                              'AcoustiQ Pick',
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w700,
+                                color: widget.activeAccent,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              // Listen / Stop Audio Preview Pill (Frosted Glass)
               LuminousFeedback(
                 onTap: onTogglePlay,
                 borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: isPlaying
-                        ? widget.activeAccent.withValues(alpha: 0.25)
-                        : (widget.isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isPlaying
-                          ? widget.activeAccent.withValues(alpha: 0.50)
-                          : (widget.isDark ? const Color(0x20FFFFFF) : const Color(0x15000000)),
-                      width: 0.6,
-                    ),
-                  ),
+                child: GlassSurface(
+                  borderRadius: BorderRadius.circular(12),
+                  style: GlassStyle.clear,
+                  borderless: false,
+                  tintColor: isPlaying
+                      ? widget.activeAccent.withValues(alpha: 0.28)
+                      : (widget.isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000)),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -3069,26 +3067,22 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
             ],
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 5),
 
           _InlineAudioProgressStrip(
             filePath: item.info.filePath,
             durationSec: item.info.durationSec,
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
 
-          // Specs Container
-          Container(
+          // Specs Container (Glass Card)
+          GlassSurface(
+            borderRadius: BorderRadius.circular(10),
+            style: GlassStyle.clear,
+            borderless: false,
+            tintColor: widget.isDark ? const Color(0x0EFFFFFF) : const Color(0x06000000),
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color: widget.isDark ? const Color(0x12000000) : const Color(0x06000000),
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(
-                color: widget.isDark ? const Color(0x10FFFFFF) : const Color(0x0A000000),
-                width: 0.6,
-              ),
-            ),
             child: Column(
               children: [
                 _buildSpecRow('Format', Text(
@@ -3171,19 +3165,14 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
 
           const SizedBox(height: 8),
 
-          // Bottom Action Button
+          // Bottom Action Button (Frosted Glass)
           if (item.isUserKept)
-            Container(
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.20 : 0.12),
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(
-                  color: AppColors.genuineEmerald.withValues(alpha: 0.40),
-                  width: 0.8,
-                ),
-              ),
+            GlassSurface(
+              borderRadius: BorderRadius.circular(10),
+              style: GlassStyle.frosted,
+              borderless: false,
+              tintColor: AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.22 : 0.14),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -3205,13 +3194,13 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
               onTap: () {
                 widget.onSelectKeep(item.info.filePath);
               },
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(10),
               child: GlassSurface(
-                borderRadius: BorderRadius.circular(9),
-                style: GlassStyle.clear,
+                borderRadius: BorderRadius.circular(10),
+                style: GlassStyle.frosted,
                 borderless: false,
-                tintColor: widget.activeAccent.withValues(alpha: widget.isDark ? 0.22 : 0.14),
-                padding: const EdgeInsets.symmetric(vertical: 7.5),
+                tintColor: widget.activeAccent.withValues(alpha: widget.isDark ? 0.24 : 0.16),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -3295,7 +3284,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
           ),
         ],
 
-        // Dual Encapsulated Cards Side-by-Side (Option B)
+        // Dual Encapsulated Cards Side-by-Side (Maximized Width!)
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3314,7 +3303,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                 },
               ),
             ),
-            const SizedBox(width: 8), // Clean 8dp gutter between cards!
+            const SizedBox(width: 8),
             Expanded(
               child: _buildEncapsulatedCard(
                 item: itemB,
