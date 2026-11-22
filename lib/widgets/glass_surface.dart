@@ -101,7 +101,6 @@ class GlassSurface extends StatelessWidget {
             break;
 
           case GlassStyle.frosted:
-          default:
             blurSigma = 20.0;
             surfaceFill = isDark
                 ? (tintColor?.withOpacity(0.18) ?? (appState.amoledMode ? const Color(0x1AFFFFFF) : const Color(0x24FFFFFF)))

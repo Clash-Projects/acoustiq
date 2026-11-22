@@ -26,6 +26,12 @@ class MainActivity: FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // ClashPlayer Native Audio Engine Channel
+        val nativeAudioEngine = NativeAudioEngine(this)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NativeAudioEngine.CHANNEL_NAME)
+            .setMethodCallHandler(nativeAudioEngine)
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "extractPcmSamples" -> {

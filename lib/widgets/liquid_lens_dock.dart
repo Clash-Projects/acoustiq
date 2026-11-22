@@ -53,9 +53,11 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   static const double _kInactiveSlotWidth = 72.0;
   static const double _kPillHeight = _kDockHeight - (2 * _kPaddingV); // 55.0dp
 
-  // Dynamic growth constants on lift (BitChord generous 3D floating expansion)
-  static const double _kPillLiftGrowth = 21.0; // 55dp -> 76dp (stands 7.0dp above and 7.0dp below dock rail!)
-  static const double _kPillWidthGrowth = 32.0; // 96dp -> 128dp (luxurious broad liquid bubble)
+  // Dynamic growth constants on lift (LastWave Native Proportional Scale: railHeight / (railHeight - 2 * padding))
+  // At rest: 55dp height with 3.5dp padding preserves the floating liquid capsule & concentric 3D gap.
+  // On lift: expands from 55dp -> 62dp (+7dp) so its 31dp radius perfectly matches the outer dock rail.
+  static const double _kPillLiftGrowth = 7.0; // 55dp -> 62dp (seamlessly reaches outer dock rail borders)
+  static const double _kPillWidthGrowth = 12.0; // 96dp -> 108dp (proportional +12.7% expansion)
 
   // BitChord Physics Springs & Decay Constants
   static const double _kTravelStiffness = 280.0;
@@ -481,7 +483,13 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
         // Continuous track center: 72dp distance between slot centers
         final double centerX = _kPaddingH + (_kActiveSlotWidth / 2.0) + (_currentPosition * _kInactiveSlotWidth);
-        final double pillLeft = centerX - (dynamicPillWidth / 2.0);
+        double pillLeft = centerX - (dynamicPillWidth / 2.0);
+        // LastWave edge containment: prevents lens from protruding outside dock rail at extreme ends
+        if (pillLeft < 0.0) {
+          pillLeft = 0.0;
+        } else if (pillLeft + dynamicPillWidth > _kDockWidth) {
+          pillLeft = _kDockWidth - dynamicPillWidth;
+        }
         final double pillTop = (_kDockHeight / 2.0) - (dynamicPillHeight / 2.0);
 
         // BitChord Hand-off blend factors (Phase 6 & 7):

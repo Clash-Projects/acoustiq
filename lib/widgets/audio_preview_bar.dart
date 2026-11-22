@@ -5,6 +5,7 @@ import '../services/audio_playback_service.dart';
 import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
+import 'signal_path_sheet.dart';
 
 /// WWDC25 Frosted Glass Inline Audio Preview Bar
 class AudioPreviewBar extends StatefulWidget {
@@ -94,7 +95,7 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: activeAccent.withOpacity(0.35),
+                        color: Colors.black.withOpacity(isDark ? 0.40 : 0.15),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -122,7 +123,7 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                           child: Text(
                             isPlaying ? 'Now Playing Lossless' : 'Audio Preview',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: textColor,
                             ),
@@ -130,8 +131,9 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
-                          dur > 0 ? '${_formatTime(pos)} / ${_formatTime(dur)}' : 'Tap to listen',
+                          dur > 0 ? '${_formatTime(pos)} / ${_formatTime(dur)}' : 'Ready to play',
                           style: TextStyle(
                             fontFamily: 'JetBrainsMono',
                             fontSize: 10.5,
@@ -176,6 +178,49 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Utility Row: Signal Path Frosted Badge + Audiophile Status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              LuminousFeedback(
+                onTap: () => showSignalPathSheet(context, trackTitle: widget.title),
+                borderRadius: BorderRadius.circular(8),
+                child: GlassSurface(
+                  borderRadius: BorderRadius.circular(8),
+                  style: GlassStyle.frosted,
+                  borderless: false,
+                  tintColor: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.route_rounded, size: 11, color: AppColors.genuineEmerald),
+                      SizedBox(width: 4),
+                      Text(
+                        'SIGNAL PATH',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: AppColors.genuineEmerald,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Text(
+                isPlaying ? 'Bit-Perfect AAudio Stream' : 'ClashPlayer C++ Pipeline',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                  color: subTextColor,
                 ),
               ),
             ],

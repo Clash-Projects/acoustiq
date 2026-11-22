@@ -14,11 +14,12 @@ import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
-import '../widgets/dev_lab_sheet.dart';
 import '../widgets/bounded_scroll_physics.dart';
 import '../widgets/update_available_sheet.dart';
 import '../services/app_update_service.dart';
 import '../services/app_url_launcher.dart';
+import '../widgets/hardware_diagnostics_sheet.dart';
+import '../widgets/signal_path_sheet.dart';
 
 /// 1:1 Port of LastWave Native's Settings Architecture (Appearance & Visuals)
 ///
@@ -40,7 +41,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   int? _activeSubPageIndex; // null = Master Hub, 0 = Appearance, 1 = Audio Engine, 2 = Library, 3 = About
-  static int _devTapCount = 0;
   String _cacheSizeText = 'Calculating...';
   bool _isRefreshingCache = false;
 
@@ -323,7 +323,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
     return SingleChildScrollView(
       key: const ValueKey('master_settings_hub'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
       physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -431,10 +431,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             title: 'Diagnostics & About AcoustiQ',
             subtitle: 'Engine v${AppUpdateService.currentVersion}, GitHub updates & developer info',
             badges: [
-              'v${AppUpdateService.currentVersion} (BUILD #${AppUpdateService.currentBuild})',
+              'v${AppUpdateService.currentVersion}',
               'OFFLINE & PRIVATE',
               if (AppUpdateService.instance.hasUpdate) 'UPDATE AVAILABLE',
-              if (appState.devModeEnabled) 'DEV LAB',
             ],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
@@ -703,7 +702,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   ) {
     return SingleChildScrollView(
       key: const ValueKey('subpage_appearance'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
       physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1053,7 +1052,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   ) {
     return SingleChildScrollView(
       key: const ValueKey('subpage_audio_engine'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
       physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1351,7 +1350,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   ) {
     return SingleChildScrollView(
       key: const ValueKey('subpage_library_storage'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
       physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1507,7 +1506,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   ) {
     return SingleChildScrollView(
       key: const ValueKey('subpage_about_diagnostics'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
       physics: const BoundedBouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1528,7 +1527,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           // 1. ENGINE & UPDATES
           buildSectionHeader('Engine & Updates', subTextColor),
           ExpressiveGroup(
-            rowCount: appState.devModeEnabled ? 3 : 2,
+            rowCount: 2,
             itemBuilder: (context, index, position) {
               if (index == 0) {
                 return ExpressiveGroupRow(
@@ -1536,26 +1535,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFF38BDF8),
                   iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                   title: 'Engine Version',
-                  subtitle: 'AcoustiQ Mobile • v${AppUpdateService.currentVersion} (Build #${AppUpdateService.currentBuild})',
+                  subtitle: 'AcoustiQ Mobile • v${AppUpdateService.currentVersion}',
                   position: position,
-                  onTap: () {
-                    _devTapCount++;
-                    if (_devTapCount >= 5) {
-                      _devTapCount = 0;
-                      appState.toggleDevMode();
-                      showThemedSnackBar(
-                        context,
-                        appState.devModeEnabled ? '🧪 AcoustiQ Dev Lab Activated!' : '🔒 Dev Lab Deactivated',
-                        icon: Icons.science_rounded,
-                      );
-                    } else if (_devTapCount >= 2) {
-                      showThemedSnackBar(
-                        context,
-                        'Tap ${5 - _devTapCount} more times to toggle Dev Lab',
-                        duration: const Duration(milliseconds: 700),
-                      );
-                    }
-                  },
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
@@ -1563,7 +1544,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'v${AppUpdateService.currentVersion}+${AppUpdateService.currentBuild}',
+                      'v${AppUpdateService.currentVersion}',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
                         fontSize: 11,
@@ -1573,7 +1554,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   ),
                 );
-              } else if (index == 1) {
+              } else {
                 final updateService = AppUpdateService.instance;
                 final isChecking = updateService.isChecking;
                 final hasUpdate = updateService.hasUpdate;
@@ -1638,49 +1619,16 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   onTap: isChecking ? null : () => _checkUpdates(manual: true),
                   trailing: trailingWidget,
                 );
-              } else {
-                return ExpressiveGroupRow(
-                  icon: Icons.science_rounded,
-                  iconColor: const Color(0xFF38BDF8),
-                  iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
-                  title: 'AcoustiQ Dev Lab & QA',
-                  subtitle: 'Mock audio injection, live theme matrix & modal contrast QA',
-                  position: position,
-                  onTap: () => showDevLabSheet(context),
-                  trailing: LuminousFeedback(
-                    onTap: () => showDevLabSheet(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: activeAccent.withOpacity(isDark ? 0.25 : 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: activeAccent.withOpacity(0.4),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        'Open Lab',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: activeAccent,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
               }
             },
           ),
 
           const SizedBox(height: 16),
 
-          // 2. DEVELOPER & COMMUNITY
+          // 2. DEVELOPER & COMMUNITY (Clash Projects Ecosystem)
           buildSectionHeader('Developer & Community', subTextColor),
           ExpressiveGroup(
-            rowCount: 4,
+            rowCount: 6,
             itemBuilder: (context, index, position) {
               if (index == 0) {
                 return ExpressiveGroupRow(
@@ -1698,19 +1646,19 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(13),
                       child: Image.network(
-                        'https://github.com/NONDEADER.png',
+                        'https://github.com/Clash-Projects.png',
                         width: 44,
                         height: 44,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => const Icon(
-                          Icons.person_rounded,
+                          Icons.groups_rounded,
                           size: 22,
                           color: Color(0xFFA78BFA),
                         ),
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;
                           return const Icon(
-                            Icons.person_rounded,
+                            Icons.groups_rounded,
                             size: 22,
                             color: Color(0xFFA78BFA),
                           );
@@ -1719,7 +1667,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   ),
                   title: 'Developer Profile',
-                  subtitle: 'NONDEADER on GitHub',
+                  subtitle: 'Clash Projects on GitHub',
                   position: position,
                   onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.developerProfileUrl),
                   trailing: Row(
@@ -1732,7 +1680,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '@NONDEADER',
+                          '@Clash-Projects',
                           style: TextStyle(
                             fontFamily: 'JetBrainsMono',
                             fontSize: 11,
@@ -1781,6 +1729,28 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 );
               } else if (index == 2) {
                 return ExpressiveGroupRow(
+                  icon: Icons.send_rounded,
+                  iconColor: const Color(0xFF229ED9),
+                  iconBgColor: isDark ? const Color(0x30229ED9) : const Color(0xFFE0F2FE),
+                  title: 'Updates & Support',
+                  subtitle: 'Join @clashprojects on Telegram',
+                  position: position,
+                  onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.telegramSupportUrl),
+                  trailing: Icon(Icons.open_in_new_rounded, size: 16, color: subTextColor),
+                );
+              } else if (index == 3) {
+                return ExpressiveGroupRow(
+                  icon: Icons.auto_awesome_rounded,
+                  iconColor: const Color(0xFFF59E0B),
+                  iconBgColor: isDark ? const Color(0x30F59E0B) : const Color(0xFFFEF3C7),
+                  title: 'More From Us',
+                  subtitle: 'Join @MaterialYouApp on Telegram',
+                  position: position,
+                  onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.telegramMaterialYouUrl),
+                  trailing: Icon(Icons.open_in_new_rounded, size: 16, color: subTextColor),
+                );
+              } else if (index == 4) {
+                return ExpressiveGroupRow(
                   icon: Icons.bug_report_outlined,
                   iconColor: const Color(0xFFFBBF24),
                   iconBgColor: isDark ? const Color(0x30FBBF24) : const Color(0xFFFEF3C7),
@@ -1824,7 +1794,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           // 3. HARDWARE & DECODER ARCHITECTURE
           buildSectionHeader('Hardware Architecture', subTextColor),
           ExpressiveGroup(
-            rowCount: 3,
+            rowCount: 4,
             itemBuilder: (context, index, position) {
               if (index == 0) {
                 return ExpressiveGroupRow(
@@ -1832,26 +1802,53 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFFC084FC),
                   iconBgColor: isDark ? const Color(0x30C084FC) : const Color(0xFFF3E8FF),
                   title: 'Audio Decoding Pipeline',
-                  subtitle: '64-bit hardware acceleration with native audio decoder',
+                  subtitle: 'ClashPlayer C++ Core (libnativeout.so + libusbiso.so)',
                   position: position,
-                  trailing: Container(
+                  trailing: GlassSurface(
+                    borderRadius: BorderRadius.circular(8),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    tintColor: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '64-BIT',
+                    child: const Text(
+                      'C++ NATIVE',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
-                        fontSize: 10,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w700,
-                        color: textColor,
+                        color: AppColors.genuineEmerald,
                       ),
                     ),
                   ),
+                  onTap: () => showHardwareDiagnosticsSheet(context),
                 );
               } else if (index == 1) {
+                return ExpressiveGroupRow(
+                  icon: Icons.usb_rounded,
+                  iconColor: const Color(0xFFFFD700),
+                  iconBgColor: isDark ? const Color(0x30FFD700) : const Color(0xFFFEF9C3),
+                  title: 'USB DAC Bit-Perfect Guide',
+                  subtitle: 'Bypass Android 48kHz resampler with Type-C DAC',
+                  position: position,
+                  trailing: GlassSurface(
+                    borderRadius: BorderRadius.circular(8),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    tintColor: const Color(0xFFFFD700).withOpacity(isDark ? 0.20 : 0.12),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    child: const Text(
+                      'GUIDE',
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFFD700),
+                      ),
+                    ),
+                  ),
+                  onTap: () => showSignalPathSheet(context),
+                );
+              } else if (index == 2) {
                 return ExpressiveGroupRow(
                   icon: Icons.speed_rounded,
                   iconColor: AppColors.genuineEmerald,
@@ -1859,17 +1856,17 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   title: 'Spectrogram Analysis',
                   subtitle: 'GPU-accelerated high-resolution frequency rendering',
                   position: position,
-                  trailing: Container(
+                  trailing: GlassSurface(
+                    borderRadius: BorderRadius.circular(8),
+                    style: GlassStyle.clear,
+                    borderless: false,
+                    tintColor: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                     child: const Text(
                       'GPU ACTIVE',
                       style: TextStyle(
                         fontFamily: 'JetBrainsMono',
-                        fontSize: 10,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.genuineEmerald,
                       ),
@@ -1927,6 +1924,201 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 trailing: Icon(Icons.lock_outline_rounded, color: AppColors.genuineEmerald, size: 18),
               );
             },
+          ),
+
+          const SizedBox(height: 32),
+
+          // 5. CLASH PROJECTS ECOSYSTEM EMBLEM (LastWave-inspired)
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 78,
+                  height: 78,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0D0F14) : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? const Color(0x35FFFFFF) : const Color(0x18000000),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.45 : 0.12),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.20 : 0.05),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(17.0),
+                      child: Image.asset(
+                        'assets/images/logo_acoustiq.png',
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'AcoustiQ',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Luminous Glass Version Tag (Matching KEPT & Quick Scan buttons)
+                GlassSurface(
+                  borderRadius: BorderRadius.circular(12),
+                  style: GlassStyle.clear,
+                  borderless: false,
+                  tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  child: Text(
+                    'v${AppUpdateService.currentVersion}',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                      color: activeAccent,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Made by Clash Projects Team 🇮🇳',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: subTextColor,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // MORE FROM US (Frosted GlassSurface with high contrast brand cards)
+                _buildMoreFromUsCard(context, isDark, textColor, subTextColor),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// LastWave MoreFromUsCard with frosted GlassSurface and high-contrast loaded brand assets
+  Widget _buildMoreFromUsCard(
+    BuildContext context,
+    bool isDark,
+    Color textColor,
+    Color subTextColor,
+  ) {
+    final apps = [
+      (
+        name: 'LastWave',
+        asset: 'assets/images/logo_lastwave.png',
+        url: AppUpdateService.lastWaveRepoUrl,
+      ),
+      (
+        name: 'Sernheise',
+        asset: 'assets/images/logo_sernheise.png',
+        url: AppUpdateService.sernheisePlayStoreUrl,
+      ),
+      (
+        name: 'Lyricify',
+        asset: 'assets/images/logo_lyricify.png',
+        url: AppUpdateService.lyricifyPlayStoreUrl,
+      ),
+      (
+        name: 'SleepTracker',
+        asset: 'assets/images/logo_sleeptracker.png',
+        url: AppUpdateService.sleepTrackerRepoUrl,
+      ),
+    ];
+
+    return GlassSurface(
+      borderRadius: BorderRadius.circular(24),
+      style: GlassStyle.frosted,
+      borderless: false,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              'MORE FROM US',
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: subTextColor.withOpacity(0.85),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: apps.map((app) {
+              return InkWell(
+                onTap: () => AppUrlLauncher.openUrl(context, app.url),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? const Color(0x33FFFFFF) : const Color(0x18000000),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            app.asset,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        app.name,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

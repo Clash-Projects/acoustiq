@@ -228,12 +228,6 @@ class _InlineAudioProgressStripState extends State<_InlineAudioProgressStrip> {
                               decoration: BoxDecoration(
                                 color: activeAccent,
                                 borderRadius: BorderRadius.circular(2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: activeAccent.withValues(alpha: 0.4),
-                                    blurRadius: 4,
-                                  ),
-                                ],
                               ),
                             ),
                           ),
@@ -960,7 +954,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     hasScrollBody: false,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(32),
+                        padding: const EdgeInsets.fromLTRB(32, 32, 32, 120),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -1047,8 +1041,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   )
                 else
                   SliverPadding(
-                    // 140dp bottom padding: content glides behind the liquid glass dock without overlapping the last card!
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                    // 160dp bottom padding: Content glides completely above dock & miniplayer!
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -1970,6 +1964,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                 if (isPlaying) {
                                   await AudioPlaybackService.instance.stop();
                                 } else {
+                                  appState.setActiveTrack(item.info);
                                   await AudioPlaybackService.instance.play(item.info.filePath);
                                 }
                                 setState(() {});
@@ -2604,6 +2599,7 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                                         if (isPlayingA) {
                                           await AudioPlaybackService.instance.stop();
                                         } else {
+                                          appState.setActiveTrack(itemA.info);
                                           await AudioPlaybackService.instance.play(itemA.info.filePath);
                                         }
                                         setState(() {});
@@ -2636,6 +2632,7 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                                         if (isPlayingB) {
                                           await AudioPlaybackService.instance.stop();
                                         } else {
+                                          appState.setActiveTrack(itemB.info);
                                           await AudioPlaybackService.instance.play(itemB.info.filePath);
                                         }
                                         setState(() {});

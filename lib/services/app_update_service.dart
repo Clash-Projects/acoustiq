@@ -56,14 +56,21 @@ class AppUpdateService extends ChangeNotifier {
   static final AppUpdateService instance = AppUpdateService._();
   AppUpdateService._();
 
-  // Application Telemetry
-  static const String currentVersion = '1.0.0';
-  static const int currentBuild = 88;
-  static const String repoOwner = 'NONDEADER';
+  // Application Telemetry & Clash Projects Links
+  static const String currentVersion = '1.1.0';
+  static const int currentBuild = 89;
+  static const String repoOwner = 'Clash-Projects';
   static const String repoName = 'acoustiq';
-  static const String githubRepoUrl = 'https://github.com/NONDEADER/acoustiq';
-  static const String developerProfileUrl = 'https://github.com/NONDEADER';
-  static const String issuesUrl = 'https://github.com/NONDEADER/acoustiq/issues';
+  static const String githubRepoUrl = 'https://github.com/Clash-Projects/acoustiq';
+  static const String developerProfileUrl = 'https://github.com/Clash-Projects';
+  static const String issuesUrl = 'https://github.com/Clash-Projects/acoustiq/issues';
+  static const String telegramSupportUrl = 'https://t.me/clashprojects';
+  static const String telegramMaterialYouUrl = 'https://t.me/MaterialYouApp';
+  static const String discordCommunityUrl = 'https://discord.gg/TMCEPSUNk2';
+  static const String lastWaveRepoUrl = 'https://github.com/Clash-Projects/LastWave-Native';
+  static const String sernheisePlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.sernheise.app';
+  static const String lyricifyPlayStoreUrl = 'https://play.google.com/store/apps/details?id=aman.lyricify';
+  static const String sleepTrackerRepoUrl = 'https://github.com/duxtami/SleepTracker';
 
   static const String _apiEndpoint =
       'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';

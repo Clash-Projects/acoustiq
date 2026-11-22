@@ -273,7 +273,7 @@ class _AuditScreenState extends State<AuditScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: activeAccent.withOpacity(0.35),
+                                color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -1629,9 +1629,11 @@ class _AuditScreenState extends State<AuditScreen> {
                   SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 120),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                           Icon(
                             Icons.folder_open_rounded,
                             size: 56,
@@ -1715,11 +1717,12 @@ class _AuditScreenState extends State<AuditScreen> {
                         ],
                       ),
                     ),
-                  )
+                  ),
+                )
                 else
                   SliverPadding(
-                    // 96dp bottom padding: Content smoothly glides behind the 56dp liquid glass dock!
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    // 160dp bottom padding: Content glides completely above dock & miniplayer!
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {

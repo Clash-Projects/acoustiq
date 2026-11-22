@@ -1951,12 +1951,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(1.5),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 4,
-          ),
-        ],
       ),
     );
   }

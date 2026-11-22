@@ -163,7 +163,7 @@ Future<T?> showAppGlassDialog<T>({
                               borderRadius: BorderRadius.circular(13),
                               boxShadow: [
                                 BoxShadow(
-                                  color: resolvedConfirmColor.withOpacity(0.35),
+                                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -199,7 +199,7 @@ Future<T?> showAppGlassDialog<T>({
                         borderRadius: BorderRadius.circular(13),
                         boxShadow: [
                           BoxShadow(
-                            color: resolvedConfirmColor.withOpacity(0.35),
+                            color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),

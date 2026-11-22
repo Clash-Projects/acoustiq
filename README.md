@@ -64,11 +64,12 @@ Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into F
       </ul>
     </td>
     <td width="50%">
-      <h3>📊 Audit & Reports</h3>
+      <h3>⚡ ClashPlayer C++ Engine & Bit-Perfect Path</h3>
       <ul>
-        <li>Library-wide batch quality scanner</li>
-        <li>Quarantine vault with restore lifecycle</li>
-        <li>CSV & JSON forensic audit export</li>
+        <li>Direct kernel USB audio isochronous driver (<code>usbiso.c</code>)</li>
+        <li>Bypasses Android AudioFlinger forced 48 kHz resampler</li>
+        <li>Low-latency AAudio & OpenSL ES output driver (<code>nativeout.c</code>)</li>
+        <li>Interactive Signal Path Inspector with live USB DAC detection</li>
       </ul>
     </td>
   </tr>
@@ -76,7 +77,8 @@ Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into F
 
 ### Also packed with
 
-- **120 FPS Liquid Lens Navigation Dock** — Sub-stepped Euler physics engine at 240 Hz, kinematic squash & stretch, frosted glass optical blur
+- **Dedicated Audiophile Player & Floating MiniPlayer** — Full-screen player with dynamic artwork ambient blur backdrop, and BitChord-spec floating liquid glass miniplayer with multi-gesture dismissal
+- **120 FPS Liquid Lens Navigation Dock** — Sub-stepped Euler physics engine at 240 Hz, proportional scale, frosted glass optical blur
 - **Hardware-Tiered Rendering** — Auto-detects device capability, toggles low-power mode for older hardware
 - **4 Curated Typography Fonts** — SF Pro, Geist, Plus Jakarta Sans, Inter
 - **Photographic Wallpaper Collection** — Handpicked studio-aesthetic backgrounds
@@ -128,7 +130,7 @@ Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into F
 
 ```bash
 # Clone
-git clone https://github.com/NONDEADER/acoustiq.git
+git clone https://github.com/Clash-Projects/acoustiq.git
 cd acoustiq
 
 # Install dependencies
@@ -155,6 +157,13 @@ The deploy script compiles a release APK and installs it over wireless ADB in ~2
 ## Architecture
 
 ```
+android/app/src/main/
+├── cpp/                             # ClashPlayer C++ Native Engine
+│   ├── usbiso.c                     # Kernel USB isochronous transfers (bit-perfect)
+│   ├── nativeout.c                  # Direct AAudio & OpenSL ES output driver
+│   ├── DspProcessor.cpp             # 64-bit float multi-band DSP chain
+│   └── CMakeLists.txt               # Android NDK C++20 & 16KB page-size build
+└── kotlin/com/clashplayer/          # Kotlin UAC descriptors & PCM packetizer
 lib/
 ├── main.dart                        # App bootstrap
 ├── models/                          # Data models (AppSettings, FlacInfo)
@@ -162,18 +171,20 @@ lib/
 │   ├── inspect_screen.dart          # Forensic inspector & spectrogram
 │   ├── audit_screen.dart            # Library-wide batch scanner
 │   ├── duplicates_screen.dart       # Duplicate resolver & comparison
-│   ├── settings_screen.dart         # Appearance, engine & cache
-│   └── splash_screen.dart           # Launch branding
+│   ├── audiophile_player_screen.dart # Dedicated full-screen audiophile player
+│   └── settings_screen.dart         # Appearance, engine & cache
 ├── services/
 │   ├── flac_parser.dart             # FLAC metadata & Vorbis tag parser
 │   ├── audio_dsp.dart               # FFT & roll-off analysis
-│   ├── audio_playback_service.dart  # Android MediaPlayer bridge
+│   ├── native_audio_service.dart    # C++ native audio engine bridge
+│   ├── audio_playback_service.dart  # Lossless audio preview controller
 │   └── duplicate_detector.dart      # Multi-vector duplicate engine
 └── widgets/
-    ├── liquid_lens_dock.dart        # 120 FPS physics navigation
+    ├── liquid_lens_dock.dart        # 120 FPS physics navigation dock
+    ├── audiophile_mini_player.dart  # Floating BitChord-spec liquid glass player
+    ├── signal_path_sheet.dart       # Roon-style Bit-Perfect signal path inspector
     ├── audio_spectrum_stage.dart    # Spectrogram visualizer
-    ├── glass_card.dart              # Frosted glass UI surfaces
-    └── ...
+    └── glass_surface.dart           # Frosted & clear glass UI surfaces
 ```
 
 ### Tech Stack
@@ -181,17 +192,18 @@ lib/
 | Layer | Technology |
 |-------|-----------|
 | Framework | Flutter 3.50.0 / Dart 3.14.0 |
-| Native Bridge | Kotlin 2.2.20 (MediaCodec, StorageStatsManager) |
-| Build System | Gradle 9.3.1 / AGP 9.1.1 |
-| Target | Android API 21–36 |
-| Audio DSP | Custom FFT with bilinear interpolation |
+| Native Engine | C++20 NDK (AAudio, OpenSL ES, USBFS isochronous) |
+| Native Bridge | Kotlin 2.2.20 / JNI & MethodChannel |
+| Build System | Gradle 9.3.1 / AGP 9.1.1 / CMake 3.22.1 |
+| Target | Android API 26–36 (Android 15 16KB page-size aligned) |
+| Audio DSP | 64-bit float DSP + Custom FFT with bilinear interpolation |
 | Physics Engine | Sub-stepped semi-implicit Euler (240 Hz) |
 
 <br />
 
 ## Privacy & Security
 
-AcoustiQ audio processing and forensic algorithms are **100% offline and private**. Audio samples, hashes, and metadata never leave your phone. Optional network access is exclusively reserved for transparent user-initiated GitHub update checks (`api.github.com/repos/NONDEADER/acoustiq`). Zero analytics, zero ad tracking, zero telemetry.
+AcoustiQ audio processing and forensic algorithms are **100% offline and private**. Audio samples, hashes, and metadata never leave your phone. Optional network access is exclusively reserved for transparent user-initiated GitHub update checks (`api.github.com/repos/Clash-Projects/acoustiq`). Zero analytics, zero ad tracking, zero telemetry.
 
 <br />
 
@@ -205,6 +217,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ---
 
-Built by [NONDEADER](https://github.com/NONDEADER)
+Built with ❤️ by [Clash Projects](https://github.com/Clash-Projects) • [LastWave Team](https://t.me/clashprojects)
 
 </div>

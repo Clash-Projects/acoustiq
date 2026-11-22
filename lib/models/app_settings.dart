@@ -29,6 +29,9 @@ class AppState extends ChangeNotifier {
   bool _isLowSpecDevice = false;
   int _activeTabIndex = 0;
 
+  // Active Audiophile Track for Floating MiniPlayer & Global Playback
+  FlacInfo? _activeTrack;
+
   // AcoustiQ Developer Laboratory & QA Mode
   bool _devModeEnabled = true;
   FlacInfo? _injectedMockTrack;
@@ -64,6 +67,14 @@ class AppState extends ChangeNotifier {
   List<FlacInfo> get sharedLibrary => _sharedLibrary;
   String? get lastScannedFolder => _lastScannedFolder;
   List<String> get recentFilePaths => _recentFilePaths;
+  FlacInfo? get activeTrack => _activeTrack;
+
+  void setActiveTrack(FlacInfo? track) {
+    if (_activeTrack != track) {
+      _activeTrack = track;
+      notifyListeners();
+    }
+  }
 
   /// Load persistent settings from device SharedPreferences
   Future<void> init() async {
@@ -139,6 +150,7 @@ class AppState extends ChangeNotifier {
 
       _lastScannedFolder = _prefs?.getString('last_scanned_folder');
       _recentFilePaths = _prefs?.getStringList('recent_file_paths') ?? [];
+      purgeMissingRecentFiles(notify: false);
       await _loadLibraryCache();
       notifyListeners();
     } catch (_) {}
@@ -413,7 +425,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void purgeMissingRecentFiles({bool notify = true}) {
+    try {
+      final valid = _recentFilePaths.where((p) => File(p).existsSync()).toList();
+      if (valid.length != _recentFilePaths.length) {
+        _recentFilePaths = valid;
+        _prefs?.setStringList('recent_file_paths', _recentFilePaths);
+        if (notify) notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   void addRecentFilePath(String path) {
+    if (!File(path).existsSync()) return;
     _recentFilePaths.remove(path);
     _recentFilePaths.insert(0, path);
     if (_recentFilePaths.length > 20) {

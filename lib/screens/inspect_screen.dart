@@ -13,7 +13,6 @@ import '../widgets/expressive_group.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/lyrics_viewer_sheet.dart';
 import '../widgets/luminous_feedback.dart';
-import '../widgets/dev_lab_sheet.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/app_glass_dialog.dart';
 import '../widgets/bounded_scroll_physics.dart';
@@ -46,11 +45,17 @@ class _InspectScreenState extends State<InspectScreen> {
     super.initState();
     _lastInjectedMock = appState.injectedMockTrack;
     _info = appState.injectedMockTrack ?? widget.initialTrack;
+    if (_info != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        appState.setActiveTrack(_info);
+      });
+    }
     if (_info != null && _info!.coverBytes == null && _info!.hasCover) {
       FlacParser.extractCoverBytes(_info!.filePath).then((bytes) {
         if (mounted && bytes != null) {
           setState(() {
             _info = _info!.copyWith(coverBytes: bytes);
+            appState.setActiveTrack(_info);
           });
         }
       });
@@ -85,32 +90,66 @@ class _InspectScreenState extends State<InspectScreen> {
   }
 
   Future<void> _loadLastRecentTrack() async {
+    appState.purgeMissingRecentFiles();
     final recent = appState.recentFilePaths;
     for (final path in recent) {
       if (File(path).existsSync()) {
         final analyzed = await FlacParser.analyzeFile(path, readCoverBytes: true);
         if (mounted && analyzed.error == null) {
-          setState(() => _info = analyzed);
+          setState(() {
+            _info = analyzed;
+            appState.setActiveTrack(analyzed);
+          });
         }
         break;
       }
     }
   }
 
+  void _setActiveTrackWithCover(FlacInfo track) {
+    if (AudioPlaybackService.instance.currentFilePath != track.filePath) {
+      AudioPlaybackService.instance.stop();
+    }
+    setState(() {
+      _info = track;
+      appState.setActiveTrack(track);
+    });
+    if (track.hasCover && track.coverBytes == null) {
+      FlacParser.extractCoverBytes(track.filePath).then((bytes) {
+        if (mounted && bytes != null && _info?.filePath == track.filePath) {
+          final updated = _info!.copyWith(coverBytes: bytes);
+          setState(() => _info = updated);
+          appState.setActiveTrack(updated);
+        }
+      });
+    }
+  }
+
   Future<void> _loadFileFromPath(String path) async {
+    if (!File(path).existsSync()) {
+      appState.purgeMissingRecentFiles();
+      if (mounted) {
+        showThemedSnackBar(
+          context,
+          'Audio file not found or moved',
+          icon: Icons.error_outline_rounded,
+        );
+      }
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       final analyzed = await FlacParser.analyzeFile(path, readCoverBytes: true);
       if (analyzed.error == null) {
         appState.addRecentFilePath(path);
       }
-      if (AudioPlaybackService.instance.isPlaying &&
-          AudioPlaybackService.instance.currentFilePath != path) {
+      if (AudioPlaybackService.instance.currentFilePath != path) {
         AudioPlaybackService.instance.stop();
       }
       if (mounted) {
         setState(() {
           _info = analyzed;
+          appState.setActiveTrack(analyzed);
           _isLoading = false;
         });
       }
@@ -144,7 +183,7 @@ class _InspectScreenState extends State<InspectScreen> {
         final textColor = appState.getTextColor(context);
         final subTextColor = appState.getSubTextColor(context);
         final activeAccent = appState.getAccentColor(context);
-        final recent = appState.recentFilePaths;
+        final recent = appState.recentFilePaths.where((p) => File(p).existsSync()).toList();
         final library = appState.sharedLibrary;
 
         return Container(
@@ -306,14 +345,10 @@ class _InspectScreenState extends State<InspectScreen> {
                             child: LuminousFeedback(
                               onTap: () {
                                 Navigator.pop(ctx);
-                                if (AudioPlaybackService.instance.isPlaying &&
-                                    AudioPlaybackService.instance.currentFilePath != t.filePath) {
-                                  AudioPlaybackService.instance.stop();
-                                }
                                 appState.injectMockTrack(null);
                                 _lastInjectedMock = null;
                                 appState.addRecentFilePath(t.filePath);
-                                setState(() => _info = t);
+                                _setActiveTrackWithCover(t);
                               },
                               borderRadius: BorderRadius.circular(14),
                               child: GlassSurface(
@@ -411,6 +446,7 @@ class _InspectScreenState extends State<InspectScreen> {
         }
         setState(() {
           _info = analyzed;
+          appState.setActiveTrack(analyzed);
           _isLoading = false;
         });
       } else {
@@ -454,8 +490,8 @@ class _InspectScreenState extends State<InspectScreen> {
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
-              // 96dp bottom padding: content glides behind the liquid glass dock!
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+              // 160dp bottom padding: content glides completely above dock & miniplayer!
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
               physics: const BoundedBouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -523,6 +559,8 @@ class _InspectScreenState extends State<InspectScreen> {
                     // 3. Lossless Tools & Extraction (Phase 2.5)
                     buildSectionHeader('Lossless Tools & Extraction', subTextColor),
                     _buildLosslessToolsGroup(isDark, textColor, subTextColor, activeAccent),
+                  ] else ...[
+                    _buildEmptyStateSection(isDark, textColor, subTextColor, activeAccent),
                   ],
                 ],
               ),
@@ -580,9 +618,9 @@ class _InspectScreenState extends State<InspectScreen> {
                           ? Image.memory(
                               _info!.coverBytes!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _fallbackArtwork(statusColor),
+                              errorBuilder: (_, __, ___) => _fallbackArtwork(statusColor, isDark),
                             )
-                          : _fallbackArtwork(statusColor)),
+                          : _fallbackArtwork(statusColor, isDark)),
                 ),
                 const SizedBox(width: 14),
                 // Title & Subtitle with Clean 3-Line Soft Wrapping
@@ -722,13 +760,203 @@ class _InspectScreenState extends State<InspectScreen> {
     );
   }
 
-  Widget _fallbackArtwork(Color statusColor) {
+  Widget _fallbackArtwork(Color statusColor, bool isDark) {
     return Center(
-      child: Icon(
-        Icons.album_rounded,
-        size: 34,
-        color: statusColor,
+      child: Container(
+        width: 62,
+        height: 62,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isDark ? const Color(0xFF0C0E12) : const Color(0xFFE2E5E9),
+          border: Border.all(
+            color: isDark ? const Color(0x22FFFFFF) : const Color(0x18000000),
+            width: 0.8,
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Outer concentric groove ring
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? const Color(0x14FFFFFF) : const Color(0x14000000),
+                  width: 0.5,
+                ),
+              ),
+            ),
+            // Middle groove ring
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? const Color(0x18FFFFFF) : const Color(0x18000000),
+                  width: 0.5,
+                ),
+              ),
+            ),
+            // Center spindle disc label
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: statusColor.withOpacity(isDark ? 0.22 : 0.15),
+                border: Border.all(
+                  color: statusColor.withOpacity(isDark ? 0.45 : 0.30),
+                  width: 0.8,
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.graphic_eq_rounded,
+                  size: 13,
+                  color: statusColor,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildEmptyStateSection(
+    bool isDark,
+    Color textColor,
+    Color subTextColor,
+    Color activeAccent,
+  ) {
+    final recent = appState.recentFilePaths.where((p) => File(p).existsSync()).toList();
+    final library = appState.sharedLibrary;
+
+    if (recent.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          buildSectionHeader('Recent Tracks', subTextColor),
+          ExpressiveGroup(
+            rowCount: recent.take(4).length,
+            itemBuilder: (context, index, position) {
+              final path = recent[index];
+              final fileName = path.split('/').last;
+              return ExpressiveGroupRow(
+                icon: Icons.audio_file_rounded,
+                iconColor: activeAccent,
+                iconBgColor: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                title: fileName,
+                subtitle: 'Tap to inspect audio quality',
+                position: position,
+                trailing: Icon(Icons.arrow_forward_ios_rounded, size: 12, color: subTextColor),
+                onTap: () => _loadFileFromPath(path),
+              );
+            },
+          ),
+        ],
+      );
+    }
+
+    if (library.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          buildSectionHeader('Library Tracks', subTextColor),
+          ExpressiveGroup(
+            rowCount: library.take(4).length,
+            itemBuilder: (context, index, position) {
+              final track = library[index];
+              final isGenuine = track.status == 'genuine';
+              final badgeColor = isGenuine
+                  ? AppColors.genuineEmerald
+                  : (track.status == 'suspicious'
+                      ? AppColors.suspiciousAmber
+                      : AppColors.fakeCoral);
+
+              return ExpressiveGroupRow(
+                icon: isGenuine ? Icons.verified_rounded : Icons.music_note_rounded,
+                iconColor: badgeColor,
+                iconBgColor: badgeColor.withOpacity(isDark ? 0.20 : 0.12),
+                title: track.title.isNotEmpty ? track.title : track.fileName,
+                subtitle: '${(track.sampleRate / 1000).toStringAsFixed(1)} kHz • ${track.bitDepth}-bit',
+                position: position,
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(isDark ? 0.18 : 0.10),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: badgeColor.withOpacity(isDark ? 0.35 : 0.20),
+                      width: 0.6,
+                    ),
+                  ),
+                  child: Text(
+                    track.status.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+                onTap: () => _loadFileFromPath(track.filePath),
+              );
+            },
+          ),
+        ],
+      );
+    }
+
+    // Default clean welcome features for first-time use
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        buildSectionHeader('Features', subTextColor),
+        ExpressiveGroup(
+          rowCount: 3,
+          itemBuilder: (context, index, position) {
+            final items = [
+              (
+                icon: Icons.graphic_eq_rounded,
+                color: AppColors.genuineEmerald,
+                bg: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
+                title: 'Frequency Spectrum',
+                subtitle: 'See audio frequencies and detect fake FLAC files',
+              ),
+              (
+                icon: Icons.verified_user_rounded,
+                color: activeAccent,
+                bg: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
+                title: 'Lossless Verification',
+                subtitle: 'Confirm if your track is genuine studio quality',
+              ),
+              (
+                icon: Icons.image_rounded,
+                color: const Color(0xFFA78BFA),
+                bg: isDark ? const Color(0x30A78BFA) : const Color(0xFFEDE9FE),
+                title: 'Artwork & Lyrics',
+                subtitle: 'View and save embedded covers and synchronized lyrics',
+              ),
+            ];
+            final item = items[index];
+            return ExpressiveGroupRow(
+              icon: item.icon,
+              iconColor: item.color,
+              iconBgColor: item.bg,
+              title: item.title,
+              subtitle: item.subtitle,
+              position: position,
+              trailing: null,
+              onTap: null,
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -1420,7 +1648,7 @@ class _InspectScreenState extends State<InspectScreen> {
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: activeAccent.withOpacity(0.35),
+                                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1712,7 +1940,7 @@ class _InspectScreenState extends State<InspectScreen> {
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: activeAccent.withOpacity(0.35),
+                                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),

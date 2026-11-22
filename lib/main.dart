@@ -11,6 +11,7 @@ import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 import 'ui/theme/colors.dart';
 import 'widgets/ambient_wallpaper.dart';
+import 'widgets/audiophile_mini_player.dart';
 import 'widgets/bounded_scroll_physics.dart';
 import 'widgets/liquid_lens_dock.dart';
 
@@ -159,19 +160,25 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
 
-              // 2. Floating 3D Liquid Lens Navigation Dock (KowSU & LastWave Optics)
+              // 2. Floating Audiophile MiniPlayer & Liquid Lens Navigation Dock
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 20,
                 child: SafeArea(
                   top: false,
-                  child: LiquidLensNavBar(
-                    currentIndex: _currentIndex,
-                    onTabSelected: (index) {
-                      appState.setActiveTabIndex(index);
-                      setState(() => _currentIndex = index);
-                    },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const AudiophileMiniPlayer(),
+                      LiquidLensNavBar(
+                        currentIndex: _currentIndex,
+                        onTabSelected: (index) {
+                          appState.setActiveTabIndex(index);
+                          setState(() => _currentIndex = index);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
