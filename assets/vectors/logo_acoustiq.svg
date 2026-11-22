@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="acoustiqGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE"/>
+      <stop offset="50%" stop-color="#4FACFE"/>
+      <stop offset="100%" stop-color="#00E5A3"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5A3" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#00F2FE" stop-opacity="0.8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer AcoustiQ Sonic Loop (The "Q") -->
+  <circle cx="64" cy="58" r="44" fill="none" stroke="url(#acoustiqGrad)" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- "Q" Diagonal Tail -->
+  <path d="M 88 84 L 108 104" stroke="url(#acoustiqGrad)" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Inner Forensic Audio Spectrum Bars -->
+  <rect x="42" y="52" width="6" height="12" rx="3" fill="url(#glowGrad)"/>
+  <rect x="52" y="44" width="6" height="28" rx="3" fill="url(#glowGrad)"/>
+  <rect x="62" y="36" width="6" height="44" rx="3" fill="url(#glowGrad)"/>
+  <rect x="72" y="44" width="6" height="28" rx="3" fill="url(#glowGrad)"/>
+  <rect x="82" y="52" width="6" height="12" rx="3" fill="url(#glowGrad)"/>
+</svg>
