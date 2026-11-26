@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/audio_playback_service.dart';
+import '../services/thumbnail_cache.dart';
 import '../ui/theme/colors.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/signal_path_sheet.dart';
@@ -51,6 +52,16 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
 
     if (_player.isPlaying) {
       _rotationController.repeat();
+    }
+
+    final initialTrack = appState.activeTrack;
+    if (initialTrack != null && initialTrack.hasCover && initialTrack.coverBytes == null) {
+      ThumbnailCacheService.instance.getOrLoadCover(initialTrack.filePath).then((bytes) {
+        if (mounted && bytes != null && appState.activeTrack?.filePath == initialTrack.filePath) {
+          appState.setActiveTrack(appState.activeTrack!.copyWith(coverBytes: bytes));
+          setState(() {});
+        }
+      });
     }
   }
 
@@ -107,17 +118,19 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
         ? '${track.bitrateKbps} kbps'
         : 'Lossless';
 
-    final hasCover = track?.hasCover == true && track?.coverBytes != null;
+    final coverBytes = track?.coverBytes ??
+        (track != null ? ThumbnailCacheService.instance.getCached(track.filePath) : null);
+    final hasCover = track?.hasCover == true && coverBytes != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0C0E12),
       body: Stack(
         children: [
           // 0. Ambient Dynamic Artwork Backdrop (Full Screen Blur)
-          if (hasCover)
+          if (coverBytes != null)
             Positioned.fill(
               child: Image.memory(
-                track!.coverBytes!,
+                coverBytes,
                 fit: BoxFit.cover,
               ),
             ),
@@ -462,9 +475,10 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
   }
 
   Widget _buildHeroArtwork(FlacInfo? track, bool isPlaying) {
-    final hasCover = track?.hasCover == true && track?.coverBytes != null;
+    final coverBytes = track?.coverBytes ??
+        (track != null ? ThumbnailCacheService.instance.getCached(track.filePath) : null);
 
-    if (hasCover) {
+    if (coverBytes != null) {
       return Container(
         width: 230,
         height: 230,
@@ -482,7 +496,7 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
             ),
           ],
           image: DecorationImage(
-            image: MemoryImage(track!.coverBytes!),
+            image: MemoryImage(coverBytes),
             fit: BoxFit.cover,
           ),
         ),

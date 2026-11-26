@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
+import '../models/flac_info.dart';
 import '../services/audio_playback_service.dart';
 import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
@@ -11,11 +12,13 @@ import 'signal_path_sheet.dart';
 class AudioPreviewBar extends StatefulWidget {
   final String filePath;
   final String title;
+  final FlacInfo? trackInfo;
 
   const AudioPreviewBar({
     super.key,
     required this.filePath,
     required this.title,
+    this.trackInfo,
   });
 
   @override
@@ -84,6 +87,16 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
               LuminousFeedback(
                 onTap: () {
                   if (appState.hapticsEnabled) HapticFeedback.mediumImpact();
+                  if (!isPlaying) {
+                    if (widget.trackInfo != null) {
+                      appState.setActiveTrack(widget.trackInfo);
+                    } else if (appState.activeTrack?.filePath != widget.filePath) {
+                      final match = appState.sharedLibrary.where((t) => t.filePath == widget.filePath).firstOrNull;
+                      if (match != null) {
+                        appState.setActiveTrack(match);
+                      }
+                    }
+                  }
                   _player.play(widget.filePath);
                 },
                 borderRadius: BorderRadius.circular(20),

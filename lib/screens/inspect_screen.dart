@@ -6,6 +6,7 @@ import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/flac_parser.dart';
 import '../services/audio_playback_service.dart';
+import '../services/thumbnail_cache.dart';
 import '../ui/theme/colors.dart';
 import '../widgets/audio_spectrum_stage.dart';
 import '../widgets/audio_preview_bar.dart';
@@ -16,6 +17,85 @@ import '../widgets/luminous_feedback.dart';
 import '../widgets/app_snack_bar.dart';
 import '../widgets/app_glass_dialog.dart';
 import '../widgets/bounded_scroll_physics.dart';
+
+/// Dedicated Squircle Artwork Thumbnail for Track Picker (Recents & Audited Library)
+class _InspectTrackThumbnail extends StatefulWidget {
+  final String filePath;
+  final Uint8List? fallbackBytes;
+  final Color fallbackColor;
+  final double size;
+  final double borderRadius;
+
+  const _InspectTrackThumbnail({
+    required this.filePath,
+    this.fallbackBytes,
+    required this.fallbackColor,
+    this.size = 38,
+    this.borderRadius = 10,
+  });
+
+  @override
+  State<_InspectTrackThumbnail> createState() => _InspectTrackThumbnailState();
+}
+
+class _InspectTrackThumbnailState extends State<_InspectTrackThumbnail> {
+  Uint8List? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _bytes = widget.fallbackBytes ?? ThumbnailCacheService.instance.getCached(widget.filePath);
+    if (_bytes == null) {
+      _load();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _InspectTrackThumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filePath != widget.filePath || oldWidget.fallbackBytes != widget.fallbackBytes) {
+      _bytes = widget.fallbackBytes ?? ThumbnailCacheService.instance.getCached(widget.filePath);
+      if (_bytes == null) {
+        _load();
+      }
+    }
+  }
+
+  void _load() {
+    ThumbnailCacheService.instance.getOrLoadCover(widget.filePath).then((bytes) {
+      if (mounted) {
+        setState(() {
+          _bytes = bytes;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: widget.size,
+      height: widget.size,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        boxShadow: isDark
+            ? AppColors.softElevation(elevation: 1.5)
+            : AppColors.lightSoftElevation(elevation: 1.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _bytes != null
+          ? Image.memory(_bytes!, fit: BoxFit.cover)
+          : Icon(
+              Icons.album_rounded,
+              size: widget.size * 0.52,
+              color: widget.fallbackColor,
+            ),
+    );
+  }
+}
 
 /// 1:1 Port of LastWave Studio-Grade Audio Inspector Architecture
 ///
@@ -289,7 +369,12 @@ class _InspectScreenState extends State<InspectScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.history_rounded, size: 20, color: activeAccent),
+                                    _InspectTrackThumbnail(
+                                      filePath: path,
+                                      fallbackColor: activeAccent,
+                                      size: 38,
+                                      borderRadius: 10,
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
@@ -358,17 +443,12 @@ class _InspectScreenState extends State<InspectScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 child: Row(
                                   children: [
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE5E5EA),
-                                      ),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: t.hasCover && t.coverBytes != null
-                                          ? Image.memory(t.coverBytes!, fit: BoxFit.cover)
-                                          : Icon(Icons.album_rounded, size: 18, color: _getStatusColor(t.status)),
+                                    _InspectTrackThumbnail(
+                                      filePath: t.filePath,
+                                      fallbackBytes: t.coverBytes,
+                                      fallbackColor: _getStatusColor(t.status),
+                                      size: 38,
+                                      borderRadius: 10,
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
@@ -702,6 +782,7 @@ class _InspectScreenState extends State<InspectScreen> {
               AudioPreviewBar(
                 filePath: _info!.filePath,
                 title: _info!.title.isNotEmpty ? _info!.title : _info!.fileName,
+                trackInfo: _info,
               ),
 
               const SizedBox(height: 16),

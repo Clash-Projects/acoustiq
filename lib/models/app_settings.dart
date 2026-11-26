@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'flac_info.dart';
+import '../services/thumbnail_cache.dart';
 import '../ui/theme/colors.dart';
 
 class AppState extends ChangeNotifier {
@@ -73,6 +74,17 @@ class AppState extends ChangeNotifier {
     if (_activeTrack != track) {
       _activeTrack = track;
       notifyListeners();
+
+      // Universal Cover Resolver: If track has cover but bytes are not loaded (e.g. from fast audit/recents),
+      // resolve asynchronously from ThumbnailCacheService and update activeTrack.
+      if (track != null && track.hasCover && track.coverBytes == null) {
+        ThumbnailCacheService.instance.getOrLoadCover(track.filePath).then((bytes) {
+          if (bytes != null && _activeTrack?.filePath == track.filePath && _activeTrack?.coverBytes == null) {
+            _activeTrack = _activeTrack!.copyWith(coverBytes: bytes);
+            notifyListeners();
+          }
+        });
+      }
     }
   }
 

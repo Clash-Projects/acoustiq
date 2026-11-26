@@ -4,6 +4,7 @@ import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../screens/audiophile_player_screen.dart';
 import '../services/audio_playback_service.dart';
+import '../services/thumbnail_cache.dart';
 import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 
@@ -18,9 +19,15 @@ class AudiophileMiniPlayer extends StatefulWidget {
 }
 
 class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _player = AudioPlaybackService.instance;
   late final AnimationController _rotationController;
+  late final AnimationController _dismissAnimController;
+  Animation<double>? _dismissAnimation;
+
+  double _dragOffsetY = 0.0;
+  bool _isDismissing = false;
+  bool _dismissOnAnimComplete = false;
 
   @override
   void initState() {
@@ -29,6 +36,12 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
       vsync: this,
       duration: const Duration(seconds: 12),
     );
+    _dismissAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    )
+      ..addListener(_onDismissAnimTick)
+      ..addStatusListener(_onDismissAnimStatus);
     _player.addListener(_onPlaybackChanged);
     appState.addListener(_onPlaybackChanged);
 
@@ -42,6 +55,7 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
     _player.removeListener(_onPlaybackChanged);
     appState.removeListener(_onPlaybackChanged);
     _rotationController.dispose();
+    _dismissAnimController.dispose();
     super.dispose();
   }
 
@@ -55,10 +69,67 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
     setState(() {});
   }
 
+  void _onDismissAnimTick() {
+    if (!mounted || _dismissAnimation == null) return;
+    setState(() {
+      _dragOffsetY = _dismissAnimation!.value;
+    });
+  }
+
+  Future<void> _onDismissAnimStatus(AnimationStatus status) async {
+    if (status == AnimationStatus.completed && _dismissOnAnimComplete) {
+      _dismissOnAnimComplete = false;
+      if (appState.hapticsEnabled) HapticFeedback.lightImpact();
+      await _player.stop();
+      appState.setActiveTrack(null);
+      if (mounted) {
+        setState(() {
+          _dragOffsetY = 0.0;
+          _isDismissing = false;
+        });
+      }
+    }
+  }
+
+  void _animateDismiss([double velocity = 0]) {
+    if (_isDismissing) return;
+    _isDismissing = true;
+    _dismissOnAnimComplete = true;
+    final startY = _dragOffsetY;
+    const targetY = 90.0;
+
+    _dismissAnimation = Tween<double>(begin: startY, end: targetY).animate(
+      CurvedAnimation(
+        parent: _dismissAnimController,
+        curve: Curves.easeInCubic,
+      ),
+    );
+
+    _dismissAnimController.forward(from: 0.0);
+  }
+
+  void _animateReset() {
+    _dismissOnAnimComplete = false;
+    final startY = _dragOffsetY;
+    _dismissAnimation = Tween<double>(begin: startY, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _dismissAnimController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _dismissAnimController.forward(from: 0.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final track = appState.activeTrack;
     if (track == null && !_player.isPlaying && _player.currentFilePath == null) {
+      if (_dragOffsetY != 0.0 || _isDismissing || _dismissOnAnimComplete) {
+        _dragOffsetY = 0.0;
+        _isDismissing = false;
+        _dismissOnAnimComplete = false;
+      }
       return const SizedBox.shrink();
     }
 
@@ -82,27 +153,48 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
         : '48k';
     final bitDepthStr = track != null ? '${track.bitDepth}b' : '24b';
 
+    final double opacity = (1.0 - (_dragOffsetY / 100.0)).clamp(0.0, 1.0);
+
     return Padding(
       padding: const EdgeInsets.only(left: 14.0, right: 14.0, bottom: 10.0),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onVerticalDragEnd: (details) {
-          if (details.primaryVelocity != null && details.primaryVelocity! > 180) {
-            if (appState.hapticsEnabled) HapticFeedback.lightImpact();
-            appState.setActiveTrack(null);
-          }
-        },
-        onHorizontalDragEnd: (details) {
-          if (details.primaryVelocity != null && details.primaryVelocity!.abs() > 180) {
-            if (appState.hapticsEnabled) HapticFeedback.lightImpact();
-            appState.setActiveTrack(null);
-          }
-        },
-        onTap: () {
-          if (appState.hapticsEnabled) HapticFeedback.selectionClick();
-          openAudiophilePlayerScreen(context);
-        },
-        child: GlassSurface(
+      child: Transform.translate(
+        offset: Offset(0, _dragOffsetY),
+        child: Opacity(
+          opacity: opacity,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragStart: (_) {
+              if (_dismissAnimController.isAnimating) {
+                _dismissAnimController.stop();
+              }
+            },
+            onVerticalDragUpdate: (details) {
+              if (_isDismissing) return;
+              final delta = details.primaryDelta ?? 0;
+              final newOffset = _dragOffsetY + delta;
+              setState(() {
+                _dragOffsetY = newOffset < 0 ? newOffset * 0.2 : newOffset;
+              });
+            },
+            onVerticalDragEnd: (details) {
+              if (_isDismissing) return;
+              final velocity = details.primaryVelocity ?? 0;
+              if (velocity > 260 || _dragOffsetY > 45) {
+                _animateDismiss(velocity);
+              } else {
+                _animateReset();
+              }
+            },
+            onHorizontalDragEnd: (details) {
+              if (details.primaryVelocity != null && details.primaryVelocity!.abs() > 260) {
+                _animateDismiss();
+              }
+            },
+            onTap: () {
+              if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+              openAudiophilePlayerScreen(context);
+            },
+            child: GlassSurface(
           style: GlassStyle.frosted,
           borderRadius: BorderRadius.circular(28.0),
           tintColor: const Color(0xFF111319).withOpacity(0.42),
@@ -243,13 +335,16 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildArtwork(FlacInfo? track, bool isPlaying) {
-    final hasCover = track?.hasCover == true && track?.coverBytes != null;
+    final coverBytes = track?.coverBytes ??
+        (track != null ? ThumbnailCacheService.instance.getCached(track.filePath) : null);
 
-    if (hasCover) {
+    if (coverBytes != null) {
       return Container(
         width: 40.0,
         height: 40.0,
@@ -260,7 +355,7 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
             width: 0.5,
           ),
           image: DecorationImage(
-            image: MemoryImage(track!.coverBytes!),
+            image: MemoryImage(coverBytes),
             fit: BoxFit.cover,
           ),
         ),

@@ -2728,6 +2728,7 @@ class _TrackDetailModalState extends State<_TrackDetailModal> {
                       AudioPreviewBar(
                         filePath: track.filePath,
                         title: track.title.isNotEmpty ? track.title : track.fileName,
+                        trackInfo: track,
                       ),
                       const SizedBox(height: 12),
                     ],

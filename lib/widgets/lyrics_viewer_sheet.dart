@@ -392,6 +392,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                   AudioPreviewBar(
                     filePath: widget.track.filePath,
                     title: widget.track.title.isNotEmpty ? widget.track.title : widget.track.fileName,
+                    trackInfo: widget.track,
                   ),
 
                   const SizedBox(height: 12),
@@ -454,6 +455,7 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                                           if (appState.hapticsEnabled) HapticFeedback.selectionClick();
                                           _player.seek(line.timestampMs);
                                           if (!_player.isPlaying) {
+                                            appState.setActiveTrack(widget.track);
                                             _player.play(widget.track.filePath);
                                           }
                                         }

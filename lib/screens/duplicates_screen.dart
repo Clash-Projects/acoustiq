@@ -1385,90 +1385,103 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Set Header with Album Cover (Calm, full width)
+                      // Set Header with Album Cover (2-Tier unclipped layout)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _DuplicateCoverArt(
-                              filePath: currentGroup.items.first.info.filePath,
-                              size: 46,
-                              borderRadius: 13,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    currentGroup.title,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: textColor,
-                                      height: 1.2,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                            // Tier 1: Cover + Full Unclipped Title
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                _DuplicateCoverArt(
+                                  filePath: currentGroup.items.first.info.filePath,
+                                  size: 46,
+                                  borderRadius: 13,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        currentGroup.title,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: textColor,
+                                          height: 1.25,
+                                        ),
+                                        maxLines: 2,
+                                        softWrap: true,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        currentGroup.artist,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: subTextColor,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    currentGroup.artist,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            // Tier 2: Version Count Chip + Full Page Action Button
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${currentGroup.items.length} Versions',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
                                       color: subTextColor,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${currentGroup.items.length} Versions',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: subTextColor,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            LuminousFeedback(
-                              onTap: () {
-                                Navigator.of(sheetCtx).pop();
-                                _openFullPageComparison(currentGroup);
-                              },
-                              borderRadius: BorderRadius.circular(8),
-                              child: GlassSurface(
-                                borderRadius: BorderRadius.circular(8),
-                                style: GlassStyle.clear,
-                                borderless: false,
-                                tintColor: activeAccent.withValues(alpha: isDark ? 0.20 : 0.12),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.fullscreen_rounded, size: 14, color: activeAccent),
-                                    const SizedBox(width: 3.5),
-                                    Text(
-                                      'Full Page',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: activeAccent,
-                                      ),
+                                const Spacer(),
+                                LuminousFeedback(
+                                  onTap: () {
+                                    Navigator.of(sheetCtx).pop();
+                                    _openFullPageComparison(currentGroup);
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: GlassSurface(
+                                    borderRadius: BorderRadius.circular(8),
+                                    style: GlassStyle.clear,
+                                    borderless: false,
+                                    tintColor: activeAccent.withValues(alpha: isDark ? 0.20 : 0.12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.fullscreen_rounded, size: 14, color: activeAccent),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Full Page',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: activeAccent,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),
@@ -2244,11 +2257,14 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
     required Widget valueB,
     required bool isDark,
     required Color subTextColor,
+    double labelWidth = 84,
+    double horizontalPadding = 10,
+    double colGap = 8,
     bool isLast = false,
     bool highlightDiff = false,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8.5),
       decoration: BoxDecoration(
         color: highlightDiff
             ? (isDark ? const Color(0x0C00D68F) : const Color(0x0600D68F))
@@ -2266,7 +2282,7 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 112,
+            width: labelWidth,
             child: Text(
               label,
               style: TextStyle(
@@ -2276,9 +2292,9 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: colGap),
           Expanded(child: valueA),
-          const SizedBox(width: 12),
+          SizedBox(width: colGap),
           Expanded(child: valueB),
         ],
       ),
@@ -2346,42 +2362,13 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
               icon: Icon(Icons.arrow_back_rounded, color: textColor),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            title: Row(
-              children: [
-                _DuplicateCoverArt(
-                  filePath: _group.items.first.info.filePath,
-                  size: 36,
-                  borderRadius: 10,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _group.title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: textColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${_group.artist} · ${_group.items.length} Versions',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: subTextColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            title: Text(
+              'Compare Versions',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
             ),
             actions: [
               if (_group.isMd5Identical) ...[
@@ -2424,6 +2411,76 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Prominent Unclipped Track Identity Header (Zero Truncation)
+                        GlassSurface(
+                          borderRadius: BorderRadius.circular(16),
+                          style: GlassStyle.frosted,
+                          borderless: false,
+                          tintColor: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _DuplicateCoverArt(
+                                filePath: _group.items.first.info.filePath,
+                                size: 52,
+                                borderRadius: 14,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _group.title,
+                                      style: TextStyle(
+                                        fontSize: 16.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: textColor,
+                                        letterSpacing: -0.2,
+                                        height: 1.25,
+                                      ),
+                                      maxLines: 2,
+                                      softWrap: true,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            _group.artist,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: subTextColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text('•', style: TextStyle(fontSize: 10, color: subTextColor.withOpacity(0.5))),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${_group.items.length} Versions',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: activeAccent,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
                         // Forensic Certificate Banner (Frosted Glass)
                         GlassSurface(
                           borderRadius: BorderRadius.circular(14),
@@ -2679,124 +2736,212 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                           borderless: false,
                           tintColor: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
                           padding: const EdgeInsets.all(4),
-                          child: Column(
-                            children: [
-                              // Table Header Row
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0x15FFFFFF) : const Color(0x0C000000),
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 112,
-                                      child: Text(
-                                        'AUDIO PROPERTY',
-                                        style: TextStyle(
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.5,
-                                          color: subTextColor,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'TRACK 1 (MASTER)',
-                                        style: TextStyle(
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.5,
-                                          color: itemA.isUserKept ? AppColors.genuineEmerald : subTextColor,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        'TRACK 2 (COPY)',
-                                        style: TextStyle(
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.5,
-                                          color: itemB.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          child: LayoutBuilder(
+                            builder: (matrixCtx, matrixConstraints) {
+                              final isCompact = matrixConstraints.maxWidth < 520;
+                              final labelWidth = isCompact ? 82.0 : 120.0;
+                              final hPad = isCompact ? 10.0 : 12.0;
+                              final colGap = isCompact ? 8.0 : 12.0;
 
-                              // Spec Rows (Continuous dividers - zero broken dashes!)
-                              _buildMatrixRow(
-                                label: 'Format & Quality',
-                                valueA: Text('${itemA.info.bitDepth}-bit · ${(itemA.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: textColor)),
-                                valueB: Text('${itemB.info.bitDepth}-bit · ${(itemB.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: textColor)),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'Audio Channels',
-                                valueA: Text('Stereo (2.0)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
-                                valueB: Text('Stereo (2.0)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'Bitrate',
-                                valueA: Text(itemA.info.bitrateKbps > 0 ? '${itemA.info.bitrateKbps} kbps' : 'N/A', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
-                                valueB: Text(itemB.info.bitrateKbps > 0 ? '${itemB.info.bitrateKbps} kbps' : 'N/A', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'Duration',
-                                valueA: Text(_formatExactDuration(itemA.info.durationSec), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
-                                valueB: Text(_formatExactDuration(itemB.info.durationSec), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'File Size',
-                                valueA: Text('${itemA.info.fileSizeMb.toStringAsFixed(1)} MB', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: itemA.isUserKept ? AppColors.genuineEmerald : textColor)),
-                                valueB: Text('${itemB.info.fileSizeMb.toStringAsFixed(1)} MB${!itemB.isUserKept ? ' (waste)' : ''}', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: itemB.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral)),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'Synchronized Lyrics',
-                                highlightDiff: itemA.info.hasLyrics != itemB.info.hasLyrics,
-                                valueA: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemA.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemA.info.hasLyrics ? AppColors.genuineEmerald : subTextColor), const SizedBox(width: 3.5), Text(itemA.info.hasLyrics ? '✓ Embedded (.lrc)' : 'Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemA.info.hasLyrics ? textColor : subTextColor))]),
-                                valueB: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemB.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemB.info.hasLyrics ? AppColors.genuineEmerald : AppColors.fakeCoral), const SizedBox(width: 3.5), Text(itemB.info.hasLyrics ? '✓ Embedded (.lrc)' : '✗ Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemB.info.hasLyrics ? textColor : AppColors.fakeCoral))]),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'Cover Art',
-                                valueA: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemA.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemA.info.hasCover ? AppColors.genuineEmerald : subTextColor), const SizedBox(width: 3.5), Text(itemA.info.hasCover ? '✓ Embedded Artwork' : 'Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemA.info.hasCover ? textColor : subTextColor))]),
-                                valueB: Row(mainAxisSize: MainAxisSize.min, children: [Icon(itemB.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemB.info.hasCover ? AppColors.genuineEmerald : subTextColor), const SizedBox(width: 3.5), Text(itemB.info.hasCover ? '✓ Embedded Artwork' : 'Missing', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemB.info.hasCover ? textColor : subTextColor))]),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'Audio Purity',
-                                valueA: Text(itemA.info.status == 'untested' || itemA.info.score <= 0 ? 'Untested' : (itemA.info.score >= 80 ? 'Genuine (${itemA.info.score}%)' : '${itemA.info.score}% lossy'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: itemA.info.status == 'untested' || itemA.info.score <= 0 ? subTextColor : (itemA.info.score >= 80 ? AppColors.genuineEmerald : (itemA.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)))),
-                                valueB: Text(itemB.info.status == 'untested' || itemB.info.score <= 0 ? 'Untested' : (itemB.info.score >= 80 ? 'Genuine (${itemB.info.score}%)' : '${itemB.info.score}% lossy'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: itemB.info.status == 'untested' || itemB.info.score <= 0 ? subTextColor : (itemB.info.score >= 80 ? AppColors.genuineEmerald : (itemB.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)))),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                              ),
-                              _buildMatrixRow(
-                                label: 'File Path',
-                                valueA: Text(itemA.info.filePath, style: TextStyle(fontSize: 9, fontFamily: 'monospace', color: subTextColor), maxLines: 3, overflow: TextOverflow.ellipsis),
-                                valueB: Text(itemB.info.filePath, style: TextStyle(fontSize: 9, fontFamily: 'monospace', color: subTextColor), maxLines: 3, overflow: TextOverflow.ellipsis),
-                                isDark: isDark,
-                                subTextColor: subTextColor,
-                                isLast: true,
-                              ),
-                            ],
+                              return Column(
+                                children: [
+                                  // Table Header Row
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0x15FFFFFF) : const Color(0x0C000000),
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: labelWidth,
+                                          child: Text(
+                                            'PROPERTY',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.5,
+                                              color: subTextColor,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: colGap),
+                                        Expanded(
+                                          child: Text(
+                                            'TRACK 1 (MASTER)',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.5,
+                                              color: itemA.isUserKept ? AppColors.genuineEmerald : subTextColor,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: colGap),
+                                        Expanded(
+                                          child: Text(
+                                            'TRACK 2 (COPY)',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.5,
+                                              color: itemB.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Spec Rows (Continuous dividers - zero broken dashes!)
+                                  _buildMatrixRow(
+                                    label: 'Format & Quality',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Text('${itemA.info.bitDepth}-bit · ${(itemA.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: textColor)),
+                                    valueB: Text('${itemB.info.bitDepth}-bit · ${(itemB.info.sampleRate / 1000).toStringAsFixed(1)}k FLAC', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: textColor)),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'Audio Channels',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Text('Stereo (2.0)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                    valueB: Text('Stereo (2.0)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'Bitrate',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Text(itemA.info.bitrateKbps > 0 ? '${itemA.info.bitrateKbps} kbps' : 'N/A', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                    valueB: Text(itemB.info.bitrateKbps > 0 ? '${itemB.info.bitrateKbps} kbps' : 'N/A', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'Duration',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Text(_formatExactDuration(itemA.info.durationSec), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                    valueB: Text(_formatExactDuration(itemB.info.durationSec), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor)),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'File Size',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Text('${itemA.info.fileSizeMb.toStringAsFixed(1)} MB', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: itemA.isUserKept ? AppColors.genuineEmerald : textColor)),
+                                    valueB: Text('${itemB.info.fileSizeMb.toStringAsFixed(1)} MB${!itemB.isUserKept ? ' (waste)' : ''}', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: itemB.isUserKept ? AppColors.genuineEmerald : AppColors.fakeCoral)),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'Sync Lyrics',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    highlightDiff: itemA.info.hasLyrics != itemB.info.hasLyrics,
+                                    valueA: Row(
+                                      children: [
+                                        Icon(itemA.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemA.info.hasLyrics ? AppColors.genuineEmerald : subTextColor),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            itemA.info.hasLyrics ? 'Embedded (.lrc)' : 'Missing',
+                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemA.info.hasLyrics ? textColor : subTextColor),
+                                            maxLines: 2,
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    valueB: Row(
+                                      children: [
+                                        Icon(itemB.info.hasLyrics ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemB.info.hasLyrics ? AppColors.genuineEmerald : AppColors.fakeCoral),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            itemB.info.hasLyrics ? 'Embedded (.lrc)' : 'Missing',
+                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemB.info.hasLyrics ? textColor : AppColors.fakeCoral),
+                                            maxLines: 2,
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'Cover Art',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Row(
+                                      children: [
+                                        Icon(itemA.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemA.info.hasCover ? AppColors.genuineEmerald : subTextColor),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            itemA.info.hasCover ? 'Embedded' : 'Missing',
+                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemA.info.hasCover ? textColor : subTextColor),
+                                            maxLines: 2,
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    valueB: Row(
+                                      children: [
+                                        Icon(itemB.info.hasCover ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 11, color: itemB.info.hasCover ? AppColors.genuineEmerald : subTextColor),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            itemB.info.hasCover ? 'Embedded' : 'Missing',
+                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemB.info.hasCover ? textColor : subTextColor),
+                                            maxLines: 2,
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'Audio Purity',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Text(itemA.info.status == 'untested' || itemA.info.score <= 0 ? 'Untested' : (itemA.info.score >= 80 ? 'Genuine (${itemA.info.score}%)' : '${itemA.info.score}% lossy'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: itemA.info.status == 'untested' || itemA.info.score <= 0 ? subTextColor : (itemA.info.score >= 80 ? AppColors.genuineEmerald : (itemA.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)))),
+                                    valueB: Text(itemB.info.status == 'untested' || itemB.info.score <= 0 ? 'Untested' : (itemB.info.score >= 80 ? 'Genuine (${itemB.info.score}%)' : '${itemB.info.score}% lossy'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: itemB.info.status == 'untested' || itemB.info.score <= 0 ? subTextColor : (itemB.info.score >= 80 ? AppColors.genuineEmerald : (itemB.info.score < 50 ? AppColors.fakeCoral : AppColors.suspiciousAmber)))),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                  ),
+                                  _buildMatrixRow(
+                                    label: 'File Path',
+                                    labelWidth: labelWidth,
+                                    horizontalPadding: hPad,
+                                    colGap: colGap,
+                                    valueA: Text(itemA.info.filePath, style: TextStyle(fontSize: 9, fontFamily: 'monospace', color: subTextColor), maxLines: 3, overflow: TextOverflow.ellipsis),
+                                    valueB: Text(itemB.info.filePath, style: TextStyle(fontSize: 9, fontFamily: 'monospace', color: subTextColor), maxLines: 3, overflow: TextOverflow.ellipsis),
+                                    isDark: isDark,
+                                    subTextColor: subTextColor,
+                                    isLast: true,
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -3718,6 +3863,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                           if (isPlayingA) {
                             await AudioPlaybackService.instance.stop();
                           } else {
+                            appState.setActiveTrack(itemA.info);
                             await AudioPlaybackService.instance.play(itemA.info.filePath);
                           }
                           setState(() {});
@@ -3734,6 +3880,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                           if (isPlayingB) {
                             await AudioPlaybackService.instance.stop();
                           } else {
+                            appState.setActiveTrack(itemB.info);
                             await AudioPlaybackService.instance.play(itemB.info.filePath);
                           }
                           setState(() {});
@@ -3755,6 +3902,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                       if (isPlayingA) {
                         await AudioPlaybackService.instance.stop();
                       } else {
+                        appState.setActiveTrack(itemA.info);
                         await AudioPlaybackService.instance.play(itemA.info.filePath);
                       }
                       setState(() {});
@@ -3769,6 +3917,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                       if (isPlayingB) {
                         await AudioPlaybackService.instance.stop();
                       } else {
+                        appState.setActiveTrack(itemB.info);
                         await AudioPlaybackService.instance.play(itemB.info.filePath);
                       }
                       setState(() {});
