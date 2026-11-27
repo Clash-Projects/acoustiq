@@ -1336,10 +1336,7 @@ class _InspectScreenState extends State<InspectScreen> {
                           ),
                         ),
                         Tooltip(
-                          message: 'WHAT DOES AUDIO INTEGRITY MEAN?\n\n'
-                              '• Zero Bit-Rot: Digital audio files can suffer flipped bits from degraded storage, faulty SD cards, or partial downloads.\n'
-                              '• Studio Fingerprint: During FLAC master creation, the studio encoder computes an unalterable 128-bit MD5 signature of all raw PCM audio samples.\n'
-                              '• Bit-Perfect Guarantee: AcoustiQ verified this file matches the studio master bit-for-bit.',
+                          message: '128-bit MD5 signature embedded in the FLAC header confirms raw PCM audio integrity.',
                           triggerMode: TooltipTriggerMode.tap,
                           showDuration: const Duration(seconds: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

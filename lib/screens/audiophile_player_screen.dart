@@ -165,7 +165,7 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
                         child: Column(
                           children: [
                             Text(
-                              'AUDIOPHILE PLAYBACK',
+                              'NOW PLAYING',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.50),
                                 fontSize: 10.5,
@@ -175,7 +175,7 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'ClashPlayer C++ Engine',
+                              'FLAC Lossless',
                               style: TextStyle(
                                 color: AppColors.genuineEmerald.withOpacity(0.95),
                                 fontSize: 12,
@@ -190,280 +190,281 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
                   ),
                 ),
 
-                // Scrollable Body
+                // Scrollable Body with Balanced Ergonomic Positioning (Tablet + Mobile)
                 Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCompactH = constraints.maxHeight < 640;
+                      final artSize = isCompactH ? 190.0 : (constraints.maxHeight > 850 ? 250.0 : 215.0);
 
-                        // Large Vinyl Record / Artwork Platter Hero
-                        _buildHeroArtwork(track, isPlaying),
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 48),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Hero Artwork / Vinyl Platter
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: _buildHeroArtwork(track, isPlaying, size: artSize),
+                                ),
 
-                        const SizedBox(height: 32),
-
-                        // Track Title & Artist
-                        Text(
-                          title,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '$artist • $album',
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.65),
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Single Dedicated Signal Path Quality Badge (Tap to Inspect)
-                        GestureDetector(
-                          onTap: () {
-                            if (appState.hapticsEnabled) {
-                              HapticFeedback.lightImpact();
-                            }
-                            showSignalPathSheet(
-                              context,
-                              trackTitle: title,
-                              sampleRate: track?.sampleRate ?? 48000,
-                              bitDepth: track?.bitDepth ?? 16,
-                            );
-                          },
-                          child: GlassSurface(
-                            style: GlassStyle.frosted,
-                            borderRadius: BorderRadius.circular(10),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.bolt_rounded,
-                                    color: AppColors.genuineEmerald,
-                                    size: 14,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    isPlaying
-                                        ? 'BIT-PERFECT • $bitDepthStr / $sampleRateStr'
-                                        : '$bitDepthStr / $sampleRateStr • Tap to inspect path',
-                                    style: const TextStyle(
-                                      color: AppColors.genuineEmerald,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                      fontFamily: 'JetBrainsMono',
-                                      letterSpacing: 0.2,
+                                // Track Identity & Signal Path
+                                Column(
+                                  children: [
+                                    Text(
+                                      title,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: -0.3,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    color: AppColors.genuineEmerald.withOpacity(0.60),
-                                    size: 10,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Frosted Audio Metadata Chips (Wrap layout: Zero Overflow Guaranteed)
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _buildFrostedChip('FLAC LOSSLESS', Icons.audio_file_rounded),
-                            _buildFrostedChip(bitrateStr, Icons.speed_rounded),
-                            if (track != null && track.cutoffKhz > 0)
-                              _buildFrostedChip(
-                                '${track.cutoffKhz.toStringAsFixed(1)} kHz Nyquist',
-                                Icons.graphic_eq_rounded,
-                              ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        // Scrubber Slider
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 4.0,
-                            activeTrackColor: AppColors.accentPrimary,
-                            inactiveTrackColor: Colors.white.withOpacity(0.12),
-                            thumbColor: Colors.white,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 7,
-                            ),
-                            overlayShape: const RoundSliderOverlayShape(
-                              overlayRadius: 16,
-                            ),
-                          ),
-                          child: Slider(
-                            value: progress,
-                            onChangeStart: (_) {
-                              setState(() => _isDraggingScrubber = true);
-                            },
-                            onChanged: (val) {
-                              setState(() => _dragValue = val);
-                            },
-                            onChangeEnd: (val) {
-                              setState(() => _isDraggingScrubber = false);
-                              if (dur > 0) {
-                                _player.seek((val * dur).toInt());
-                              }
-                            },
-                          ),
-                        ),
-
-                        // Timestamps
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _formatTime(currentPos),
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.55),
-                                  fontSize: 12,
-                                  fontFamily: 'JetBrainsMono',
-                                ),
-                              ),
-                              Text(
-                                _formatTime(dur),
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.55),
-                                  fontSize: 12,
-                                  fontFamily: 'JetBrainsMono',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        // Tactile Transport Controls (Frosted Glass)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // 10s Rewind
-                            GestureDetector(
-                              onTap: () {
-                                if (appState.hapticsEnabled) {
-                                  HapticFeedback.lightImpact();
-                                }
-                                final target = (pos - 10000).clamp(0, dur);
-                                _player.seek(target);
-                              },
-                              child: GlassSurface(
-                                style: GlassStyle.frosted,
-                                borderRadius: BorderRadius.circular(25),
-                                child: const SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.replay_10_rounded,
-                                      color: Colors.white,
-                                      size: 26,
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '$artist • $album',
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.65),
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w400,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Main Play / Pause Button (68x68dp)
-                            GestureDetector(
-                              onTap: () {
-                                if (appState.hapticsEnabled) {
-                                  HapticFeedback.mediumImpact();
-                                }
-                                final path = track?.filePath ?? _player.currentFilePath;
-                                if (path != null) {
-                                  _player.play(path);
-                                }
-                              },
-                              child: Container(
-                                width: 68,
-                                height: 68,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0xFFF1F5F9),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.white.withOpacity(0.20),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 4),
+                                    const SizedBox(height: 14),
+                                    // Single Dedicated Signal Path Quality Badge (Tap to Inspect)
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (appState.hapticsEnabled) {
+                                          HapticFeedback.lightImpact();
+                                        }
+                                        showSignalPathSheet(
+                                          context,
+                                          trackTitle: title,
+                                          sampleRate: track?.sampleRate ?? 48000,
+                                          bitDepth: track?.bitDepth ?? 16,
+                                        );
+                                      },
+                                      child: GlassSurface(
+                                        style: GlassStyle.frosted,
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.bolt_rounded,
+                                                color: AppColors.genuineEmerald,
+                                                size: 14,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'Bit-Perfect • $bitDepthStr / $sampleRateStr',
+                                                style: const TextStyle(
+                                                  color: AppColors.genuineEmerald,
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontFamily: 'JetBrainsMono',
+                                                  letterSpacing: 0.2,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_forward_ios_rounded,
+                                                color: AppColors.genuineEmerald.withOpacity(0.60),
+                                                size: 10,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    // Frosted Audio Metadata Chips (Wrap layout: Zero Overflow Guaranteed)
+                                    Wrap(
+                                      alignment: WrapAlignment.center,
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        _buildFrostedChip('FLAC LOSSLESS', Icons.audio_file_rounded),
+                                        _buildFrostedChip(bitrateStr, Icons.speed_rounded),
+                                        if (track != null && track.cutoffKhz > 0)
+                                          _buildFrostedChip(
+                                            '${track.cutoffKhz.toStringAsFixed(1)} kHz Nyquist',
+                                            Icons.graphic_eq_rounded,
+                                          ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                                child: Center(
-                                  child: Icon(
-                                    isPlaying
-                                        ? Icons.pause_rounded
-                                        : Icons.play_arrow_rounded,
-                                    color: Colors.black,
-                                    size: 38,
-                                  ),
-                                ),
-                              ),
-                            ),
 
-                            // 10s Forward
-                            GestureDetector(
-                              onTap: () {
-                                if (appState.hapticsEnabled) {
-                                  HapticFeedback.lightImpact();
-                                }
-                                final target = (pos + 10000).clamp(0, dur);
-                                _player.seek(target);
-                              },
-                              child: GlassSurface(
-                                style: GlassStyle.frosted,
-                                borderRadius: BorderRadius.circular(25),
-                                child: const SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.forward_10_rounded,
-                                      color: Colors.white,
-                                      size: 26,
+                                // Scrubber + Tactile Transport Controls (Elevated Comfort Zone)
+                                Column(
+                                  children: [
+                                    SliderTheme(
+                                      data: SliderTheme.of(context).copyWith(
+                                        trackHeight: 4.0,
+                                        activeTrackColor: AppColors.accentPrimary,
+                                        inactiveTrackColor: Colors.white.withOpacity(0.12),
+                                        thumbColor: Colors.white,
+                                        thumbShape: const RoundSliderThumbShape(
+                                          enabledThumbRadius: 7,
+                                        ),
+                                        overlayShape: const RoundSliderOverlayShape(
+                                          overlayRadius: 16,
+                                        ),
+                                      ),
+                                      child: Slider(
+                                        value: progress,
+                                        onChangeStart: (_) {
+                                          setState(() => _isDraggingScrubber = true);
+                                        },
+                                        onChanged: (val) {
+                                          setState(() => _dragValue = val);
+                                        },
+                                        onChangeEnd: (val) {
+                                          setState(() => _isDraggingScrubber = false);
+                                          if (dur > 0) {
+                                            _player.seek((val * dur).toInt());
+                                          }
+                                        },
+                                      ),
                                     ),
-                                  ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            _formatTime(currentPos),
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.55),
+                                              fontSize: 12,
+                                              fontFamily: 'JetBrainsMono',
+                                            ),
+                                          ),
+                                          Text(
+                                            _formatTime(dur),
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.55),
+                                              fontSize: 12,
+                                              fontFamily: 'JetBrainsMono',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    // Tactile Transport Controls (Frosted Glass)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () {
+                                            if (appState.hapticsEnabled) {
+                                              HapticFeedback.lightImpact();
+                                            }
+                                            final target = (pos - 10000).clamp(0, dur);
+                                            _player.seek(target);
+                                          },
+                                          child: GlassSurface(
+                                            style: GlassStyle.frosted,
+                                            borderRadius: BorderRadius.circular(25),
+                                            child: const SizedBox(
+                                              width: 50,
+                                              height: 50,
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.replay_10_rounded,
+                                                  color: Colors.white,
+                                                  size: 26,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            if (appState.hapticsEnabled) {
+                                              HapticFeedback.mediumImpact();
+                                            }
+                                            final path = track?.filePath ?? _player.currentFilePath;
+                                            if (path != null) {
+                                              _player.play(path);
+                                            }
+                                          },
+                                          child: Container(
+                                            width: 68,
+                                            height: 68,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: const Color(0xFFF1F5F9),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.white.withOpacity(0.20),
+                                                  blurRadius: 20,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Center(
+                                              child: Icon(
+                                                isPlaying
+                                                    ? Icons.pause_rounded
+                                                    : Icons.play_arrow_rounded,
+                                                color: Colors.black,
+                                                size: 38,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            if (appState.hapticsEnabled) {
+                                              HapticFeedback.lightImpact();
+                                            }
+                                            final target = (pos + 10000).clamp(0, dur);
+                                            _player.seek(target);
+                                          },
+                                          child: GlassSurface(
+                                            style: GlassStyle.frosted,
+                                            borderRadius: BorderRadius.circular(25),
+                                            child: const SizedBox(
+                                              width: 50,
+                                              height: 50,
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.forward_10_rounded,
+                                                  color: Colors.white,
+                                                  size: 26,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -474,14 +475,14 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
     );
   }
 
-  Widget _buildHeroArtwork(FlacInfo? track, bool isPlaying) {
+  Widget _buildHeroArtwork(FlacInfo? track, bool isPlaying, {double size = 225}) {
     final coverBytes = track?.coverBytes ??
         (track != null ? ThumbnailCacheService.instance.getCached(track.filePath) : null);
 
     if (coverBytes != null) {
       return Container(
-        width: 230,
-        height: 230,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
@@ -507,8 +508,8 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
     return RotationTransition(
       turns: _rotationController,
       child: Container(
-        width: 230,
-        height: 230,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: const Color(0xFF0A0C10),

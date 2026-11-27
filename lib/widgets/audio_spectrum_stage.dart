@@ -3,10 +3,10 @@ import 'dart:ui' as ui;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../models/app_settings.dart';
 import '../services/flac_parser.dart';
 import 'glass_surface.dart';
-import 'app_snack_bar.dart';
 import 'app_glass_dialog.dart';
 import 'animated_status_badge.dart';
 import 'bounded_scroll_physics.dart';
@@ -280,16 +280,20 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
 
                   const SizedBox(height: 10),
 
-                  // 2. Visualizer Body (Gauge, Waveform, or Hybrid)
-                  _buildVisualizerBody(
-                    mode: mode,
-                    entryVal: entryVal,
-                    shimmerVal: shimmerVal,
-                    isDark: isDark,
-                    textColor: textColor,
-                    subTextColor: subTextColor,
-                    activeAccent: activeAccent,
-                    safeMax: safeMax,
+                  // 2. Visualizer Body (Tap to open Spectrogram)
+                  GestureDetector(
+                    onTap: () => _openForensicModal(context),
+                    behavior: HitTestBehavior.opaque,
+                    child: _buildVisualizerBody(
+                      mode: mode,
+                      entryVal: entryVal,
+                      shimmerVal: shimmerVal,
+                      isDark: isDark,
+                      textColor: textColor,
+                      subTextColor: subTextColor,
+                      activeAccent: activeAccent,
+                      safeMax: safeMax,
+                    ),
                   ),
 
                   const SizedBox(height: 10),
@@ -329,10 +333,14 @@ class _AudioSpectrumStageState extends State<AudioSpectrumStage>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.insights_rounded,
-                                  size: 13,
-                                  color: activeAccent,
+                                SvgPicture.asset(
+                                  'assets/vectors/ic_spectrogram.svg',
+                                  width: 14,
+                                  height: 14,
+                                  colorFilter: ColorFilter.mode(
+                                    activeAccent,
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -855,16 +863,13 @@ class _ForensicSpectrogramModal extends StatefulWidget {
   State<_ForensicSpectrogramModal> createState() => _ForensicSpectrogramModalState();
 }
 
-class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal> {
   late List<List<double>> _spectrogramMatrix;
   bool _isLoadingMatrix = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _spectrogramMatrix = widget.spectrogramMatrix;
 
     // If matrix is empty and we have a valid filePath, lazily compute real STFT matrix
@@ -888,12 +893,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
         if (mounted) setState(() => _isLoadingMatrix = false);
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -985,64 +984,9 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
 
               const SizedBox(height: 12),
 
-              // Segmented Tab Selector (WWDC25 Liquid Glass Capsule)
-              Container(
-                height: 38,
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0x18FFFFFF) : const Color(0x0E000000),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000),
-                    width: 0.8,
-                  ),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: isDark ? activeAccent.withOpacity(0.22) : Colors.white,
-                    borderRadius: BorderRadius.circular(9),
-                    border: Border.all(
-                      color: activeAccent.withOpacity(isDark ? 0.5 : 0.25),
-                      width: 0.8,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
-                        blurRadius: 6,
-                        offset: const Offset(0, 1.5),
-                      ),
-                    ],
-                  ),
-                  labelColor: isDark ? Colors.white : activeAccent,
-                  unselectedLabelColor: subTextColor,
-                  labelStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  tabs: const [
-                    Tab(text: 'Sound Spectrogram'),
-                    Tab(text: 'How Detection Works'),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Tab Views
+              // Unified Single-Scroll Spectrogram & Metrics View
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Tab 1: Real STFT Spectrogram Heatmap
-                    _buildSpectrogramTab(isDark, textColor, subTextColor, activeAccent),
-
-                    // Tab 2: Engaging How Detection Works
-                    _buildDetectionGuideTab(isDark, textColor, subTextColor, activeAccent),
-                  ],
-                ),
+                child: _buildSpectrogramTab(isDark, textColor, subTextColor, activeAccent),
               ),
             ],
           ),
@@ -1063,9 +1007,9 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 2D Spectrogram Canvas Box
+          // 2D Spectrogram Canvas Box (Compact height so entire sheet fits cleanly without hidden bottom content)
           Container(
-            height: 230,
+            height: 205,
             decoration: BoxDecoration(
               color: const Color(0xFF0F1117),
               borderRadius: BorderRadius.circular(16),
@@ -1270,435 +1214,8 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
               ],
             ),
           ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
 
-  /// Tab 2: How Detection Works (Obsidian Markdown & Liquid Glass Terminal)
-  Widget _buildDetectionGuideTab(
-    bool isDark,
-    Color textColor,
-    Color subTextColor,
-    Color activeAccent,
-  ) {
-    return SingleChildScrollView(
-      physics: const BoundedBouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _markdownCard(
-            title: 'The Great "Hi-Res" Scam',
-            icon: Icons.search_rounded,
-            accent: const Color(0xFFFF9500),
-            isDark: isDark,
-            textColor: textColor,
-            subTextColor: subTextColor,
-            body: Text.rich(
-              TextSpan(
-                style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.5,
-                  color: subTextColor,
-                ),
-                children: const [
-                  TextSpan(text: 'Ever downloaded a '),
-                  TextSpan(
-                    text: '24-bit / 96 kHz FLAC',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFFFB340)),
-                  ),
-                  TextSpan(text: ' song that secretly sounded muddy? Someone likely converted an ordinary '),
-                  TextSpan(
-                    text: '128 kbps MP3',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFFF6B6B)),
-                  ),
-                  TextSpan(text: ' into a lossless container and labeled it a '),
-                  TextSpan(
-                    text: '"Studio Master"',
-                    style: TextStyle(fontStyle: FontStyle.italic, fontWeight: FontWeight.w600),
-                  ),
-                  TextSpan(text: '. We expose what is truly inside the audio bitstream.'),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _markdownCard(
-            title: 'Why Legacy Tools Get Fooled',
-            icon: Icons.shield_outlined,
-            accent: const Color(0xFF00D2FF),
-            isDark: isDark,
-            textColor: textColor,
-            subTextColor: subTextColor,
-            body: Text.rich(
-              TextSpan(
-                style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.5,
-                  color: subTextColor,
-                ),
-                children: const [
-                  TextSpan(text: 'Older tools check only the '),
-                  TextSpan(
-                    text: 'highest ultrasonic spike',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF38BDF8)),
-                  ),
-                  TextSpan(text: '. When lossy audio is upscaled to 96 kHz, digital interpolation generates '),
-                  TextSpan(
-                    text: 'ultrasonic noise above 24 kHz',
-                    style: TextStyle(fontStyle: FontStyle.italic),
-                  ),
-                  TextSpan(text: ' that old tools mistake for real music! Our DSP engine inspects the core '),
-                  TextSpan(
-                    text: '16–22 kHz overtones',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF4ADE80)),
-                  ),
-                  TextSpan(text: ' to prove acoustic validity before trusting container tags.'),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _markdownCard(
-            title: 'Our 4-Point Forensic Check',
-            icon: Icons.verified_user_outlined,
-            accent: const Color(0xFF34C759),
-            isDark: isDark,
-            textColor: textColor,
-            subTextColor: subTextColor,
-            body: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _pointRow('1', 'Brickwall Cutoff', 'Catches sharp frequency dropoffs (MP3/AAC cliff).', const Color(0xFFFF6B6B), isDark, textColor, subTextColor),
-                const SizedBox(height: 6),
-                _pointRow('2', 'Quantization Holes', 'Detects empty harmonic pockets left by lossy encoders.', const Color(0xFFFFA500), isDark, textColor, subTextColor),
-                const SizedBox(height: 6),
-                _pointRow('3', 'Shannon Entropy', 'Exposes 16-bit audio padded with zero bytes into fake 24-bit.', const Color(0xFF38BDF8), isDark, textColor, subTextColor),
-                const SizedBox(height: 6),
-                _pointRow('4', 'Acoustic Continuity', 'Verifies natural harmonic curve across full bandwidth.', const Color(0xFF34C759), isDark, textColor, subTextColor),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Try It Yourself Human Explanatory Guide
-          _markdownCard(
-            title: 'Try It Yourself: The Forensic Recipe',
-            icon: Icons.science_outlined,
-            accent: const Color(0xFF38BDF8),
-            isDark: isDark,
-            textColor: textColor,
-            subTextColor: subTextColor,
-            body: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Want to test our DSP engine with a known fake? You can create an upsampled FLAC on your computer using FFmpeg in two simple commands, then inspect it in AcoustiQ:',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.45,
-                    color: subTextColor,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _pointRow(
-                  '1',
-                  'Lossy Compression',
-                  'Encode a real FLAC to 128 kbps MP3. This permanently discards all harmonics above 16 kHz.',
-                  const Color(0xFFFBBF24),
-                  isDark,
-                  textColor,
-                  subTextColor,
-                ),
-                const SizedBox(height: 6),
-                _pointRow(
-                  '2',
-                  'Container Upsampling',
-                  'Transcode that MP3 into a 24-bit / 96 kHz FLAC container. File size swells, but acoustic cutoff stays locked at 16 kHz.',
-                  const Color(0xFFF472B6),
-                  isDark,
-                  textColor,
-                  subTextColor,
-                ),
-                const SizedBox(height: 6),
-                _pointRow(
-                  '3',
-                  'Live Detection',
-                  'Drop the file into AcoustiQ — watch our engine instantly identify the 16 kHz brickwall cutoff with 0% purity!',
-                  const Color(0xFF34D399),
-                  isDark,
-                  textColor,
-                  subTextColor,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Liquid Glass macOS Terminal Box
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xF20B0F17),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0x3338BDF8),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // macOS Titlebar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  color: const Color(0x33FFFFFF),
-                  child: Row(
-                    children: [
-                      // Traffic Lights
-                      Row(
-                        children: [
-                          Container(width: 9, height: 9, decoration: const BoxDecoration(color: Color(0xFFFF5F56), shape: BoxShape.circle)),
-                          const SizedBox(width: 5),
-                          Container(width: 9, height: 9, decoration: const BoxDecoration(color: Color(0xFFFFBD2E), shape: BoxShape.circle)),
-                          const SizedBox(width: 5),
-                          Container(width: 9, height: 9, decoration: const BoxDecoration(color: Color(0xFF27C93F), shape: BoxShape.circle)),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'terminal — verify-lossless.sh',
-                          style: TextStyle(
-                            fontFamily: 'JetBrainsMono',
-                            fontSize: 10.5,
-                            color: Color(0x99FFFFFF),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          const cmd = 'ffmpeg -i song.flac -b:a 128k fake.mp3 && ffmpeg -i fake.mp3 -sample_fmt s32 -ar 96000 fake_hires.flac';
-                          Clipboard.setData(const ClipboardData(text: cmd));
-                          if (appState.hapticsEnabled) HapticFeedback.lightImpact();
-                          showThemedSnackBar(
-                            context,
-                            'Terminal commands copied to clipboard!',
-                            icon: Icons.copy_rounded,
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0x2838BDF8),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0x5538BDF8), width: 0.8),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.copy_rounded, size: 11, color: Color(0xFF38BDF8)),
-                              SizedBox(width: 4),
-                              Text(
-                                'Copy',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF38BDF8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '# Step 1: Compress genuine song to 128k MP3',
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 10,
-                          color: Color(0x88FFFFFF),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text.rich(
-                        TextSpan(
-                          style: const TextStyle(fontFamily: 'JetBrainsMono', fontSize: 11, height: 1.35),
-                          children: [
-                            const TextSpan(text: '\$ ', style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
-                            const TextSpan(text: 'ffmpeg ', style: TextStyle(color: Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
-                            const TextSpan(text: '-i ', style: TextStyle(color: Color(0xFF93C5FD))),
-                            const TextSpan(text: 'song.flac ', style: TextStyle(color: Colors.white)),
-                            const TextSpan(text: '-b:a 128k ', style: TextStyle(color: Color(0xFFFBBF24))),
-                            const TextSpan(text: 'fake.mp3', style: TextStyle(color: Color(0xFFF472B6))),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        '# Step 2: Upsample lossy MP3 into fake 24-bit/96kHz FLAC',
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 10,
-                          color: Color(0x88FFFFFF),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text.rich(
-                        TextSpan(
-                          style: const TextStyle(fontFamily: 'JetBrainsMono', fontSize: 11, height: 1.35),
-                          children: [
-                            const TextSpan(text: '\$ ', style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
-                            const TextSpan(text: 'ffmpeg ', style: TextStyle(color: Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
-                            const TextSpan(text: '-i ', style: TextStyle(color: Color(0xFF93C5FD))),
-                            const TextSpan(text: 'fake.mp3 ', style: TextStyle(color: Color(0xFFF472B6))),
-                            const TextSpan(text: '-sample_fmt s32 -ar 96000 ', style: TextStyle(color: Color(0xFFFBBF24))),
-                            const TextSpan(text: 'fake_hires.flac', style: TextStyle(color: Color(0xFF34D399))),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Card: How to Read Inferno Colormap
-          _markdownCard(
-            title: 'Reading the Inferno Spectrogram',
-            icon: Icons.palette_outlined,
-            accent: const Color(0xFFFCA50A),
-            isDark: isDark,
-            textColor: textColor,
-            subTextColor: subTextColor,
-            body: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _pointRow('•', 'White & Gold', 'Maximum acoustic loudness (0 dB to -12 dB).', const Color(0xFFFCFFA4), isDark, textColor, subTextColor),
-                const SizedBox(height: 6),
-                _pointRow('•', 'Coral & Red', 'Core musical instruments & lead vocals (-12 dB to -45 dB).', const Color(0xFFDD513A), isDark, textColor, subTextColor),
-                const SizedBox(height: 6),
-                _pointRow('•', 'Deep Purple', 'Delicate natural harmonics & air decay (-45 dB to -75 dB).', const Color(0xFF932667), isDark, textColor, subTextColor),
-                const SizedBox(height: 6),
-                _pointRow('•', 'Obsidian Black', 'Absence of acoustic energy / digital silence (-90 dB).', const Color(0xFF420A68), isDark, textColor, subTextColor),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _pointRow(String num, String title, String desc, Color badgeColor, bool isDark, Color textColor, Color subTextColor) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 18,
-          height: 18,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: badgeColor.withOpacity(0.18),
-            shape: BoxShape.circle,
-            border: Border.all(color: badgeColor.withOpacity(0.4), width: 0.8),
-          ),
-          child: Text(
-            num,
-            style: TextStyle(
-              fontFamily: 'JetBrainsMono',
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: badgeColor,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text.rich(
-            TextSpan(
-              style: TextStyle(fontFamily: 'Inter', fontSize: 12, height: 1.4, color: subTextColor),
-              children: [
-                TextSpan(
-                  text: '$title: ',
-                  style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
-                ),
-                TextSpan(text: desc),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _markdownCard({
-    required String title,
-    required IconData icon,
-    required Color accent,
-    required bool isDark,
-    required Color textColor,
-    required Color subTextColor,
-    required Widget body,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0x14FFFFFF) : const Color(0x0A000000),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000),
-          width: 0.8,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accent.withOpacity(isDark ? 0.20 : 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, size: 16, color: accent),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          body,
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -2224,16 +1741,19 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal>
                     ],
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: color,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                      maxLines: 1,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

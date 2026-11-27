@@ -257,7 +257,7 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
                                 ),
                                 const SizedBox(width: 6.0),
                                 Text(
-                                  isPlaying ? 'BIT-PERFECT' : '$bitDepthStr/$sampleRateStr',
+                                  '$bitDepthStr/$sampleRateStr',
                                   style: const TextStyle(
                                     color: AppColors.genuineEmerald,
                                     fontSize: 9.5,

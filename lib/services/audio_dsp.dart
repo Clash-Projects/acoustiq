@@ -285,44 +285,44 @@ class AudioDspEngine {
     if (sampleRate > 48000) {
       if (cutoffKhz < 22.5) {
         score = rawScore.clamp(10.0, 30.0).round();
-        verdict = 'Fake Hi-Res FLAC (${sampleRate ~/ 1000} kHz container with ${cutoffKhz.toStringAsFixed(1)} kHz lossy cutoff)';
+        verdict = 'Upscaled Hi-Res (${sampleRate ~/ 1000} kHz • ${cutoffKhz.toStringAsFixed(1)} kHz cutoff)';
         status = 'fake';
       } else if (cutoffKhz < 24.0) {
         score = rawScore.clamp(10.0, 55.0).round();
-        verdict = 'Suspicious Hi-Res FLAC (Premature brickwall cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz)';
+        verdict = 'Early Cutoff (${cutoffKhz.toStringAsFixed(1)} kHz shelf)';
         status = 'suspicious';
       } else {
         score = rawScore.clamp(10.0, 99.0).round();
-        verdict = 'Genuine Hi-Res Lossless Master (${sampleRate ~/ 1000} kHz / >24 kHz acoustic bandwidth)';
+        verdict = 'Hi-Res Studio Master (${sampleRate ~/ 1000} kHz)';
         status = 'genuine';
       }
     } else {
       // Standard Red Book CD / 44.1 - 48 kHz FLAC
       score = rawScore.clamp(10.0, 99.0).round();
       if (score >= 90) {
-        verdict = 'Genuine Lossless (Full dynamic spectrum up to ${cutoffKhz.toStringAsFixed(1)} kHz)';
+        verdict = 'Studio Master • Full Bandwidth (${cutoffKhz.toStringAsFixed(1)} kHz)';
         status = 'genuine';
       } else if (score >= 80) {
-        verdict = 'Lossless with natural high-frequency roll-off at ${cutoffKhz.toStringAsFixed(1)} kHz';
+        verdict = 'Lossless (${cutoffKhz.toStringAsFixed(1)} kHz roll-off)';
         status = 'genuine';
       } else if (score >= 65) {
-        verdict = 'Likely 320 kbps MP3 upscale (Cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz, slope drop ${slopeDropDb.toStringAsFixed(1)} dB)';
+        verdict = 'Likely 320 kbps Upscale (${cutoffKhz.toStringAsFixed(1)} kHz cutoff)';
         status = 'suspicious';
       } else if (score >= 50) {
-        verdict = 'Suspicious / Likely 192-256 kbps lossy upscale (Cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz)';
+        verdict = 'Suspect Lossy Upscale (${cutoffKhz.toStringAsFixed(1)} kHz cutoff)';
         status = 'suspicious';
       } else if (score >= 30) {
-        verdict = 'Low-quality fake FLAC (Cutoff at ${cutoffKhz.toStringAsFixed(1)} kHz typical of 128 kbps MP3)';
+        verdict = 'Lossy Transcode (${cutoffKhz.toStringAsFixed(1)} kHz cutoff)';
         status = 'fake';
       } else {
-        verdict = 'Severe cutoff / Heavy compression upscale (${cutoffKhz.toStringAsFixed(1)} kHz)';
+        verdict = 'Heavy Compression Upscale (${cutoffKhz.toStringAsFixed(1)} kHz)';
         status = 'fake';
       }
     }
 
     if (isFake24) {
       score = (score * 0.75).round().clamp(10, 99);
-      verdict = 'Fake 24-bit (Zero-padded 16-bit upsample) • $verdict';
+      verdict = 'Zero-Padded 24-bit • $verdict';
       status = 'fake';
     }
 

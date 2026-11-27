@@ -160,6 +160,30 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
 
+              // 1.5 Soft Bottom Scrim behind Floating Dock (prevents scrolled items peeking under dock)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 112,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          appState.getBgColor(context).withValues(alpha: 0.0),
+                          appState.getBgColor(context).withValues(alpha: 0.72),
+                          appState.getBgColor(context).withValues(alpha: 0.94),
+                        ],
+                        stops: const [0.0, 0.55, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               // 2. Floating Audiophile MiniPlayer & Liquid Lens Navigation Dock
               Positioned(
                 left: 0,

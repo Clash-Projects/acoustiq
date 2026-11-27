@@ -42,6 +42,40 @@ class _AuditScreenState extends State<AuditScreen> {
   int _totalFiles = 0;
   String _currentAuditingFileName = '';
   String _filter = 'all'; // 'all', 'genuine', 'suspicious', 'fake', 'untested'
+  final Set<String> _analyzingPaths = {};
+
+  Future<void> _analyzeSingleTrackInline(FlacInfo track) async {
+    if (_analyzingPaths.contains(track.filePath) || _isScanning) return;
+    setState(() => _analyzingPaths.add(track.filePath));
+    try {
+      final fullTrack = await FlacParser.analyzeFile(
+        track.filePath,
+        deepDsp: true,
+        readCoverBytes: false,
+      );
+      if (mounted && fullTrack.error == null) {
+        appState.updateTrackInLibrary(
+          fullTrack.copyWith(coverBytes: track.coverBytes ?? fullTrack.coverBytes),
+        );
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _analyzingPaths.remove(track.filePath));
+      }
+    }
+  }
+
+  Future<void> _auditUntestedTracks() async {
+    if (_isScanning) return;
+    final files = appState.sharedLibrary
+        .map((t) => File(t.filePath))
+        .where((f) => f.existsSync())
+        .toList();
+    if (files.isEmpty) return;
+    final dirPath = appState.lastScannedFolder ?? files.first.parent.path;
+    await _executeDeepAudit(dirPath, files);
+  }
 
   @override
   void initState() {
@@ -2028,6 +2062,39 @@ class _AuditScreenState extends State<AuditScreen> {
                 ),
               ],
             ),
+
+            if (untestedCount > 0 && !_isScanning) ...[
+              const SizedBox(height: 12),
+              LuminousFeedback(
+                onTap: () {
+                  if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                  _auditUntestedTracks();
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: GlassSurface(
+                  borderRadius: BorderRadius.circular(14),
+                  style: GlassStyle.clear,
+                  borderless: false,
+                  tintColor: activeAccent.withValues(alpha: isDark ? 0.22 : 0.14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.bolt_rounded, size: 16, color: activeAccent),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Audit $untestedCount Untested ${untestedCount == 1 ? 'Track' : 'Tracks'}',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: activeAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -2131,14 +2198,15 @@ class _AuditScreenState extends State<AuditScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Material(
-        color: Colors.transparent,
+        color: isDark ? const Color(0x550D0F14) : const Color(0x88FFFFFF),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           splashColor: statusColor.withOpacity(0.12),
           highlightColor: statusColor.withOpacity(0.06),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -2186,28 +2254,75 @@ class _AuditScreenState extends State<AuditScreen> {
                 ),
                 const SizedBox(width: 10),
 
-                // Wavy Verified Seal & Score Badge
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedStatusBadge(
-                      status: track.status,
-                      color: statusColor,
-                      size: 16,
-                      animatePulse: false,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      track.status == 'untested' ? 'UNTESTED' : '${track.score}%',
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: track.status == 'untested' ? 10.5 : 13,
-                        fontWeight: FontWeight.w800,
+                // Wavy Verified Seal & Score Badge (or Inline Test Button for Untested)
+                if (track.status == 'untested' || track.status == 'pending')
+                  _analyzingPaths.contains(track.filePath)
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: appState.getAccentColor(context),
+                            ),
+                          ),
+                        )
+                      : LuminousFeedback(
+                          onTap: () {
+                            if (appState.hapticsEnabled) HapticFeedback.selectionClick();
+                            _analyzeSingleTrackInline(track);
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: GlassSurface(
+                            borderRadius: BorderRadius.circular(10),
+                            style: GlassStyle.frosted,
+                            borderless: false,
+                            tintColor: appState.getAccentColor(context).withValues(alpha: isDark ? 0.22 : 0.12),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 13,
+                                  color: appState.getAccentColor(context),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'Test',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: appState.getAccentColor(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedStatusBadge(
+                        status: track.status,
                         color: statusColor,
+                        size: 16,
+                        animatePulse: false,
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${track.score}%',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

@@ -6,16 +6,31 @@ import 'glass_surface.dart';
 import 'luminous_feedback.dart';
 
 /// Shows Poweramp / LastWave inspired Audiophile Signal Path Inspector
-void showSignalPathSheet(BuildContext context, {String? trackTitle, int sampleRate = 48000, int bitDepth = 16}) {
+void showSignalPathSheet(BuildContext context, {String? trackTitle, int? sampleRate, int? bitDepth}) {
+  final active = appState.activeTrack;
+  final resolvedTitle = trackTitle ?? (active?.title.isNotEmpty == true ? active!.title : active?.fileName);
+  final resolvedRate = sampleRate ?? active?.sampleRate ?? 48000;
+  final resolvedDepth = bitDepth ?? active?.bitDepth ?? 16;
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => _SignalPathSheetView(
-      trackTitle: trackTitle,
-      sampleRate: sampleRate,
-      bitDepth: bitDepth,
+      trackTitle: resolvedTitle,
+      sampleRate: resolvedRate,
+      bitDepth: resolvedDepth,
     ),
+  );
+}
+
+/// Dedicated USB DAC & Bit-Perfect Architecture Guide Sheet (Settings)
+void showUsbDacGuideSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => const _UsbDacGuideSheetView(),
   );
 }
 
@@ -384,7 +399,7 @@ class _SignalPathSheetViewState extends State<_SignalPathSheetView> {
                                     _buildGuideBullet(
                                       icon: Icons.memory_rounded,
                                       title: 'Kernel usbfs Isochronous Driver',
-                                      detail: 'AcoustiQ communicates directly with DAC hardware via native C++ kernel calls, bypassing Android AudioFlinger.',
+                                      detail: 'Communicates directly with DAC hardware, bypassing Android AudioFlinger.',
                                       textColor: textColor,
                                       subTextColor: subTextColor,
                                     ),
@@ -473,6 +488,227 @@ class _SignalPathSheetViewState extends State<_SignalPathSheetView> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _UsbDacGuideSheetView extends StatefulWidget {
+  const _UsbDacGuideSheetView();
+
+  @override
+  State<_UsbDacGuideSheetView> createState() => _UsbDacGuideSheetViewState();
+}
+
+class _UsbDacGuideSheetViewState extends State<_UsbDacGuideSheetView> {
+  Map<String, dynamic>? _engineStatus;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatus();
+  }
+
+  Future<void> _loadStatus() async {
+    final status = await NativeAudioService.instance.queryEngineStatus();
+    if (mounted) {
+      setState(() {
+        _engineStatus = status;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = appState.isCurrentDark(context);
+    final textColor = appState.getTextColor(context);
+    final subTextColor = appState.getSubTextColor(context);
+    final hasUsbDac = _engineStatus?['hasUsbDac'] == true;
+    final usbDacName = _engineStatus?['usbDacName']?.toString() ?? 'No Type-C DAC connected';
+
+    final guideSteps = [
+      (
+        icon: Icons.power_rounded,
+        title: 'Plug & Play Type-C DACs',
+        detail: 'Supports external USB DACs and dongles (Moondrop, FiiO, Apple, iFi).',
+      ),
+      (
+        icon: Icons.memory_rounded,
+        title: 'Kernel usbfs Bypass',
+        detail: 'Streams PCM directly to USB hardware, bypassing Android AudioFlinger.',
+      ),
+      (
+        icon: Icons.speed_rounded,
+        title: 'Native Hardware Clocks',
+        detail: 'Feeds exact 44.1 kHz, 96 kHz, or 192 kHz rates without 48 kHz resampling.',
+      ),
+      (
+        icon: Icons.verified_rounded,
+        title: 'Hardware Volume Curve',
+        detail: 'Preserves full 24-bit dynamic range without software gain clipping.',
+      ),
+    ];
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      child: GlassSurface(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        style: GlassStyle.frosted,
+        borderless: false,
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0x40FFFFFF) : const Color(0x35000000),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFFD700).withOpacity(isDark ? 0.22 : 0.14),
+                    ),
+                    child: const Icon(Icons.usb_rounded, size: 20, color: Color(0xFFFFD700)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'USB DAC Bit-Perfect Guide',
+                          style: TextStyle(
+                            fontSize: 17.5,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        Text(
+                          _isLoading
+                              ? 'Checking USB audio interface...'
+                              : (hasUsbDac ? 'Connected: $usbDacName' : usbDacName),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: hasUsbDac ? const Color(0xFFFFD700) : subTextColor,
+                            fontWeight: hasUsbDac ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: subTextColor,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: guideSteps.map((step) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0x14FFFFFF) : const Color(0x0A000000),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? const Color(0x18FFFFFF) : const Color(0x10000000),
+                            width: 0.7,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD700).withOpacity(isDark ? 0.18 : 0.12),
+                                borderRadius: BorderRadius.circular(9),
+                              ),
+                              child: Icon(step.icon, size: 16, color: const Color(0xFFFFD700)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    step.title,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    step.detail,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: subTextColor,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              LuminousFeedback(
+                onTap: () => Navigator.pop(context),
+                borderRadius: BorderRadius.circular(16),
+                child: GlassSurface(
+                  borderRadius: BorderRadius.circular(16),
+                  style: GlassStyle.frosted,
+                  borderless: false,
+                  tintColor: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  child: Center(
+                    child: Text(
+                      'Done',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

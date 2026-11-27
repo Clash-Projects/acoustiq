@@ -1339,20 +1339,20 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             if (currentGroup.isMd5Identical) {
               bannerIcon = Icons.fingerprint_rounded;
               bannerColor = AppColors.genuineEmerald;
-              bannerTitle = 'Identical Audio Waveforms';
+              bannerTitle = 'Bit-Identical Streams';
               bannerDetail = currentGroup.wastedMb > 0
-                  ? 'Both files contain identical audio streams. Preserving your preferred version reclaims ${currentGroup.wastedMb.toStringAsFixed(1)} MB with zero quality loss.'
-                  : 'Both files contain identical audio streams. AcoustiQ marks the secondary copy as redundant.';
+                  ? 'Exact MD5 match • Reclaims ${currentGroup.wastedMb.toStringAsFixed(1)} MB'
+                  : 'Exact MD5 match across files';
             } else if (currentGroup.isAllFake) {
               bannerIcon = Icons.info_outline_rounded;
               bannerColor = AppColors.suspiciousAmber;
-              bannerTitle = 'Lossy Transcodes Detected';
-              bannerDetail = 'Both files are lossy upscales to FLAC. AcoustiQ recommends the most compact copy to conserve storage.';
+              bannerTitle = 'Lossy Transcodes';
+              bannerDetail = 'Smallest copy kept to save storage';
             } else {
               bannerIcon = Icons.verified_rounded;
               bannerColor = activeAccent;
-              bannerTitle = 'Audio Quality Comparison';
-              bannerDetail = 'AcoustiQ evaluated audio purity, resolution, lyrics, and artwork completeness to determine the superior copy.';
+              bannerTitle = 'Quality Evaluated';
+              bannerDetail = 'Ranked by purity, resolution & metadata';
             }
 
             final redundantCount = currentGroup.items.where((it) => !it.isUserKept).length;
@@ -1538,11 +1538,11 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Unified Side-by-Side Diff Matrix (Zero Scroll)
+                      // Unified Side-by-Side Diff Matrix
                       Flexible(
                         child: SingleChildScrollView(
                           physics: const BoundedBouncingScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          padding: const EdgeInsets.fromLTRB(10, 2, 10, 14),
                           child: _SideBySideDiffMatrix(
                             group: currentGroup,
                             isDark: isDark,
@@ -2188,33 +2188,9 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
             ],
           ),
 
-          const SizedBox(height: 10),
-
-          // Card Action Button (Frosted Glass)
-          if (item.isUserKept)
-            GlassSurface(
-              borderRadius: BorderRadius.circular(10),
-              style: GlassStyle.frosted,
-              borderless: false,
-              tintColor: AppColors.genuineEmerald.withValues(alpha: isDark ? 0.22 : 0.14),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_rounded, size: 14, color: AppColors.genuineEmerald),
-                  SizedBox(width: 5),
-                  Text(
-                    'Selected Master',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.genuineEmerald,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
+          // Card Action Button (Only show switch action on alternate copy; master already badged at top)
+          if (!item.isUserKept) ...[
+            const SizedBox(height: 10),
             LuminousFeedback(
               onTap: () {
                 widget.onSetUserKeepTrack(_group, item.info.filePath);
@@ -2246,6 +2222,7 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
@@ -2316,20 +2293,20 @@ class _FullPageComparisonScreenState extends State<_FullPageComparisonScreen> {
     if (_group.isMd5Identical) {
       bannerIcon = Icons.fingerprint_rounded;
       bannerColor = AppColors.genuineEmerald;
-      bannerTitle = '100% Bit-Identical Waveforms (MD5 Certified)';
+      bannerTitle = 'Bit-Identical Streams';
       bannerDetail = _group.wastedMb > 0
-          ? 'Both files have identical sound quality. Preserving your preferred master reclaims ${_group.wastedMb.toStringAsFixed(1)} MB with zero quality loss.'
-          : 'Both files contain identical audio streams. AcoustiQ marks the secondary copy as redundant.';
+          ? 'Exact MD5 match • Reclaims ${_group.wastedMb.toStringAsFixed(1)} MB'
+          : 'Exact MD5 match across files';
     } else if (_group.isAllFake) {
       bannerIcon = Icons.info_outline_rounded;
       bannerColor = AppColors.suspiciousAmber;
-      bannerTitle = 'Lossy Transcodes Detected';
-      bannerDetail = 'Both files are lossy upscales to FLAC. AcoustiQ recommends the most compact copy to conserve storage.';
+      bannerTitle = 'Lossy Transcodes';
+      bannerDetail = 'Smallest copy kept to save storage';
     } else {
       bannerIcon = Icons.verified_rounded;
       bannerColor = activeAccent;
-      bannerTitle = 'Audio Quality Inspection';
-      bannerDetail = 'AcoustiQ evaluated audio purity, resolution, lyrics, and artwork completeness to determine the superior copy.';
+      bannerTitle = 'Quality Evaluated';
+      bannerDetail = 'Ranked by purity, resolution & metadata';
     }
 
     final redundantCount = _group.items.where((it) => !it.isUserKept).length;
@@ -3402,32 +3379,9 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
             ),
           ),
 
-          // Row 4: Action Button
-          const SizedBox(height: 10),
-          if (item.isUserKept)
-            GlassSurface(
-              borderRadius: BorderRadius.circular(12),
-              style: GlassStyle.frosted,
-              borderless: false,
-              tintColor: AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.22 : 0.14),
-              padding: const EdgeInsets.symmetric(vertical: 9),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_rounded, size: 14, color: AppColors.genuineEmerald),
-                  SizedBox(width: 5),
-                  Text(
-                    'Preserved Master',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.genuineEmerald,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
+          // Row 4: Action Button (Only show switch action on alternate copy; master already badged at top)
+          if (!item.isUserKept) ...[
+            const SizedBox(height: 10),
             LuminousFeedback(
               onTap: () {
                 widget.onSelectKeep(item.info.filePath);
@@ -3445,7 +3399,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                     Icon(Icons.swap_horiz_rounded, size: 16, color: widget.activeAccent),
                     const SizedBox(width: 6),
                     Text(
-                      'Keep This Version Instead',
+                      'Keep This Instead',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
@@ -3456,6 +3410,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
@@ -3724,33 +3679,9 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
             ],
           ),
 
-          const SizedBox(height: 8),
-
-          // Tier 4: Bottom Action Button (Pinned to Bottom Baseline!)
-          if (item.isUserKept)
-            GlassSurface(
-              borderRadius: BorderRadius.circular(10),
-              style: GlassStyle.frosted,
-              borderless: false,
-              tintColor: AppColors.genuineEmerald.withValues(alpha: widget.isDark ? 0.22 : 0.14),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_rounded, size: 13, color: AppColors.genuineEmerald),
-                  SizedBox(width: 4),
-                  Text(
-                    'Preserved Master',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.genuineEmerald,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
+          // Tier 4: Bottom Action Button (Only show action on alternate copy)
+          if (!item.isUserKept) ...[
+            const SizedBox(height: 8),
             LuminousFeedback(
               onTap: () {
                 widget.onSelectKeep(item.info.filePath);
@@ -3779,6 +3710,7 @@ class _SideBySideDiffMatrixState extends State<_SideBySideDiffMatrix> {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );

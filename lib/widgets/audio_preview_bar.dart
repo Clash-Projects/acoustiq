@@ -134,7 +134,7 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                       children: [
                         Flexible(
                           child: Text(
-                            isPlaying ? 'Now Playing Lossless' : 'Audio Preview',
+                            'Lossless Preview',
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
@@ -201,7 +201,16 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               LuminousFeedback(
-                onTap: () => showSignalPathSheet(context, trackTitle: widget.title),
+                onTap: () {
+                  final resolved = widget.trackInfo ??
+                      (appState.activeTrack?.filePath == widget.filePath ? appState.activeTrack : null);
+                  showSignalPathSheet(
+                    context,
+                    trackTitle: widget.title,
+                    sampleRate: resolved?.sampleRate ?? 48000,
+                    bitDepth: resolved?.bitDepth ?? 16,
+                  );
+                },
                 borderRadius: BorderRadius.circular(8),
                 child: GlassSurface(
                   borderRadius: BorderRadius.circular(8),
@@ -229,7 +238,7 @@ class _AudioPreviewBarState extends State<AudioPreviewBar> {
                 ),
               ),
               Text(
-                isPlaying ? 'Bit-Perfect AAudio Stream' : 'ClashPlayer C++ Pipeline',
+                'Bit-Perfect Output',
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w500,

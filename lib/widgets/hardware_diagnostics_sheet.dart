@@ -52,25 +52,24 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
 
     final hasUsbDac = _status?['hasUsbDac'] == true;
     final usbDacName = _status?['usbDacName']?.toString() ?? 'No USB DAC detected';
-    final activeDriver = _status?['activeDriver']?.toString() ?? 'AAudio Low-Latency';
 
     final items = [
       (
         icon: Icons.memory_rounded,
         iconColor: const Color(0xFFC084FC),
         iconBg: isDark ? const Color(0x30C084FC) : const Color(0xFFF3E8FF),
-        title: 'C++ Audio Engine',
-        subtitle: 'ClashPlayer C++ Core (libnativeout.so + libusbiso.so)',
-        status: 'LOADED',
+        title: 'Native Audio Engine',
+        subtitle: 'Direct PCM & USB Isochronous Core',
+        status: 'Loaded',
         statusColor: AppColors.genuineEmerald,
       ),
       (
         icon: Icons.layers_rounded,
         iconColor: const Color(0xFF38BDF8),
         iconBg: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
-        title: 'Android 15 Architecture',
-        subtitle: '16KB Page-Size Aligned Native Binaries',
-        status: '16KB NATIVE',
+        title: 'Android Binary ABI',
+        subtitle: '16KB Page-Size Aligned',
+        status: '16KB',
         statusColor: AppColors.genuineEmerald,
       ),
       (
@@ -78,8 +77,8 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
         iconColor: activeAccent,
         iconBg: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
         title: 'Primary Driver',
-        subtitle: 'AAudio Float PCM Pipeline (Direct Kernel Output)',
-        status: 'ACTIVE',
+        subtitle: 'Direct Kernel Float PCM Output',
+        status: 'AAudio',
         statusColor: activeAccent,
       ),
       (
@@ -88,9 +87,9 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
         iconBg: hasUsbDac
             ? (isDark ? const Color(0x30FFD700) : const Color(0xFFFEF9C3))
             : (isDark ? const Color(0x18FFFFFF) : const Color(0x10000000)),
-        title: 'Direct USB DAC Driver',
-        subtitle: hasUsbDac ? 'Attached: $usbDacName' : 'Kernel usbfs Isochronous Streaming (Ready)',
-        status: hasUsbDac ? 'ATTACHED' : 'READY',
+        title: 'USB DAC Driver',
+        subtitle: hasUsbDac ? usbDacName : 'Kernel usbfs isochronous ready',
+        status: hasUsbDac ? 'Attached' : 'Ready',
         statusColor: hasUsbDac ? const Color(0xFFFFD700) : subTextColor,
       ),
       (
@@ -98,8 +97,8 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
         iconColor: AppColors.genuineEmerald,
         iconBg: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
         title: 'Bit-Perfect Bypass',
-        subtitle: 'Android AudioFlinger Resampler Bypassed',
-        status: 'BIT-PERFECT',
+        subtitle: 'AudioFlinger Resampler Bypassed',
+        status: 'Active',
         statusColor: AppColors.genuineEmerald,
       ),
     ];
@@ -152,7 +151,7 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'C++ Audio Pipeline',
+                            'Audio Pipeline',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -160,7 +159,7 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
                             ),
                           ),
                           Text(
-                            'ClashPlayer Native Core Telemetry',
+                            'Hardware Output Telemetry',
                             style: TextStyle(
                               fontSize: 12,
                               color: subTextColor,
@@ -170,32 +169,10 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.genuineEmerald.withOpacity(isDark ? 0.18 : 0.10),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppColors.genuineEmerald.withOpacity(0.35),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle_rounded, size: 12, color: AppColors.genuineEmerald),
-                        SizedBox(width: 4),
-                        Text(
-                          'ONLINE',
-                          style: TextStyle(
-                            fontFamily: 'JetBrainsMono',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.genuineEmerald,
-                          ),
-                        ),
-                      ],
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: subTextColor,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
@@ -219,20 +196,13 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
                                 title: it.title,
                                 subtitle: it.subtitle,
                                 position: position,
-                                trailing: GlassSurface(
-                                  borderRadius: BorderRadius.circular(6),
-                                  style: GlassStyle.clear,
-                                  borderless: false,
-                                  tintColor: it.statusColor.withOpacity(isDark ? 0.20 : 0.12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                  child: Text(
-                                    it.status,
-                                    style: TextStyle(
-                                      fontFamily: 'JetBrainsMono',
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: it.statusColor,
-                                    ),
+                                trailing: Text(
+                                  it.status,
+                                  style: TextStyle(
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: it.statusColor,
                                   ),
                                 ),
                               );

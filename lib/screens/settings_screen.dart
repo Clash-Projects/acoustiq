@@ -317,9 +317,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     Color activeAccent,
   ) {
     final libraryCount = appState.sharedLibrary.length;
-    final motionLabel = appState.motionPreset == 'full'
-        ? '120Hz Full'
-        : (appState.motionPreset == 'reduced' ? 'Reduced' : 'Motion Off');
 
     return SingleChildScrollView(
       key: const ValueKey('master_settings_hub'),
@@ -366,13 +363,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             accentColor: activeAccent,
             icon: Icons.palette_rounded,
             title: 'Appearance & Visuals',
-            subtitle: 'Accent colors, ambient wallpapers, theme modes & smooth animations',
-            badges: [
-              appState.accentPreset.toUpperCase(),
-              _fontBadgeLabel(appState.fontFamily),
-              appState.isLiquidGlass ? 'GLASS' : 'MATTE',
-              motionLabel.toUpperCase(),
-            ],
+            subtitle: 'Theme, ${appState.isLiquidGlass ? 'Liquid Glass' : 'Matte'} & motion',
+            badges: const [],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = 0);
@@ -388,12 +380,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             accentColor: AppColors.genuineEmerald,
             icon: Icons.memory_rounded,
             title: 'Audio Engine & Detection',
-            subtitle: 'Lossless audio decoder, visualizer style & haptic feedback',
-            badges: [
-              'AUDIO READY',
-              '${appState.visualizerMode.toUpperCase()} VISUALIZER',
-              if (appState.hapticsEnabled) 'HAPTICS ON',
-            ],
+            subtitle: 'Decoder, visualizer & haptics',
+            badges: const [],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = 1);
@@ -408,12 +396,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             subTextColor: subTextColor,
             accentColor: const Color(0xFFA78BFA),
             icon: Icons.library_music_rounded,
-            title: 'Library & Storage Management',
-            subtitle: 'Music folders, audited tracks & library scanning',
-            badges: [
-              '$libraryCount TRACKS',
-              if (appState.lastScannedFolder != null) 'FOLDER LINKED' else 'READY TO SCAN',
-            ],
+            title: 'Library & Storage',
+            subtitle: libraryCount > 0 ? '$libraryCount audited tracks' : 'Music folders & scan',
+            badges: const [],
             onTap: () {
               if (appState.hapticsEnabled) HapticFeedback.selectionClick();
               setState(() => _activeSubPageIndex = 2);
@@ -428,11 +413,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             subTextColor: subTextColor,
             accentColor: const Color(0xFF38BDF8),
             icon: Icons.info_outline_rounded,
-            title: 'Diagnostics & About AcoustiQ',
-            subtitle: 'Engine v${AppUpdateService.currentVersion}, GitHub updates & developer info',
+            title: 'Diagnostics & About',
+            subtitle: 'v${AppUpdateService.currentVersion} • Telemetry & updates',
             badges: [
-              'v${AppUpdateService.currentVersion}',
-              'OFFLINE & PRIVATE',
               if (AppUpdateService.instance.hasUpdate) 'UPDATE AVAILABLE',
             ],
             onTap: () {
@@ -443,20 +426,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         ],
       ),
     );
-  }
-
-  String _fontBadgeLabel(String key) {
-    switch (key) {
-      case 'Geist':
-        return 'GEIST';
-      case 'PlusJakartaSans':
-        return 'JAKARTA';
-      case 'Inter':
-        return 'INTER';
-      case 'SF-Pro':
-      default:
-        return 'SF PRO';
-    }
   }
 
   Widget _buildHubCard({
@@ -1081,22 +1050,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: AppColors.genuineEmerald,
                   iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
                   title: 'Hardware Audio Decoder',
-                  subtitle: 'Fast hardware decoding for seamless FLAC playback',
+                  subtitle: 'Low-latency native FLAC decoding',
                   position: position,
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'ACTIVE',
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.genuineEmerald,
-                      ),
+                  trailing: Text(
+                    'Active',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.genuineEmerald,
                     ),
                   ),
                 );
@@ -1220,9 +1182,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     subTextColor: subTextColor,
                     badge: '>20 kHz',
                     badgeColor: AppColors.genuineEmerald,
-                    title: '1. Full Frequency Reach',
-                    bodyBold: 'Authentic studio FLAC ',
-                    bodyRegular: 'preserves harmonics all the way up to 20–24 kHz. Compressed MP3s cut off abruptly below 16–20 kHz.',
+                    title: 'Frequency Reach',
+                    bodyBold: 'Studio FLAC ',
+                    bodyRegular: 'preserves harmonics up to 20–24 kHz; lossy MP3s cut off lower.',
                   ),
                   const SizedBox(height: 8),
 
@@ -1231,24 +1193,50 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     isDark: isDark,
                     textColor: textColor,
                     subTextColor: subTextColor,
-                    badge: 'FAKE GUARD',
+                    badge: 'SHELF',
                     badgeColor: AppColors.suspiciousAmber,
-                    title: '2. Brickwall Shelf Filter',
-                    bodyBold: 'Detects fake conversions ',
-                    bodyRegular: 'where low-quality MP3s were re-saved as FLAC files. An unnatural shelf cutoff exposes the fake.',
+                    title: 'Brickwall Filter',
+                    bodyBold: 'Flags fake upscales ',
+                    bodyRegular: 'where lossy MP3 files cut off cleanly below Nyquist.',
                   ),
                   const SizedBox(height: 8),
 
-                  // Rule 3: Dynamic Purity Rating
+                  // Rule 3: Quantization Holes
                   _buildVerificationRuleCard(
                     isDark: isDark,
                     textColor: textColor,
                     subTextColor: subTextColor,
-                    badge: '10% – 99%',
+                    badge: 'HOLES',
+                    badgeColor: AppColors.fakeCoral,
+                    title: 'Quantization Holes',
+                    bodyBold: 'Detects spectral gaps ',
+                    bodyRegular: 'left by lossy encoder frequency-band pruning.',
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Rule 4: Bit-Depth Integrity
+                  _buildVerificationRuleCard(
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                    badge: '24-BIT',
+                    badgeColor: const Color(0xFF38BDF8),
+                    title: 'Bit-Depth Integrity',
+                    bodyBold: 'Identifies padded audio ',
+                    bodyRegular: 'where 16-bit PCM is zero-padded into a 24-bit file.',
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Rule 5: Dynamic Purity Rating
+                  _buildVerificationRuleCard(
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                    badge: '10–99%',
                     badgeColor: activeAccent,
-                    title: '3. Continuous Purity Score',
-                    bodyBold: 'Dynamic mathematical scoring ',
-                    bodyRegular: 'rates track purity from pristine studio master down to low-bitrate transcode.',
+                    title: 'Purity Score',
+                    bodyBold: 'Spectral analysis ',
+                    bodyRegular: 'rates acoustic integrity from master quality down to lossy transcode.',
                   ),
                 ],
               ),
@@ -1535,22 +1523,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFF38BDF8),
                   iconBgColor: isDark ? const Color(0x3038BDF8) : const Color(0xFFE0F2FE),
                   title: 'Engine Version',
-                  subtitle: 'AcoustiQ Mobile • v${AppUpdateService.currentVersion}',
+                  subtitle: 'AcoustiQ Mobile',
                   position: position,
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'v${AppUpdateService.currentVersion}',
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: activeAccent,
-                      ),
+                  trailing: Text(
+                    'v${AppUpdateService.currentVersion}',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: activeAccent,
                     ),
                   ),
                 );
@@ -1667,32 +1648,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   ),
                   title: 'Developer Profile',
-                  subtitle: 'Clash Projects on GitHub',
+                  subtitle: '@Clash-Projects on GitHub',
                   position: position,
                   onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.developerProfileUrl),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '@Clash-Projects',
-                          style: TextStyle(
-                            fontFamily: 'JetBrainsMono',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.open_in_new_rounded, size: 15, color: subTextColor),
-                    ],
-                  ),
+                  trailing: Icon(Icons.open_in_new_rounded, size: 16, color: subTextColor),
                 );
               } else if (index == 1) {
                 return ExpressiveGroupRow(
@@ -1703,29 +1662,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   subtitle: '${AppUpdateService.repoOwner}/${AppUpdateService.repoName}',
                   position: position,
                   onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.githubRepoUrl),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'PUBLIC',
-                          style: TextStyle(
-                            fontFamily: 'JetBrainsMono',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.genuineEmerald,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.open_in_new_rounded, size: 15, color: subTextColor),
-                    ],
-                  ),
+                  trailing: Icon(Icons.open_in_new_rounded, size: 16, color: subTextColor),
                 );
               } else if (index == 2) {
                 return ExpressiveGroupRow(
@@ -1766,24 +1703,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFF34D399),
                   iconBgColor: isDark ? const Color(0x3034D399) : const Color(0xFFD1FAE5),
                   title: 'Open Source License',
-                  subtitle: 'Free, community-driven audio forensics under MIT License',
+                  subtitle: 'MIT License',
                   position: position,
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'MIT',
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: textColor,
-                      ),
-                    ),
-                  ),
+                  trailing: Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
                 );
               }
             },
@@ -1802,24 +1724,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFFC084FC),
                   iconBgColor: isDark ? const Color(0x30C084FC) : const Color(0xFFF3E8FF),
                   title: 'Audio Decoding Pipeline',
-                  subtitle: 'ClashPlayer C++ Core (libnativeout.so + libusbiso.so)',
+                  subtitle: 'Native PCM & USB audio engine',
                   position: position,
-                  trailing: GlassSurface(
-                    borderRadius: BorderRadius.circular(8),
-                    style: GlassStyle.clear,
-                    borderless: false,
-                    tintColor: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    child: const Text(
-                      'C++ NATIVE',
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.genuineEmerald,
-                      ),
-                    ),
-                  ),
+                  trailing: Icon(Icons.chevron_right_rounded, size: 20, color: subTextColor),
                   onTap: () => showHardwareDiagnosticsSheet(context),
                 );
               } else if (index == 1) {
@@ -1828,53 +1735,31 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFFFFD700),
                   iconBgColor: isDark ? const Color(0x30FFD700) : const Color(0xFFFEF9C3),
                   title: 'USB DAC Bit-Perfect Guide',
-                  subtitle: 'Bypass Android 48kHz resampler with Type-C DAC',
+                  subtitle: 'USB DAC setup & clock bypass',
                   position: position,
-                  trailing: GlassSurface(
-                    borderRadius: BorderRadius.circular(8),
-                    style: GlassStyle.clear,
-                    borderless: false,
-                    tintColor: const Color(0xFFFFD700).withOpacity(isDark ? 0.20 : 0.12),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    child: const Text(
-                      'GUIDE',
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFFFD700),
-                      ),
-                    ),
-                  ),
-                  onTap: () => showSignalPathSheet(context),
+                  trailing: Icon(Icons.chevron_right_rounded, size: 20, color: subTextColor),
+                  onTap: () => showUsbDacGuideSheet(context),
                 );
               } else if (index == 2) {
                 return ExpressiveGroupRow(
                   icon: Icons.speed_rounded,
                   iconColor: AppColors.genuineEmerald,
                   iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
-                  title: 'Spectrogram Analysis',
-                  subtitle: 'GPU-accelerated high-resolution frequency rendering',
+                  title: 'Spectrogram Rendering',
+                  subtitle: 'GPU-accelerated STFT heatmaps',
                   position: position,
-                  trailing: GlassSurface(
-                    borderRadius: BorderRadius.circular(8),
-                    style: GlassStyle.clear,
-                    borderless: false,
-                    tintColor: AppColors.genuineEmerald.withOpacity(isDark ? 0.20 : 0.12),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    child: const Text(
-                      'GPU ACTIVE',
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.genuineEmerald,
-                      ),
+                  trailing: Text(
+                    'Active',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.genuineEmerald,
                     ),
                   ),
                 );
               } else {
-                final tierLabel = appState.isLowSpecDevice ? 'BALANCED' : 'HIGH PERFORMANCE';
+                final tierLabel = appState.isLowSpecDevice ? 'Balanced' : 'High Perf';
                 final tierColor = appState.isLowSpecDevice ? AppColors.suspiciousAmber : AppColors.genuineEmerald;
                 final devName = appState.deviceModel.isNotEmpty ? appState.deviceModel : 'Detected Device';
                 final ramText = appState.totalRamMb > 0 ? ' • ${appState.totalRamMb} MB' : '';
@@ -1886,20 +1771,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   title: 'Device Hardware Profile',
                   subtitle: '$devName$ramText',
                   position: position,
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: tierColor.withOpacity(isDark ? 0.20 : 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      tierLabel,
-                      style: TextStyle(
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: tierColor,
-                      ),
+                  trailing: Text(
+                    tierLabel,
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: tierColor,
                     ),
                   ),
                 );
@@ -1919,45 +1797,33 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 iconColor: AppColors.genuineEmerald,
                 iconBgColor: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
                 title: '100% Offline & Private',
-                subtitle: 'All audio processing happens locally on your device. Zero data ever leaves your phone.',
+                subtitle: 'Audio analysis runs locally on device',
                 position: position,
                 trailing: Icon(Icons.lock_outline_rounded, color: AppColors.genuineEmerald, size: 18),
               );
             },
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-          // 5. CLASH PROJECTS ECOSYSTEM EMBLEM (LastWave-inspired)
+          // 5. CLASH PROJECTS ECOSYSTEM EMBLEM (Compact & Clean)
           Center(
             child: Column(
               children: [
                 Container(
-                  width: 78,
-                  height: 78,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF0D0F14) : Colors.white,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? const Color(0x35FFFFFF) : const Color(0x18000000),
-                      width: 1.2,
+                      color: isDark ? const Color(0x30FFFFFF) : const Color(0x16000000),
+                      width: 1.0,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.45 : 0.12),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.20 : 0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(17.0),
+                      padding: const EdgeInsets.all(12.0),
                       child: Image.asset(
                         'assets/images/logo_acoustiq.png',
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -1966,45 +1832,26 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 Text(
-                  'AcoustiQ',
+                  'AcoustiQ • v${AppUpdateService.currentVersion}',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.3,
                     color: textColor,
                   ),
                 ),
-                const SizedBox(height: 10),
-                // Luminous Glass Version Tag (Matching KEPT & Quick Scan buttons)
-                GlassSurface(
-                  borderRadius: BorderRadius.circular(12),
-                  style: GlassStyle.clear,
-                  borderless: false,
-                  tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.12),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  child: Text(
-                    'v${AppUpdateService.currentVersion}',
-                    style: TextStyle(
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                      color: activeAccent,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
                 Text(
-                  'Made by Clash Projects Team 🇮🇳',
+                  'Made by Clash Projects Team',
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: subTextColor,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 // MORE FROM US (Frosted GlassSurface with high contrast brand cards)
                 _buildMoreFromUsCard(context, isDark, textColor, subTextColor),
                 const SizedBox(height: 32),
