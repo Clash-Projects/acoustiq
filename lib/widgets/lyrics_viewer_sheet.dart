@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
 import '../services/audio_playback_service.dart';
+import '../services/thumbnail_cache.dart';
 import '../ui/theme/colors.dart';
 import 'glass_surface.dart';
 import 'luminous_feedback.dart';
@@ -238,15 +239,22 @@ class _LyricsViewerSheetState extends State<LyricsViewerSheet>
                               : AppColors.lightSoftElevation(elevation: 2.5),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: widget.track.hasCover && widget.track.coverBytes != null
-                            ? Image.memory(widget.track.coverBytes!, fit: BoxFit.cover)
-                            : Center(
-                                child: Icon(
-                                  Icons.lyrics_rounded,
-                                  size: 26,
-                                  color: activeAccent,
-                                ),
+                        child: Builder(
+                          builder: (_) {
+                            final coverBytes = widget.track.coverBytes ??
+                                ThumbnailCacheService.instance.getCached(widget.track.filePath);
+                            if (coverBytes != null) {
+                              return Image.memory(coverBytes, fit: BoxFit.cover);
+                            }
+                            return Center(
+                              child: Icon(
+                                Icons.lyrics_rounded,
+                                size: 26,
+                                color: activeAccent,
                               ),
+                            );
+                          },
+                        ),
                       ),
                       const SizedBox(width: 12),
 

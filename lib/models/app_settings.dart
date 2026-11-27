@@ -24,6 +24,12 @@ class AppState extends ChangeNotifier {
   String _visualizerMode = 'hybrid'; // 'hybrid', 'gauge', 'waveform'
   String _fontFamily = 'SF-Pro'; // 'SF-Pro', 'Geist', 'PlusJakartaSans', 'Inter'
 
+  // Dedicated Player Lyrics preferences
+  String _lyricsStyle = 'default'; // 'default', 'flow', 'halo'
+  double _lyricsFontScale = 1.0;
+  bool _lyricsCentered = false;
+  int _lyricsOffsetMs = 0;
+
   // Hardware Tiering & Low-Power Specs (Detected quietly)
   String _deviceModel = '';
   int _totalRamMb = 0;
@@ -48,6 +54,10 @@ class AppState extends ChangeNotifier {
   bool get audiophileMode => _audiophileMode;
   String get visualizerMode => _visualizerMode;
   String get fontFamily => _fontFamily;
+  String get lyricsStyle => _lyricsStyle;
+  double get lyricsFontScale => _lyricsFontScale;
+  bool get lyricsCentered => _lyricsCentered;
+  int get lyricsOffsetMs => _lyricsOffsetMs;
   bool get devModeEnabled => _devModeEnabled;
   FlacInfo? get injectedMockTrack => _injectedMockTrack;
   String get themeMode => _themeMode;
@@ -73,6 +83,9 @@ class AppState extends ChangeNotifier {
   void setActiveTrack(FlacInfo? track) {
     if (_activeTrack != track) {
       _activeTrack = track;
+      if (track != null && track.coverBytes != null) {
+        ThumbnailCacheService.instance.put(track.filePath, track.coverBytes);
+      }
       notifyListeners();
 
       // Universal Cover Resolver: If track has cover but bytes are not loaded (e.g. from fast audit/recents),
@@ -162,6 +175,10 @@ class AppState extends ChangeNotifier {
 
       _lastScannedFolder = _prefs?.getString('last_scanned_folder');
       _recentFilePaths = _prefs?.getStringList('recent_file_paths') ?? [];
+      _lyricsStyle = _prefs?.getString('lyrics_style') ?? 'default';
+      _lyricsFontScale = (_prefs?.getDouble('lyrics_font_scale') ?? 1.0).clamp(0.7, 1.5);
+      _lyricsCentered = _prefs?.getBool('lyrics_centered') ?? false;
+      _lyricsOffsetMs = _prefs?.getInt('lyrics_offset_ms') ?? 0;
       purgeMissingRecentFiles(notify: false);
       await _loadLibraryCache();
       notifyListeners();
@@ -303,6 +320,40 @@ class AppState extends ChangeNotifier {
     _visualizerMode = mode;
     _prefs?.setString('visualizer_mode', mode);
     notifyListeners();
+  }
+
+  void setLyricsStyle(String style) {
+    if (_lyricsStyle != style) {
+      _lyricsStyle = style;
+      _prefs?.setString('lyrics_style', style);
+      notifyListeners();
+    }
+  }
+
+  void setLyricsFontScale(double scale) {
+    final clamped = scale.clamp(0.7, 1.5);
+    if (_lyricsFontScale != clamped) {
+      _lyricsFontScale = clamped;
+      _prefs?.setDouble('lyrics_font_scale', clamped);
+      notifyListeners();
+    }
+  }
+
+  void setLyricsCentered(bool centered) {
+    if (_lyricsCentered != centered) {
+      _lyricsCentered = centered;
+      _prefs?.setBool('lyrics_centered', centered);
+      notifyListeners();
+    }
+  }
+
+  void setLyricsOffsetMs(int offsetMs) {
+    final clamped = offsetMs.clamp(-3000, 3000);
+    if (_lyricsOffsetMs != clamped) {
+      _lyricsOffsetMs = clamped;
+      _prefs?.setInt('lyrics_offset_ms', clamped);
+      notifyListeners();
+    }
   }
 
   void setFontFamily(String family) {

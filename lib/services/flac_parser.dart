@@ -165,7 +165,24 @@ class FlacParser {
       final title = tags['title'] ?? stem;
       final artist = tags['artist'] ?? 'Unknown Artist';
       final album = tags['album'] ?? 'Unknown Album';
-      final lyrics = tags['lyrics'] ?? tags['unsyncedlyrics'];
+      String? lyrics = tags['syncedlyrics'] ??
+          tags['lyrics_synced'] ??
+          tags['lyrics'] ??
+          tags['unsyncedlyrics'] ??
+          tags['unsynced lyrics'];
+      if (lyrics == null || lyrics.trim().isEmpty) {
+        // Offline-only local sidecar fallback (<track>.lrc next to .flac)
+        final dot = filePath.lastIndexOf('.');
+        if (dot > 0) {
+          final lrcFile = File('${filePath.substring(0, dot)}.lrc');
+          if (lrcFile.existsSync()) {
+            try {
+              final raw = lrcFile.readAsStringSync().trim();
+              if (raw.isNotEmpty) lyrics = raw;
+            } catch (_) {}
+          }
+        }
+      }
       final hasLyrics = lyrics != null && lyrics.trim().isNotEmpty;
 
       // Close random access file before running decoder on the file

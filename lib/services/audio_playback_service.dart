@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/services.dart';
+import '../models/app_settings.dart';
 
-/// Lightweight Native Audio Player Controller for Lossless FLAC Preview
+enum PlaybackRepeatMode { off, all, one }
+
+/// Lightweight Native Audio Player Controller for Lossless FLAC Playback
 class AudioPlaybackService {
   static const MethodChannel _channel = MethodChannel('flac_toolkit/audio_decoder');
 
@@ -12,6 +16,10 @@ class AudioPlaybackService {
   String? currentFilePath;
   int positionMs = 0;
   int durationMs = 0;
+
+  PlaybackRepeatMode repeatMode = PlaybackRepeatMode.off;
+  bool isShuffle = false;
+  final math.Random _rng = math.Random();
 
   int get currentPositionMs => positionMs;
   bool get isPlayingNow => isPlaying;
@@ -28,20 +36,42 @@ class AudioPlaybackService {
   }
 
   void _notify() {
-    for (final l in _listeners) {
+    for (final l in List<void Function()>.from(_listeners)) {
       l();
     }
   }
 
-  Future<void> play(String filePath) async {
+  void toggleRepeat() {
+    switch (repeatMode) {
+      case PlaybackRepeatMode.off:
+        repeatMode = PlaybackRepeatMode.all;
+        break;
+      case PlaybackRepeatMode.all:
+        repeatMode = PlaybackRepeatMode.one;
+        break;
+      case PlaybackRepeatMode.one:
+        repeatMode = PlaybackRepeatMode.off;
+        break;
+    }
+    _notify();
+  }
+
+  void toggleShuffle() {
+    isShuffle = !isShuffle;
+    _notify();
+  }
+
+  Future<void> play(String filePath, {bool forceRestart = false}) async {
     try {
-      if (currentFilePath == filePath && isPlaying) {
-        await pause();
-        return;
-      }
-      if (currentFilePath == filePath && !isPlaying && positionMs > 0) {
-        await resume();
-        return;
+      if (!forceRestart) {
+        if (currentFilePath == filePath && isPlaying) {
+          await pause();
+          return;
+        }
+        if (currentFilePath == filePath && !isPlaying && positionMs > 0) {
+          await resume();
+          return;
+        }
       }
 
       currentFilePath = filePath;
@@ -55,6 +85,86 @@ class AudioPlaybackService {
       isPlaying = false;
       _notify();
     }
+  }
+
+  Future<void> playNext({bool fromAutoComplete = false}) async {
+    final active = appState.activeTrack;
+    final path = currentFilePath ?? active?.filePath;
+
+    if (fromAutoComplete && repeatMode == PlaybackRepeatMode.one && path != null) {
+      await play(path, forceRestart: true);
+      return;
+    }
+
+    final queue = appState.sharedLibrary;
+    if (queue.isEmpty) {
+      if (fromAutoComplete && repeatMode == PlaybackRepeatMode.all && path != null) {
+        await play(path, forceRestart: true);
+      } else if (fromAutoComplete) {
+        isPlaying = false;
+        _stopTimer();
+        _notify();
+      } else if (durationMs > 0) {
+        await seek((positionMs + 10000).clamp(0, durationMs));
+      }
+      return;
+    }
+
+    final currentIdx = path != null ? queue.indexWhere((t) => t.filePath == path) : -1;
+    int nextIdx;
+
+    if (isShuffle && queue.length > 1) {
+      do {
+        nextIdx = _rng.nextInt(queue.length);
+      } while (nextIdx == currentIdx);
+    } else {
+      nextIdx = currentIdx + 1;
+      if (nextIdx >= queue.length) {
+        if (repeatMode == PlaybackRepeatMode.all || !fromAutoComplete) {
+          nextIdx = 0;
+        } else {
+          isPlaying = false;
+          _stopTimer();
+          _notify();
+          return;
+        }
+      }
+    }
+
+    final nextTrack = queue[nextIdx];
+    appState.setActiveTrack(nextTrack);
+    await play(nextTrack.filePath, forceRestart: true);
+  }
+
+  Future<void> playPrevious() async {
+    if (positionMs > 3000) {
+      await seek(0);
+      return;
+    }
+
+    final queue = appState.sharedLibrary;
+    final path = currentFilePath ?? appState.activeTrack?.filePath;
+    if (queue.isEmpty) {
+      await seek(0);
+      return;
+    }
+
+    final currentIdx = path != null ? queue.indexWhere((t) => t.filePath == path) : 0;
+    int prevIdx;
+    if (isShuffle && queue.length > 1) {
+      do {
+        prevIdx = _rng.nextInt(queue.length);
+      } while (prevIdx == currentIdx);
+    } else {
+      prevIdx = currentIdx - 1;
+      if (prevIdx < 0) {
+        prevIdx = queue.length - 1;
+      }
+    }
+
+    final prevTrack = queue[prevIdx];
+    appState.setActiveTrack(prevTrack);
+    await play(prevTrack.filePath, forceRestart: true);
   }
 
   Future<void> pause() async {
@@ -104,10 +214,16 @@ class AudioPlaybackService {
           final pos = (res['positionMs'] as num?)?.toInt() ?? 0;
           final dur = (res['durationMs'] as num?)?.toInt() ?? 0;
 
+          final wasPlaying = isPlaying;
           positionMs = pos;
           if (dur > 0) durationMs = dur;
           if (isPlaying != nowPlaying) {
             isPlaying = nowPlaying;
+          }
+          if (wasPlaying && !nowPlaying && durationMs > 0 && positionMs >= durationMs - 450) {
+            _stopTimer();
+            unawaited(playNext(fromAutoComplete: true));
+            return;
           }
           if (!isPlaying && positionMs >= durationMs && durationMs > 0) {
             _stopTimer();
