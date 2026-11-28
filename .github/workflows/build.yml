@@ -82,21 +82,25 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release
 
-      - name: Prepare Named APK
+      - name: Prepare Named APK & Checksum
         run: |
           mkdir -p dist
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            cp build/app/outputs/flutter-apk/app-release.apk "dist/AcoustiQ-${{ github.ref_name }}.apk"
+            APK_PATH="dist/AcoustiQ-${{ github.ref_name }}.apk"
           else
             APP_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
-            cp build/app/outputs/flutter-apk/app-release.apk "dist/AcoustiQ-v${APP_VER}-build${{ github.run_number }}.apk"
+            APK_PATH="dist/AcoustiQ-v${APP_VER}-build${{ github.run_number }}.apk"
           fi
+          cp build/app/outputs/flutter-apk/app-release.apk "$APK_PATH"
+          (cd dist && sha256sum "$(basename "$APK_PATH")" > "$(basename "$APK_PATH").sha256")
 
       - name: Publish Tagged Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/AcoustiQ-*.apk
+          files: |
+            dist/AcoustiQ-*.apk
+            dist/AcoustiQ-*.apk.sha256
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -122,7 +126,9 @@ jobs:
           body: |
             Automated latest build #${{ github.run_number }} from commit ${{ github.sha }}.
             Download the APK below.
-          files: dist/AcoustiQ-*.apk
+          files: |
+            dist/AcoustiQ-*.apk
+            dist/AcoustiQ-*.apk.sha256
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
