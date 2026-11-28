@@ -1681,7 +1681,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   iconColor: const Color(0xFF34D399),
                   iconBgColor: isDark ? const Color(0x3034D399) : const Color(0xFFD1FAE5),
                   title: 'Open Source License',
-                  subtitle: 'MIT License',
+                  subtitle: 'GNU GPL-3.0',
                   position: position,
                   trailing: Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
                 );

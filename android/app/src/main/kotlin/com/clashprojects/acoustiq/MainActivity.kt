@@ -1,4 +1,4 @@
-package com.example.flac_toolkit
+package com.clashprojects.acoustiq
 
 import android.app.usage.StorageStatsManager
 import android.content.Context

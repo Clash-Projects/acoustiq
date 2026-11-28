@@ -14,7 +14,7 @@ Verify lossless authenticity · Detect fake re-encodes · Resolve smart duplicat
 [![Dart](https://img.shields.io/badge/Dart-3.14.0-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
 [![Android](https://img.shields.io/badge/Android-API%2021--36-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
 [![Build](https://img.shields.io/badge/Build-%2388-181717?style=flat-square&logo=github&logoColor=white)](#)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](#license)
+[![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](#license)
 [![Offline](https://img.shields.io/badge/100%25-Offline-blueviolet?style=flat-square)](#privacy)
 
 <br />
@@ -209,7 +209,7 @@ AcoustiQ audio processing and forensic algorithms are **100% offline and private
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
 
 <br />
 

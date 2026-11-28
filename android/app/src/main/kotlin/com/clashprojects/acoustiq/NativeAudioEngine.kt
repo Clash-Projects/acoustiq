@@ -1,4 +1,4 @@
-package com.example.flac_toolkit
+package com.clashprojects.acoustiq
 
 import android.app.PendingIntent
 import android.content.BroadcastReceiver

@@ -38,7 +38,7 @@ adb install -r "$APK_PATH"
 
 echo ""
 echo "▶️ Step 3/3: Launching AcoustiQ on device..."
-adb shell am start -n com.example.flac_toolkit/com.example.flac_toolkit.MainActivity
+adb shell am start -n com.clashprojects.acoustiq/com.clashprojects.acoustiq.MainActivity
 
 echo ""
 echo "=========================================="
