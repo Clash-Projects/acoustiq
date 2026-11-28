@@ -64,12 +64,16 @@ jobs:
         run: flutter pub get
 
       - name: Decode Release Keystore (if configured)
-        if: env.ANDROID_KEYSTORE_BASE64 != ''
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/acoustiq-release.jks
-          echo "ANDROID_KEYSTORE_PATH=/tmp/acoustiq-release.jks" >> $GITHUB_ENV
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/acoustiq-release.jks
+            echo "ANDROID_KEYSTORE_PATH=/tmp/acoustiq-release.jks" >> "$GITHUB_ENV"
+            echo "Loaded release keystore from GitHub Secrets."
+          else
+            echo "No ANDROID_KEYSTORE_BASE64 configured; falling back to debug keystore."
+          fi
 
       - name: Build Release APK
         env:
@@ -84,7 +88,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             cp build/app/outputs/flutter-apk/app-release.apk "dist/AcoustiQ-${{ github.ref_name }}.apk"
           else
-            cp build/app/outputs/flutter-apk/app-release.apk "dist/AcoustiQ-v1.1.0-build${{ github.run_number }}.apk"
+            APP_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+            cp build/app/outputs/flutter-apk/app-release.apk "dist/AcoustiQ-v${APP_VER}-build${{ github.run_number }}.apk"
           fi
 
       - name: Publish Tagged Release

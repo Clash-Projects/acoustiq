@@ -57,8 +57,8 @@ class AppUpdateService extends ChangeNotifier {
   AppUpdateService._();
 
   // Application Telemetry & Clash Projects Links
-  static const String currentVersion = '1.1.0';
-  static const int currentBuild = 89;
+  static const String currentVersion = '2.0.0';
+  static const int currentBuild = 90;
   static const String repoOwner = 'Clash-Projects';
   static const String repoName = 'acoustiq';
   static const String githubRepoUrl = 'https://github.com/Clash-Projects/acoustiq';

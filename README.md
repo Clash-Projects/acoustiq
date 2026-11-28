@@ -1,25 +1,26 @@
 <div align="center">
 
-<img src="assets/images/logo_acoustiq.png" width="80" alt="AcoustiQ Logo" />
+<img src="assets/images/logo_acoustiq.png" width="84" alt="AcoustiQ Logo" />
 
 # AcoustiQ
 
-**Studio-grade FLAC forensic inspector for Android.**
+**Studio-grade lossless FLAC forensic inspector, bit-perfect audio verifier, and audiophile player for Android.**
 
-Verify lossless authenticity · Detect fake re-encodes · Resolve smart duplicates
+Verify genuine studio masters · Spot MP3-to-FLAC fakes · Resolve duplicates · Listen with synced lyrics & USB DAC pass-through
 
 <br />
 
+[![Release](https://img.shields.io/github/v/release/Clash-Projects/acoustiq?style=flat-square&color=00E5FF&label=Release)](https://github.com/Clash-Projects/acoustiq/releases)
 [![Flutter](https://img.shields.io/badge/Flutter-3.50.0-02569B?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.14.0-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
-[![Android](https://img.shields.io/badge/Android-API%2021--36-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
-[![Build](https://img.shields.io/badge/Build-%2388-181717?style=flat-square&logo=github&logoColor=white)](#)
-[![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](#license)
-[![Offline](https://img.shields.io/badge/100%25-Offline-blueviolet?style=flat-square)](#privacy)
+[![Android](https://img.shields.io/badge/Android-API%2026--35-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](#license)
+[![Offline](https://img.shields.io/badge/100%25-Offline-blueviolet?style=flat-square)](#privacy--security)
+[![Discord](https://img.shields.io/badge/Discord-Community-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/DmyM2p2fMe)
 
 <br />
 
-[Features](#features) · [Screenshots](#screenshots) · [Get Started](#get-started) · [Architecture](#architecture) · [Privacy](#privacy) · [License](#license)
+[Features](#features) · [Screenshots](#screenshots) · [Get Started](#get-started) · [Architecture](#architecture) · [Privacy](#privacy--security) · [Community](#community--support) · [License](#license)
 
 </div>
 
@@ -27,7 +28,9 @@ Verify lossless authenticity · Detect fake re-encodes · Resolve smart duplicat
 
 ## Why AcoustiQ?
 
-Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into FLAC containers are indistinguishable by filename or metadata alone. AcoustiQ performs real-time spectral analysis and MD5 audio stream verification to separate genuine studio masters from imposters — then helps you clean up duplicates without losing the best version.
+A `.flac` extension or `24-bit / 96 kHz` tag doesn't guarantee lossless audio. Lossy MP3/AAC files transcoded into FLAC containers look identical in standard file managers and music players.
+
+AcoustiQ runs **100% offline** forensic analysis right on your phone — pairing binary `STREAMINFO` MD5 validation with Cooley-Tukey FFT & Welch PSD spectral roll-off inspection — alongside a full audiophile playback engine featuring USB UAC1/UAC2 bit-perfect pass-through, offline word/line-synced lyrics, and a smart duplicate resolver.
 
 <br />
 
@@ -36,20 +39,21 @@ Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into F
 <table>
   <tr>
     <td width="50%">
-      <h3>🔬 Forensic Inspector</h3>
+      <h3>🔬 Forensic Inspector & Spectrogram</h3>
       <ul>
-        <li>Bilinear Inferno spectrogram visualization</li>
-        <li>High-frequency roll-off detection (16–22+ kHz)</li>
-        <li>Spots fake FLAC re-encodes instantly</li>
-        <li>Full bitstream telemetry: sample rate, bit depth, channels, bitrate</li>
+        <li>Bilinear Inferno STFT spectrogram visualization</li>
+        <li>Welch PSD high-frequency cutoff detection (16–22+ kHz)</li>
+        <li>Instant detection of fake MP3-to-FLAC upscales</li>
+        <li>Full binary bitstream telemetry: bit depth, sample rate, MD5, Vorbis comments</li>
       </ul>
     </td>
     <td width="50%">
-      <h3>🛡️ MD5 Integrity Verification</h3>
+      <h3>🛡️ Library Audit & MD5 Verification</h3>
       <ul>
-        <li>Verifies audio against FLAC STREAMINFO MD5 hash</li>
-        <li>Detects bit-rot, corruption, and incomplete transfers</li>
-        <li>One-tap lossless export of cover art and synced lyrics</li>
+        <li>Verifies audio frames against embedded FLAC <code>STREAMINFO</code> MD5</li>
+        <li>Detects bit-rot, truncated downloads, and file corruption</li>
+        <li>Interactive health breakdown across your entire music library</li>
+        <li>One-tap lossless export for album artwork and embedded lyrics</li>
       </ul>
     </td>
   </tr>
@@ -57,32 +61,31 @@ Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into F
     <td width="50%">
       <h3>🎯 Smart Duplicate Resolver</h3>
       <ul>
-        <li>Multi-vector duplicate detection (hash, metadata, filename)</li>
-        <li>Side-by-side forensic comparison with spec diff</li>
-        <li>AcoustiQ Pick: auto-recommends the best version to keep</li>
-        <li>A/B lossless audio preview with inline seek</li>
+        <li>Multi-stage matching (exact MD5 hash, metadata, normalized title/artist, duration delta)</li>
+        <li>AcoustiQ Pick auto-ranks genuine masters over upscales or redundant copies</li>
+        <li>Adaptive mobile cards & tablet side-by-side comparison matrix</li>
+        <li>Inline A/B audio preview bar with real-time scrub</li>
       </ul>
     </td>
     <td width="50%">
-      <h3>⚡ ClashPlayer C++ Engine & Bit-Perfect Path</h3>
+      <h3>⚡ Native Audio Engine & USB Bit-Perfect Path</h3>
       <ul>
-        <li>Direct kernel USB audio isochronous driver (<code>usbiso.c</code>)</li>
-        <li>Bypasses Android AudioFlinger forced 48 kHz resampler</li>
-        <li>Low-latency AAudio & OpenSL ES output driver (<code>nativeout.c</code>)</li>
-        <li>Interactive Signal Path Inspector with live USB DAC detection</li>
+        <li>Direct kernel USB isochronous UAC1/UAC2 driver (<code>usbiso.c</code>)</li>
+        <li>16-bit, 24-bit packed, 32-bit, and float PCM decoding in <code>NativeAudioEngine.kt</code></li>
+        <li>Low-latency AAudio & OpenSL ES output (<code>nativeout.c</code>) with automatic fallback</li>
+        <li>Honest Roon-style Signal Path telemetry: shows <code>Bit-Perfect</code> strictly when USB DAC rate & depth match cleanly</li>
       </ul>
     </td>
   </tr>
 </table>
 
-### Also packed with
+### Audiophile Player, Lyrics & Design System
 
-- **Dedicated Audiophile Player & Floating MiniPlayer** — Full-screen player with dynamic artwork ambient blur backdrop, and BitChord-spec floating liquid glass miniplayer with multi-gesture dismissal
-- **120 FPS Liquid Lens Navigation Dock** — Sub-stepped Euler physics engine at 240 Hz, proportional scale, frosted glass optical blur
-- **Hardware-Tiered Rendering** — Auto-detects device capability, toggles low-power mode for older hardware
-- **4 Curated Typography Fonts** — SF Pro, Geist, Plus Jakarta Sans, Inter
-- **Photographic Wallpaper Collection** — Handpicked studio-aesthetic backgrounds
-- **Responsive Layouts** — Adaptive phone (stacked cards) and tablet (side-by-side) comparison views
+- **Dedicated Full-Screen Player & Floating MiniPlayer** — Dynamic artwork ambient backdrop, live Signal Path status pill, queue sheet playback controls, and swipe-dismissable floating MiniPlayer.
+- **Offline Word/Line-Synced Lyrics Stage** — 60 fps interpolated sweep, breathing interlude dots, RTL support, clickable seek lines, plus customization dialog (`Default`, `Flow`, `Halo` styles, alignment, font scaling, `.lrc` export).
+- **Liquid Glass & Matte Surface Mode** — Switch freely between WWDC25 frosted translucent Liquid Glass and high-contrast opaque **Matte Surface Mode** (`Liquid Glass = OFF`) for maximum clarity and battery efficiency.
+- **240 Hz Physics Navigation Dock** — Sub-stepped semi-implicit Euler capsule dock with proportional tab scaling and Monochrome/Accent parity.
+- **6 Accent Themes + 4 Typography Families** — Cyan, Amber, Emerald, Violet, Crimson, **Monochrome**, plus custom HSV color picker; `SF Pro`, `Geist Sans`, `Plus Jakarta Sans`, and `Inter`; Dark, Light, and pure AMOLED modes.
 
 <br />
 
@@ -90,24 +93,24 @@ Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into F
 
 <div align="center">
 
-| 🔬 Forensic Inspector | 📊 STFT Spectrogram & Dead Zone | 📈 Library Audit & Health |
+| 🔬 Forensic Inspector | 📊 STFT Spectrogram & Cutoff | 📈 Library Audit & Health |
 | :---: | :---: | :---: |
 | <img src="screenshots/01_inspect_lossless.jpg" width="260" alt="Forensic Inspector" /> | <img src="screenshots/02_spectrogram_cutoff.jpg" width="260" alt="Spectrogram Cutoff" /> | <img src="screenshots/03_audit_library.jpg" width="260" alt="Audit Library" /> |
-| **24-bit Studio Master FLAC** | **16.6 kHz MP3 Upscale Dead-Zone** | **Batch verification & health ratio** |
+| **Studio Master vs Re-Encode Telemetry** | **Cooley-Tukey FFT Dead-Zone Analysis** | **Batch Library Verification Scan** |
 
 <br />
 
-| 🎯 Smart Duplicates Resolver | 📱 Encapsulated Comparison Sheet | 🖥️ Full Forensic Matrix |
+| 🎯 Smart Duplicate Resolver | 📱 Encapsulated Comparison | 🖥️ Full Forensic Matrix |
 | :---: | :---: | :---: |
 | <img src="screenshots/04_duplicates_resolver.jpg" width="260" alt="Duplicates Resolver" /> | <img src="screenshots/05_comparison_sheet.jpg" width="260" alt="Comparison Sheet" /> | <img src="screenshots/06_comparison_matrix.jpg" width="260" alt="Comparison Matrix" /> |
-| **Bit-identical match detection** | **Side-by-side spec comparison** | **A/B playback & delta metrics** |
+| **Exact MD5 & Purity Detection** | **AcoustiQ Pick & Quick Spec Diff** | **A/B Lossless Preview & Deep Matrix** |
 
 <br />
 
-| ⚙️ System, Glass & Update Hub |
-| :---: |
-| <img src="screenshots/07_settings_system.jpg" width="280" alt="Settings & Glass" /> |
-| **WWDC25 Frosted Glass & In-App GitHub Releases** |
+| 🎵 Audiophile Player | 📝 Synced Lyrics Stage | ⚙️ Glass & System Studio |
+| :---: | :---: | :---: |
+| <img src="screenshots/07_audiophile_player.jpg" width="260" alt="Audiophile Player" /> | <img src="screenshots/08_synced_lyrics.jpg" width="260" alt="Synced Lyrics Stage" /> | <img src="screenshots/09_settings_system.jpg" width="260" alt="Settings & System" /> |
+| **Ambient Artwork & Signal Path Pill** | **60fps Word/Line Synced Offline Lyrics** | **Liquid Glass / Matte, Accents & Updater** |
 
 </div>
 
@@ -115,16 +118,20 @@ Your FLAC files might not be what they claim. Low-bitrate MP3s re-encoded into F
 
 ## Get Started
 
+Download the latest signed APK directly from [GitHub Releases](https://github.com/Clash-Projects/acoustiq/releases), or build from source below.
+
+> **Upgrading from `v1.0.0` / template builds?** `v2.0.0` uses the official **`com.clashprojects.acoustiq`** package ID signed with AcoustiQ's release key, so it installs cleanly alongside or fresh over legacy `com.example.flac_toolkit` builds.
+
 ### Prerequisites
 
 | Tool | Version |
 |------|---------|
 | Flutter | 3.50.0+ |
 | Dart | 3.14.0+ |
-| Android SDK | 36 |
+| Android SDK | Compile 36 / Min 26 / Target 35 |
+| Android NDK | 28.2.13676358 |
 | JDK | 17 |
-| Kotlin | 2.2.20 |
-| Gradle | 9.3.1 |
+| Gradle | 9.3.1 (AGP 9.1.1) |
 
 ### Build & Run
 
@@ -136,80 +143,91 @@ cd acoustiq
 # Install dependencies
 flutter pub get
 
-# Run on connected device
+# Verify analyzer & unit tests
+flutter analyze --no-fatal-infos
+flutter test
+
+# Run on connected device (hot reload)
 flutter run
 
-# Or build release APK
+# Build signed / shrunk release APK (R8 enabled)
 flutter build apk --release
 ```
 
-### Wireless Deploy (Recommended)
+### Release Signing (Optional Local Keystore)
+
+Create `android/key.properties` pointing to your `.jks` keystore (both `key.properties` and `*.jks` are gitignored), or configure `ANDROID_KEYSTORE_*` secrets in GitHub Actions for CI builds. Without local signing properties, Gradle falls back cleanly to debug signing for local testing.
+
+### Wireless Deploy
 
 ```bash
 adb connect <DEVICE_IP>:5555
 ./deploy.sh
 ```
 
-The deploy script compiles a release APK and installs it over wireless ADB in ~20 seconds.
-
 <br />
 
 ## Architecture
 
 ```
+.github/workflows/build.yml                 # Analyze + test gate, signed tag & nightly APK releases
 android/app/src/main/
-├── cpp/                             # ClashPlayer C++ Native Engine
-│   ├── usbiso.c                     # Kernel USB isochronous transfers (bit-perfect)
-│   ├── nativeout.c                  # Direct AAudio & OpenSL ES output driver
-│   ├── DspProcessor.cpp             # 64-bit float multi-band DSP chain
-│   └── CMakeLists.txt               # Android NDK C++20 & 16KB page-size build
-└── kotlin/com/clashplayer/          # Kotlin UAC descriptors & PCM packetizer
+├── cpp/
+│   ├── usbiso.c                            # Kernel USBFS isochronous transfers (UAC1/UAC2 bit-perfect)
+│   ├── nativeout.c                         # Low-latency AAudio & OpenSL ES driver
+│   └── CMakeLists.txt                      # CMake 3.22.1 & 16 KB Android 15 page-size alignment
+└── kotlin/com/clashprojects/acoustiq/
+    ├── MainActivity.kt                     # Platform channels, storage permissions & playback fallback
+    └── NativeAudioEngine.kt                # Multi-depth PCM decoder & USB DAC handshake coordinator
 lib/
-├── main.dart                        # App bootstrap
-├── models/                          # Data models (AppSettings, FlacInfo)
+├── main.dart                               # App bootstrap & notification channel init
+├── models/
+│   ├── app_settings.dart                   # Persistent preferences, themes, glass/matte & wallpapers
+│   └── flac_info.dart                      # Track telemetry & spectral classification model
 ├── screens/
-│   ├── inspect_screen.dart          # Forensic inspector & spectrogram
-│   ├── audit_screen.dart            # Library-wide batch scanner
-│   ├── duplicates_screen.dart       # Duplicate resolver & comparison
-│   ├── audiophile_player_screen.dart # Dedicated full-screen audiophile player
-│   └── settings_screen.dart         # Appearance, engine & cache
+│   ├── inspect_screen.dart                 # Forensic inspector & bilinear spectrogram
+│   ├── audit_screen.dart                   # Batch library verification scanner
+│   ├── duplicates_screen.dart              # Multi-vector duplicate resolver & matrix
+│   ├── audiophile_player_screen.dart       # Full-screen player, signal path pill & lyrics mode
+│   └── settings_screen.dart                # Visual studio, typography, engine & updater hub
 ├── services/
-│   ├── flac_parser.dart             # FLAC metadata & Vorbis tag parser
-│   ├── audio_dsp.dart               # FFT & roll-off analysis
-│   ├── native_audio_service.dart    # C++ native audio engine bridge
-│   ├── audio_playback_service.dart  # Lossless audio preview controller
-│   └── duplicate_detector.dart      # Multi-vector duplicate engine
+│   ├── flac_parser.dart                    # Binary FLAC metadata, MD5 & embedded block parser
+│   ├── audio_dsp.dart                      # Cooley-Tukey FFT & Welch PSD roll-off analyzer
+│   ├── duplicate_detector.dart             # Multi-stage hash/metadata/duration matcher
+│   ├── native_audio_service.dart           # MethodChannel bridge for C++/Kotlin playback & Signal Path
+│   ├── audio_playback_service.dart         # Queue & preview playback state coordinator
+│   └── app_update_service.dart             # GitHub Releases semver + nightly APK updater
+├── utils/
+│   └── lyrics_parser.dart                  # Word-synced (ELRC), LRC & plain lyrics parser
 └── widgets/
-    ├── liquid_lens_dock.dart        # 120 FPS physics navigation dock
-    ├── audiophile_mini_player.dart  # Floating BitChord-spec liquid glass player
-    ├── signal_path_sheet.dart       # Roon-style Bit-Perfect signal path inspector
-    ├── audio_spectrum_stage.dart    # Spectrogram visualizer
-    └── glass_surface.dart           # Frosted & clear glass UI surfaces
+    ├── liquid_lens_dock.dart               # 240 Hz Euler physics navigation dock (Glass & Matte)
+    ├── audiophile_mini_player.dart         # Floating swipe-dismissable MiniPlayer
+    ├── player_lyrics_stage.dart            # 60 fps lyrics stage with edge-fade mask
+    ├── player_lyrics_options_dialog.dart   # Style, scale, alignment & .lrc export sheet
+    ├── signal_path_sheet.dart              # Interactive hardware Signal Path inspector
+    ├── audio_spectrum_stage.dart           # Spectrogram & roll-off canvas visualizer
+    └── glass_surface.dart                  # Translucent Liquid Glass & alpha-blended Matte renderer
 ```
-
-### Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | Flutter 3.50.0 / Dart 3.14.0 |
-| Native Engine | C++20 NDK (AAudio, OpenSL ES, USBFS isochronous) |
-| Native Bridge | Kotlin 2.2.20 / JNI & MethodChannel |
-| Build System | Gradle 9.3.1 / AGP 9.1.1 / CMake 3.22.1 |
-| Target | Android API 26–36 (Android 15 16KB page-size aligned) |
-| Audio DSP | 64-bit float DSP + Custom FFT with bilinear interpolation |
-| Physics Engine | Sub-stepped semi-implicit Euler (240 Hz) |
 
 <br />
 
 ## Privacy & Security
 
-AcoustiQ audio processing and forensic algorithms are **100% offline and private**. Audio samples, hashes, and metadata never leave your phone. Optional network access is exclusively reserved for transparent user-initiated GitHub update checks (`api.github.com/repos/Clash-Projects/acoustiq`). Zero analytics, zero ad tracking, zero telemetry.
+AcoustiQ audio analysis, fingerprinting, playback, and lyrics parsing are **100% offline and private**. Audio files, metadata, and hashes never leave your device. The only optional network request is user-initiated update checking against `api.github.com/repos/Clash-Projects/acoustiq`. Zero analytics, zero ads, zero tracking.
+
+<br />
+
+## Community & Support
+
+- **Discord**: [Join Clash Projects](https://discord.gg/DmyM2p2fMe)
+- **Telegram**: [@clashprojects](https://t.me/clashprojects)
+- **Issues & Bug Reports**: [GitHub Issues](https://github.com/Clash-Projects/acoustiq/issues)
 
 <br />
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE) for full terms.
 
 <br />
 
@@ -217,6 +235,6 @@ This project is licensed under the GNU General Public License v3.0 — see the [
 
 ---
 
-Built with ❤️ by [Clash Projects](https://github.com/Clash-Projects) • [LastWave Team](https://t.me/clashprojects)
+Built with ❤️ by [Clash Projects](https://github.com/Clash-Projects)
 
 </div>

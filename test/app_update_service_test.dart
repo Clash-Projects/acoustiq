@@ -9,6 +9,8 @@ void main() {
     });
 
     test('compares semantic versions accurately', () {
+      expect(AppUpdateService.currentVersion, '2.0.0');
+      expect(AppUpdateService.isNewerVersion('v2.0.0', '1.1.0'), isTrue);
       expect(AppUpdateService.isNewerVersion('v1.2.0', '1.1.0'), isTrue);
       expect(AppUpdateService.isNewerVersion('1.1.1', '1.1.0'), isTrue);
       expect(AppUpdateService.isNewerVersion('v1.1.0', '1.1.0'), isFalse);
@@ -16,6 +18,9 @@ void main() {
     });
 
     test('extracts build numbers and versions from nightly APK names', () {
+      expect(AppUpdateService.extractApkBuildNumber('AcoustiQ-v2.0.0-build91.apk'), 91);
+      expect(AppUpdateService.extractVersionCandidate('nightly', 'AcoustiQ-v2.0.0-build91.apk'), '2.0.0');
+      expect(AppUpdateService.extractVersionCandidate('v2.0.0', null), '2.0.0');
       expect(AppUpdateService.extractApkBuildNumber('AcoustiQ-v1.1.0-build94.apk'), 94);
       expect(AppUpdateService.extractVersionCandidate('nightly', 'AcoustiQ-v1.1.0-build94.apk'), '1.1.0');
       expect(AppUpdateService.extractVersionCandidate('v1.2.0', null), '1.2.0');
