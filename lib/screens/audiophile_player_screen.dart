@@ -326,27 +326,16 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
             splashRadius: 24,
           ),
           Expanded(
-            child: Column(
-              children: [
-                Text(
-                  _lyricsFullscreen ? 'LYRICS' : 'NOW PLAYING',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.50),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.6,
-                  ),
+            child: Center(
+              child: Text(
+                _lyricsFullscreen ? 'LYRICS' : 'NOW PLAYING',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.55),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.6,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'FLAC Lossless',
-                  style: TextStyle(
-                    color: AppColors.genuineEmerald.withOpacity(0.95),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           // Option 1: Playing Queue ("Up Next")
@@ -386,11 +375,14 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
   }) {
     final isCompactH = constraints.maxHeight < 620;
     final artSize = isCompactH
-        ? 185.0
-        : (constraints.maxHeight > 820 ? 265.0 : 230.0);
+        ? 180.0
+        : (constraints.maxHeight > 800 ? 285.0 : 250.0);
+    final bottomPad = isCompactH
+        ? 24.0
+        : (constraints.maxHeight > 740 ? 46.0 : 38.0);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+      padding: EdgeInsets.fromLTRB(24, 4, 24, bottomPad),
       child: Column(
         children: [
           // Stage Area: Morphs between Hero Artwork and Dedicated Inline Lyrics
@@ -642,7 +634,7 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
           child: IgnorePointer(
             ignoring: !_fsControlsVisible,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 4, 22, 18),
+              padding: const EdgeInsets.fromLTRB(22, 4, 22, 32),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

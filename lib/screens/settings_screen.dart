@@ -440,22 +440,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     required List<String> badges,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? const Color(0x24FFFFFF) : const Color(0x16000000),
-          width: 0.85,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? const Color(0x1A000000) : const Color(0x0A000000),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
@@ -464,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           child: GlassSurface(
             borderRadius: BorderRadius.circular(20),
             style: GlassStyle.frosted,
-            borderless: true,
+            borderless: false,
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,7 +518,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isDark ? const Color(0x28FFFFFF) : const Color(0x15000000),
-                            width: 0.6,
+                            width: 0.5,
                           ),
                         ),
                         child: Text(
@@ -872,19 +858,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         buildSectionHeader('Motion & Animations', subTextColor),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? const Color(0x24FFFFFF) : const Color(0x16000000),
-              width: 0.85,
-            ),
-          ),
-          child: GlassSurface(
-            borderRadius: BorderRadius.circular(20),
-            style: GlassStyle.frosted,
-            borderless: true,
-            padding: const EdgeInsets.all(16),
+        GlassSurface(
+          borderRadius: BorderRadius.circular(20),
+          style: GlassStyle.frosted,
+          borderless: false,
+          padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -944,7 +922,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               ],
             ),
           ),
-        ),
       ],
     );
   }
@@ -1121,19 +1098,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
           // 3. LOSSLESS DETECTION RULES & CRITERIA (Structured Micro-Cards)
           buildSectionHeader('Lossless Verification Rules', subTextColor),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? const Color(0x24FFFFFF) : const Color(0x16000000),
-                width: 0.85,
-              ),
-            ),
-            child: GlassSurface(
-              borderRadius: BorderRadius.circular(20),
-              style: GlassStyle.frosted,
-              borderless: true,
-              padding: const EdgeInsets.all(16),
+          GlassSurface(
+            borderRadius: BorderRadius.circular(20),
+            style: GlassStyle.frosted,
+            borderless: false,
+            padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -1241,7 +1210,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 ],
               ),
             ),
-          ),
         ],
       ),
     );
@@ -2117,12 +2085,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? color.withOpacity(isDark ? 0.9 : 0.8)
-                  : (isDark ? const Color(0x22FFFFFF) : const Color(0x14000000)),
-              width: isSelected ? 1.5 : 0.85,
-            ),
+            border: isSelected
+                ? Border.all(
+                    color: color.withOpacity(isDark ? 0.9 : 0.8),
+                    width: 1.5,
+                  )
+                : null,
             boxShadow: isSelected
                 ? [
                     BoxShadow(
@@ -2136,7 +2104,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           child: GlassSurface(
             borderRadius: BorderRadius.circular(16),
             style: GlassStyle.frosted,
-            borderless: true,
+            borderless: isSelected,
             tintColor: isSelected ? color.withOpacity(isDark ? 0.16 : 0.08) : null,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
@@ -2860,12 +2828,12 @@ class _CustomColorCardState extends State<_CustomColorCard> {
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: widget.isSelected
-                ? widget.customColor.withOpacity(widget.isDark ? 0.9 : 0.8)
-                : (widget.isDark ? const Color(0x22FFFFFF) : const Color(0x14000000)),
-            width: widget.isSelected ? 1.5 : 0.85,
-          ),
+          border: widget.isSelected
+              ? Border.all(
+                  color: widget.customColor.withOpacity(widget.isDark ? 0.9 : 0.8),
+                  width: 1.5,
+                )
+              : null,
           boxShadow: widget.isSelected
               ? [
                   BoxShadow(
@@ -2879,7 +2847,7 @@ class _CustomColorCardState extends State<_CustomColorCard> {
         child: GlassSurface(
           borderRadius: BorderRadius.circular(16),
           style: GlassStyle.frosted,
-          borderless: true,
+          borderless: widget.isSelected,
           tintColor: widget.isSelected
               ? widget.customColor.withOpacity(widget.isDark ? 0.16 : 0.08)
               : null,

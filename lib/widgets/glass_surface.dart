@@ -162,11 +162,11 @@ class _SpecularRimPainter extends CustomPainter {
     if (size.width <= 0 || size.height <= 0) return;
 
     final rect = Offset.zero & size;
-    final rrect = borderRadius.toRRect(rect).deflate(0.3);
+    final rrect = borderRadius.toRRect(rect).deflate(0.25);
 
     final rimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.6
+      ..strokeWidth = 0.5
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,

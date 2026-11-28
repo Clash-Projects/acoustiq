@@ -1696,8 +1696,8 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal> {
           color: isDark ? const Color(0x18FFFFFF) : const Color(0x0C000000),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000),
-            width: 0.8,
+            color: isDark ? const Color(0x1EFFFFFF) : const Color(0x12000000),
+            width: 0.5,
           ),
         ),
         child: Row(

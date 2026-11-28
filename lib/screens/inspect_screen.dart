@@ -602,7 +602,7 @@ class _InspectScreenState extends State<InspectScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: AppColors.suspiciousAmber.withOpacity(0.4),
-                                    width: 0.8,
+                                    width: 0.5,
                                   ),
                                 ),
                                 child: const Text(
@@ -972,7 +972,7 @@ class _InspectScreenState extends State<InspectScreen> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: badgeColor.withOpacity(isDark ? 0.35 : 0.20),
-                      width: 0.6,
+                      width: 0.5,
                     ),
                   ),
                   child: Text(

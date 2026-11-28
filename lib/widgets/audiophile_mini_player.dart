@@ -157,8 +157,11 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
 
     return Padding(
       padding: const EdgeInsets.only(left: 14.0, right: 14.0, bottom: 10.0),
-      child: Transform.translate(
-        offset: Offset(0, _dragOffsetY),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460.0),
+          child: Transform.translate(
+            offset: Offset(0, _dragOffsetY),
         child: Opacity(
           opacity: opacity,
           child: GestureDetector(
@@ -335,6 +338,8 @@ class _AudiophileMiniPlayerState extends State<AudiophileMiniPlayer>
           ),
         ),
       ),
+    ),
+  ),
     ),
   ),
 );
