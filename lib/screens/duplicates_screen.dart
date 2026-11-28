@@ -1810,7 +1810,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Layer 1: Status Pill & Purity Capsule (Symmetrical Telemetry)
-                              Row(
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Text(
                                     item.isUserKept
@@ -1825,7 +1828,6 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                                           : AppColors.fakeCoral,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
                                   if (item.info.status == 'untested' || item.info.score <= 0)
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),

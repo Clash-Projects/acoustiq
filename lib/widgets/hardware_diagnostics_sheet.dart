@@ -52,6 +52,8 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
 
     final hasUsbDac = _status?['hasUsbDac'] == true;
     final usbDacName = _status?['usbDacName']?.toString() ?? 'No USB DAC detected';
+    final isBitPerfect = _status?['isBitPerfect'] == true;
+    final activeDriver = _status?['activeDriver']?.toString() ?? 'AAudio';
 
     final items = [
       (
@@ -59,7 +61,7 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
         iconColor: const Color(0xFFC084FC),
         iconBg: isDark ? const Color(0x30C084FC) : const Color(0xFFF3E8FF),
         title: 'Native Audio Engine',
-        subtitle: 'Direct PCM & USB Isochronous Core',
+        subtitle: 'Multi-Depth PCM & USB Isochronous Core',
         status: 'Loaded',
         statusColor: AppColors.genuineEmerald,
       ),
@@ -76,9 +78,9 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
         icon: Icons.graphic_eq_rounded,
         iconColor: activeAccent,
         iconBg: activeAccent.withOpacity(isDark ? 0.20 : 0.12),
-        title: 'Primary Driver',
-        subtitle: 'Direct Kernel Float PCM Output',
-        status: 'AAudio',
+        title: 'Active Output Driver',
+        subtitle: isBitPerfect ? 'Direct Kernel USB Isochronous' : 'Native Float PCM Pipeline',
+        status: activeDriver,
         statusColor: activeAccent,
       ),
       (
@@ -94,12 +96,16 @@ class _HardwareDiagnosticsViewState extends State<_HardwareDiagnosticsView> {
       ),
       (
         icon: Icons.verified_user_rounded,
-        iconColor: AppColors.genuineEmerald,
-        iconBg: isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7),
+        iconColor: isBitPerfect ? AppColors.genuineEmerald : AppColors.suspiciousAmber,
+        iconBg: isBitPerfect
+            ? (isDark ? const Color(0x3000E676) : const Color(0xFFDCFCE7))
+            : (isDark ? const Color(0x28FFB300) : const Color(0xFFFEF3C7)),
         title: 'Bit-Perfect Bypass',
-        subtitle: 'AudioFlinger Resampler Bypassed',
-        status: 'Active',
-        statusColor: AppColors.genuineEmerald,
+        subtitle: isBitPerfect
+            ? 'USB Clock Locked • AudioFlinger Bypassed'
+            : 'Requires Permitted USB UAC DAC',
+        status: isBitPerfect ? 'Active' : 'Standby',
+        statusColor: isBitPerfect ? AppColors.genuineEmerald : AppColors.suspiciousAmber,
       ),
     ];
 

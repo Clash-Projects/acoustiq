@@ -16,7 +16,7 @@ class AudioSignalPath {
     this.sampleRate = 48000,
     this.bitDepth = 16,
     this.channels = 2,
-    this.driver = 'AAudio Low-Latency',
+    this.driver = 'AAudio',
     this.endpoint = 'Internal Audio Hardware',
     this.isBitPerfect = false,
   });
@@ -26,16 +26,14 @@ class AudioSignalPath {
   String get channelsStr => channels == 2 ? 'Stereo (2.0)' : 'Mono (1.0)';
 }
 
-/// Service bridging AcoustiQ to the native ClashPlayer C++ audio engine.
+/// Service bridging AcoustiQ to the native C/Kotlin audio engine (USB DAC + AAudio/OpenSL ES).
 class NativeAudioService {
   static const MethodChannel _channel = MethodChannel('acoustiq/clash_native_audio');
 
   static final NativeAudioService _instance = NativeAudioService._internal();
   static NativeAudioService get instance => _instance;
 
-  NativeAudioService._internal() {
-    _startPositionPoller();
-  }
+  NativeAudioService._internal();
 
   bool _isPlaying = false;
   bool _isPaused = false;
@@ -43,8 +41,6 @@ class NativeAudioService {
   int _positionMs = 0;
   int _durationMs = 0;
   AudioSignalPath _signalPath = const AudioSignalPath();
-
-  Timer? _poller;
 
   final StreamController<int> _positionController = StreamController<int>.broadcast();
   final StreamController<bool> _stateController = StreamController<bool>.broadcast();
@@ -61,18 +57,22 @@ class NativeAudioService {
   Stream<bool> get stateStream => _stateController.stream;
   Stream<AudioSignalPath> get signalPathStream => _signalPathController.stream;
 
-  void _startPositionPoller() {
-    _poller = Timer.periodic(const Duration(milliseconds: 200), (_) async {
-      if (!_isPlaying || _isPaused) return;
-      try {
-        final res = await _channel.invokeMethod<Map>('getPlaybackPosition');
-        if (res != null) {
-          _positionMs = (res['positionMs'] as num?)?.toInt() ?? _positionMs;
-          _durationMs = (res['durationMs'] as num?)?.toInt() ?? _durationMs;
-          _positionController.add(_positionMs);
-        }
-      } catch (_) {}
-    });
+  /// Updates signal path metadata when fallback Android MediaPlayer handles playback.
+  void setFallbackTelemetry({
+    int sampleRate = 48000,
+    int bitDepth = 16,
+    int channels = 2,
+  }) {
+    _signalPath = AudioSignalPath(
+      sourceFormat: 'FLAC Lossless',
+      sampleRate: sampleRate,
+      bitDepth: bitDepth,
+      channels: channels,
+      driver: 'Android MediaPlayer',
+      endpoint: 'Android AudioFlinger Mixer',
+      isBitPerfect: false,
+    );
+    _signalPathController.add(_signalPath);
   }
 
   /// Queries connected USB DAC hardware and active driver capabilities.
@@ -86,20 +86,68 @@ class NativeAudioService {
     return {
       'hasUsbDac': false,
       'usbDacName': 'No USB DAC detected',
-      'defaultDriver': 'AAudio Low-Latency',
-      'activeDriver': 'AAudio',
+      'defaultDriver': 'AAudio',
+      'activeDriver': _signalPath.driver,
+      'endpoint': _signalPath.endpoint,
       'isBitPerfect': false,
-      'sampleRate': 48000,
-      'bitDepth': 16,
+      'sampleRate': _signalPath.sampleRate,
+      'bitDepth': _signalPath.bitDepth,
     };
   }
 
+  /// Polls native playback progress, duration, completion flag, and live driver telemetry.
+  Future<Map<String, dynamic>?> pollPlaybackState() async {
+    try {
+      final res = await _channel.invokeMethod<Map>('getPlaybackPosition');
+      if (res != null) {
+        final data = Map<String, dynamic>.from(res);
+        _positionMs = (data['positionMs'] as num?)?.toInt() ?? _positionMs;
+        final dur = (data['durationMs'] as num?)?.toInt() ?? 0;
+        if (dur > 0) _durationMs = dur;
+        _isPlaying = data['isPlaying'] == true;
+        _isPaused = data['isPaused'] == true;
+
+        final driver = data['driver']?.toString() ?? _signalPath.driver;
+        final endpoint = data['endpoint']?.toString() ?? _signalPath.endpoint;
+        final bitPerfect = data['bitPerfect'] == true;
+        final rate = (data['sampleRate'] as num?)?.toInt() ?? _signalPath.sampleRate;
+        final depth = (data['bitDepth'] as num?)?.toInt() ?? _signalPath.bitDepth;
+        final ch = (data['channels'] as num?)?.toInt() ?? _signalPath.channels;
+
+        if (driver != _signalPath.driver ||
+            endpoint != _signalPath.endpoint ||
+            bitPerfect != _signalPath.isBitPerfect ||
+            rate != _signalPath.sampleRate ||
+            depth != _signalPath.bitDepth) {
+          _signalPath = AudioSignalPath(
+            sourceFormat: 'FLAC Lossless',
+            sampleRate: rate,
+            bitDepth: depth,
+            channels: ch,
+            driver: driver,
+            endpoint: endpoint,
+            isBitPerfect: bitPerfect,
+          );
+          _signalPathController.add(_signalPath);
+        }
+        return data;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Starts native audio streaming for [filePath].
-  Future<bool> play(String filePath, {int sampleRate = 48000, int bitDepth = 16, int channels = 2}) async {
+  Future<bool> play(
+    String filePath, {
+    int sampleRate = 48000,
+    int bitDepth = 16,
+    int channels = 2,
+    bool preferUsb = true,
+  }) async {
     try {
       final res = await _channel.invokeMethod<Map>('startNativePlayback', {
         'filePath': filePath,
-        'preferUsb': true,
+        'preferUsb': preferUsb,
       });
 
       if (res != null) {
@@ -107,16 +155,20 @@ class NativeAudioService {
         _isPaused = false;
         _currentFilePath = filePath;
         _durationMs = (res['durationMs'] as num?)?.toInt() ?? 0;
+        _positionMs = 0;
+
         final driver = res['driver']?.toString() ?? 'AAudio';
+        final endpoint = res['endpoint']?.toString() ??
+            (driver.contains('USB') ? 'External USB DAC' : 'Internal Audio Hardware (Shared Mixer)');
         final bitPerfect = res['bitPerfect'] == true;
 
         _signalPath = AudioSignalPath(
-          sourceFormat: 'FLAC Lossless Master',
+          sourceFormat: 'FLAC Lossless',
           sampleRate: (res['sampleRate'] as num?)?.toInt() ?? sampleRate,
-          bitDepth: bitDepth,
+          bitDepth: (res['bitDepth'] as num?)?.toInt() ?? bitDepth,
           channels: (res['channels'] as num?)?.toInt() ?? channels,
           driver: driver,
-          endpoint: driver.contains('USB') ? 'External USB DAC' : 'AAudio AudioFlinger Direct',
+          endpoint: endpoint,
           isBitPerfect: bitPerfect,
         );
 
@@ -124,9 +176,7 @@ class NativeAudioService {
         _signalPathController.add(_signalPath);
         return true;
       }
-    } catch (e) {
-      // Fallback
-    }
+    } catch (_) {}
     return false;
   }
 
@@ -149,13 +199,13 @@ class NativeAudioService {
   Future<void> stop() async {
     try {
       await _channel.invokeMethod('stopNativePlayback');
-      _isPlaying = false;
-      _isPaused = false;
-      _currentFilePath = null;
-      _positionMs = 0;
-      _stateController.add(false);
-      _positionController.add(0);
     } catch (_) {}
+    _isPlaying = false;
+    _isPaused = false;
+    _currentFilePath = null;
+    _positionMs = 0;
+    _stateController.add(false);
+    _positionController.add(0);
   }
 
   Future<void> seek(int positionMs) async {
@@ -167,7 +217,6 @@ class NativeAudioService {
   }
 
   void dispose() {
-    _poller?.cancel();
     _positionController.close();
     _stateController.close();
     _signalPathController.close();

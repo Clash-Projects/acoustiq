@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
+import '../models/flac_info.dart';
+import 'native_audio_service.dart';
 
 enum PlaybackRepeatMode { off, all, one }
 
-/// Lightweight Native Audio Player Controller for Lossless FLAC Playback
+/// Unified Audio Playback Controller routing via NativeAudioService (USB DAC / AAudio)
+/// with automatic MediaPlayer fallback on unsupported codecs or platforms.
 class AudioPlaybackService {
   static const MethodChannel _channel = MethodChannel('flac_toolkit/audio_decoder');
 
@@ -16,6 +19,7 @@ class AudioPlaybackService {
   String? currentFilePath;
   int positionMs = 0;
   int durationMs = 0;
+  bool _usingNativeEngine = false;
 
   PlaybackRepeatMode repeatMode = PlaybackRepeatMode.off;
   bool isShuffle = false;
@@ -23,6 +27,7 @@ class AudioPlaybackService {
 
   int get currentPositionMs => positionMs;
   bool get isPlayingNow => isPlaying;
+  bool get isUsingNativeEngine => _usingNativeEngine;
 
   Timer? _positionTimer;
   final List<void Function()> _listeners = [];
@@ -61,6 +66,16 @@ class AudioPlaybackService {
     _notify();
   }
 
+  FlacInfo? _findTrackMetadata(String filePath) {
+    if (appState.activeTrack?.filePath == filePath) {
+      return appState.activeTrack;
+    }
+    for (final t in appState.sharedLibrary) {
+      if (t.filePath == filePath) return t;
+    }
+    return null;
+  }
+
   Future<void> play(String filePath, {bool forceRestart = false}) async {
     try {
       if (!forceRestart) {
@@ -74,7 +89,43 @@ class AudioPlaybackService {
         }
       }
 
+      // Cleanly tear down previous engine session before switching tracks
+      await NativeAudioService.instance.stop();
+      try {
+        await _channel.invokeMethod('stopAudio');
+      } catch (_) {}
+
+      final meta = _findTrackMetadata(filePath);
+      final sampleRate = meta?.sampleRate ?? 48000;
+      final bitDepth = meta?.bitDepth ?? 16;
+      final channels = meta?.channels ?? 2;
+
       currentFilePath = filePath;
+
+      final startedNative = await NativeAudioService.instance.play(
+        filePath,
+        sampleRate: sampleRate,
+        bitDepth: bitDepth,
+        channels: channels,
+      );
+
+      if (startedNative) {
+        _usingNativeEngine = true;
+        isPlaying = true;
+        durationMs = NativeAudioService.instance.durationMs;
+        positionMs = 0;
+        _startTimer();
+        _notify();
+        return;
+      }
+
+      // Automatic fallback to Android MediaPlayer
+      _usingNativeEngine = false;
+      NativeAudioService.instance.setFallbackTelemetry(
+        sampleRate: sampleRate,
+        bitDepth: bitDepth,
+        channels: channels,
+      );
       final res = await _channel.invokeMethod<Map>('playAudio', {'filePath': filePath});
       isPlaying = true;
       durationMs = (res?['durationMs'] as num?)?.toInt() ?? 0;
@@ -169,7 +220,11 @@ class AudioPlaybackService {
 
   Future<void> pause() async {
     try {
-      await _channel.invokeMethod('pauseAudio');
+      if (_usingNativeEngine) {
+        await NativeAudioService.instance.pause();
+      } else {
+        await _channel.invokeMethod('pauseAudio');
+      }
       isPlaying = false;
       _stopTimer();
       _notify();
@@ -178,7 +233,11 @@ class AudioPlaybackService {
 
   Future<void> resume() async {
     try {
-      await _channel.invokeMethod('resumeAudio');
+      if (_usingNativeEngine) {
+        await NativeAudioService.instance.resume();
+      } else {
+        await _channel.invokeMethod('resumeAudio');
+      }
       isPlaying = true;
       _startTimer();
       _notify();
@@ -187,8 +246,12 @@ class AudioPlaybackService {
 
   Future<void> stop() async {
     try {
+      await NativeAudioService.instance.stop();
+    } catch (_) {}
+    try {
       await _channel.invokeMethod('stopAudio');
     } catch (_) {}
+    _usingNativeEngine = false;
     isPlaying = false;
     currentFilePath = null;
     positionMs = 0;
@@ -198,7 +261,11 @@ class AudioPlaybackService {
 
   Future<void> seek(int targetMs) async {
     try {
-      await _channel.invokeMethod('seekAudio', {'positionMs': targetMs});
+      if (_usingNativeEngine) {
+        await NativeAudioService.instance.seek(targetMs);
+      } else {
+        await _channel.invokeMethod('seekAudio', {'positionMs': targetMs});
+      }
       positionMs = targetMs;
       _notify();
     } catch (_) {}
@@ -208,6 +275,28 @@ class AudioPlaybackService {
     _positionTimer?.cancel();
     _positionTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) async {
       try {
+        if (_usingNativeEngine) {
+          final res = await NativeAudioService.instance.pollPlaybackState();
+          if (res != null) {
+            final nowPlaying = res['isPlaying'] == true && res['isPaused'] != true;
+            final completed = res['completed'] == true;
+            final pos = (res['positionMs'] as num?)?.toInt() ?? positionMs;
+            final dur = (res['durationMs'] as num?)?.toInt() ?? durationMs;
+
+            positionMs = pos;
+            if (dur > 0) durationMs = dur;
+            isPlaying = nowPlaying;
+
+            if (completed || (durationMs > 0 && !nowPlaying && positionMs >= durationMs - 450 && res['isPaused'] != true)) {
+              _stopTimer();
+              unawaited(playNext(fromAutoComplete: true));
+              return;
+            }
+            _notify();
+          }
+          return;
+        }
+
         final res = await _channel.invokeMethod<Map>('getAudioPosition');
         if (res != null) {
           final nowPlaying = res['isPlaying'] as bool? ?? false;
@@ -239,4 +328,3 @@ class AudioPlaybackService {
     _positionTimer = null;
   }
 }
-

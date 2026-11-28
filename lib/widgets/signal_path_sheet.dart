@@ -77,11 +77,18 @@ class _SignalPathSheetViewState extends State<_SignalPathSheetView> {
     final subTextColor = appState.getSubTextColor(context);
     final activeAccent = appState.getAccentColor(context);
 
+    final livePath = NativeAudioService.instance.signalPath;
     final hasUsbDac = _engineStatus?['hasUsbDac'] == true;
     final usbDacName = _engineStatus?['usbDacName']?.toString() ?? 'Device Audio Pipeline';
-    final activeDriver = hasUsbDac ? 'Direct USB DAC (Isochronous)' : 'AAudio Low-Latency';
+    final isBitPerfect = (_engineStatus?['isBitPerfect'] == true) || livePath.isBitPerfect;
+    final activeDriver = _engineStatus?['activeDriver']?.toString() ?? livePath.driver;
+    final activeEndpoint = _engineStatus?['endpoint']?.toString() ?? livePath.endpoint;
+    final isUsbDirectActive = activeDriver.contains('USB') && isBitPerfect;
     final sampleRateStr = '${(widget.sampleRate / 1000).toStringAsFixed(1)} kHz';
     final bitDepthStr = '${widget.bitDepth}-bit';
+    final Color statusColor = isUsbDirectActive
+        ? AppColors.genuineEmerald
+        : (hasUsbDac ? const Color(0xFFFFD700) : activeAccent);
 
     final nodes = [
       (
@@ -96,33 +103,37 @@ class _SignalPathSheetViewState extends State<_SignalPathSheetView> {
       ),
       (
         step: '2',
-        category: 'DSP ENGINE',
-        tag: 'UNITY 1:1',
+        category: 'PCM DECODER',
+        tag: isUsbDirectActive ? 'UNITY 1:1' : 'FLOAT32',
         tagColor: AppColors.genuineEmerald,
-        value: '64-Bit Float Passthrough',
-        spec: '0.0 dB Gain • Zero Resampling',
+        value: 'Multi-Depth PCM Unpack',
+        spec: '$bitDepthStr → 32-bit Float • 0.0 dB Gain',
         icon: Icons.graphic_eq_rounded,
         color: AppColors.genuineEmerald,
       ),
       (
         step: '3',
         category: 'OUTPUT DRIVER',
-        tag: hasUsbDac ? 'USB DIRECT' : 'AAUDIO',
-        tagColor: hasUsbDac ? const Color(0xFFFFD700) : activeAccent,
+        tag: isUsbDirectActive
+            ? 'USB DIRECT'
+            : (activeDriver.contains('MediaPlayer') ? 'MEDIAPLAYER' : activeDriver.toUpperCase()),
+        tagColor: statusColor,
         value: activeDriver,
-        spec: 'Bypasses Android AudioFlinger',
+        spec: isUsbDirectActive
+            ? 'Kernel usbfs Isochronous • Bypasses AudioFlinger'
+            : 'Android Audio Mixer (Connect UAC DAC for Bit-Perfect)',
         icon: Icons.memory_rounded,
-        color: hasUsbDac ? const Color(0xFFFFD700) : activeAccent,
+        color: statusColor,
       ),
       (
         step: '4',
         category: 'HARDWARE ENDPOINT',
-        tag: 'BIT-PERFECT',
-        tagColor: hasUsbDac ? const Color(0xFFFFD700) : const Color(0xFFA78BFA),
-        value: hasUsbDac ? usbDacName : 'Internal Audio Hardware',
-        spec: '$sampleRateStr Hardware Rate',
+        tag: isUsbDirectActive ? 'BIT-PERFECT' : (hasUsbDac ? 'USB DETECTED' : 'SHARED'),
+        tagColor: statusColor,
+        value: hasUsbDac ? usbDacName : activeEndpoint,
+        spec: '$sampleRateStr Output Clock',
         icon: hasUsbDac ? Icons.usb_rounded : Icons.headphones_rounded,
-        color: hasUsbDac ? const Color(0xFFFFD700) : const Color(0xFFA78BFA),
+        color: statusColor,
       ),
     ];
 
@@ -165,13 +176,12 @@ class _SignalPathSheetViewState extends State<_SignalPathSheetView> {
                         height: 38,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: (hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald)
-                              .withOpacity(isDark ? 0.22 : 0.15),
+                          color: statusColor.withOpacity(isDark ? 0.22 : 0.15),
                         ),
                         child: Icon(
                           Icons.route_rounded,
                           size: 20,
-                          color: hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald,
+                          color: statusColor,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -187,7 +197,9 @@ class _SignalPathSheetViewState extends State<_SignalPathSheetView> {
                             ),
                           ),
                           Text(
-                            'Bit-Perfect Audio Pipeline',
+                            isUsbDirectActive
+                                ? 'Bit-Perfect USB Direct Pipeline'
+                                : 'High-Res Audio Pipeline',
                             style: TextStyle(
                               fontSize: 12,
                               color: subTextColor,
@@ -201,25 +213,26 @@ class _SignalPathSheetViewState extends State<_SignalPathSheetView> {
                     borderRadius: BorderRadius.circular(10),
                     style: GlassStyle.frosted,
                     borderless: false,
-                    tintColor: (hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald)
-                        .withOpacity(isDark ? 0.22 : 0.14),
+                    tintColor: statusColor.withOpacity(isDark ? 0.22 : 0.14),
                     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.verified_rounded,
+                          isUsbDirectActive ? Icons.verified_rounded : Icons.graphic_eq_rounded,
                           size: 13,
-                          color: hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald,
+                          color: statusColor,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          hasUsbDac ? 'USB BIT-PERFECT' : 'BIT-PERFECT',
+                          isUsbDirectActive
+                              ? 'USB BIT-PERFECT'
+                              : (activeDriver.contains('MediaPlayer') ? 'SYSTEM MIXER' : 'STANDARD FLOAT'),
                           style: TextStyle(
                             fontFamily: 'JetBrainsMono',
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald,
+                            color: statusColor,
                           ),
                         ),
                       ],

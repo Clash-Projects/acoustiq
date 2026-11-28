@@ -1,6 +1,7 @@
 import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class DspAnalysisResult {
@@ -96,6 +97,23 @@ class AudioDspEngine {
       isFake24: isFake24,
       nyquistKhz: nyquistKhz,
     ));
+  }
+
+  /// Pure synchronous FFT / Welch PSD entry point for unit tests.
+  @visibleForTesting
+  static DspAnalysisResult analyzePcmSamplesForTesting({
+    required List<double> rawSamples,
+    required int sampleRate,
+    int statedBitDepth = 16,
+    bool isFake24 = false,
+  }) {
+    return _computeDspAnalysis(
+      rawSamples: rawSamples,
+      sampleRate: sampleRate,
+      statedBitDepth: statedBitDepth,
+      isFake24: isFake24,
+      nyquistKhz: sampleRate / 2000.0,
+    );
   }
 
   static DspAnalysisResult _computeDspAnalysis({

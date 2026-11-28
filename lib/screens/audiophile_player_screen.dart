@@ -48,6 +48,9 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
   double _dragValue = 0.0;
   bool _hasUsbDac = false;
   String _usbDacName = '';
+  String _activeDriver = NativeAudioService.instance.signalPath.driver;
+  bool _isBitPerfect = NativeAudioService.instance.signalPath.isBitPerfect;
+  StreamSubscription<AudioSignalPath>? _signalSub;
 
   // Dedicated LastWave + ClashPlayer Lyrics Modes
   bool _lyricsMode = false;
@@ -68,6 +71,13 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
     );
     _player.addListener(_onPlaybackChanged);
     appState.addListener(_onPlaybackChanged);
+    _signalSub = NativeAudioService.instance.signalPathStream.listen((path) {
+      if (!mounted) return;
+      setState(() {
+        _activeDriver = path.driver;
+        _isBitPerfect = path.isBitPerfect;
+      });
+    });
 
     if (_player.isPlaying) {
       _rotationController.repeat();
@@ -102,9 +112,13 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
     if (mounted) {
       final usb = status['hasUsbDac'] == true;
       final dacName = status['usbDacName']?.toString() ?? '';
+      final driver = status['activeDriver']?.toString() ?? _activeDriver;
+      final bitPerfect = status['isBitPerfect'] == true;
       setState(() {
         _hasUsbDac = usb;
         _usbDacName = dacName;
+        _activeDriver = driver;
+        _isBitPerfect = bitPerfect;
       });
     }
   }
@@ -112,6 +126,7 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
   @override
   void dispose() {
     _fsHideTimer?.cancel();
+    _signalSub?.cancel();
     _player.removeListener(_onPlaybackChanged);
     appState.removeListener(_onPlaybackChanged);
     _rotationController.dispose();
@@ -854,9 +869,20 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
     required String bitDepthStr,
     required String sampleRateStr,
   }) {
-    final badgeText = _hasUsbDac && _usbDacName.isNotEmpty
-        ? '$_usbDacName • $bitDepthStr / $sampleRateStr'
-        : 'Bit-Perfect • $bitDepthStr / $sampleRateStr';
+    final bool usbExact = _isBitPerfect;
+    final Color badgeColor = usbExact
+        ? AppColors.genuineEmerald
+        : (_hasUsbDac ? const Color(0xFFFFD700) : const Color(0xFF38BDF8));
+    final String badgeText;
+    if (usbExact) {
+      badgeText = _usbDacName.isNotEmpty && _usbDacName != 'No USB DAC detected'
+          ? 'USB Bit-Perfect • $_usbDacName • $bitDepthStr / $sampleRateStr'
+          : 'USB Bit-Perfect • $bitDepthStr / $sampleRateStr';
+    } else if (_hasUsbDac && _usbDacName.isNotEmpty) {
+      badgeText = '$_usbDacName • $bitDepthStr / $sampleRateStr';
+    } else {
+      badgeText = '$_activeDriver • $bitDepthStr / $sampleRateStr';
+    }
 
     return GestureDetector(
       onTap: () {
@@ -877,8 +903,10 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                _hasUsbDac ? Icons.usb_rounded : Icons.bolt_rounded,
-                color: _hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald,
+                _hasUsbDac
+                    ? Icons.usb_rounded
+                    : (usbExact ? Icons.bolt_rounded : Icons.graphic_eq_rounded),
+                color: badgeColor,
                 size: 14,
               ),
               const SizedBox(width: 6),
@@ -888,7 +916,7 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald,
+                    color: badgeColor,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'JetBrainsMono',
@@ -899,8 +927,7 @@ class _AudiophilePlayerScreenState extends State<AudiophilePlayerScreen>
               const SizedBox(width: 4),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: (_hasUsbDac ? const Color(0xFFFFD700) : AppColors.genuineEmerald)
-                    .withOpacity(0.60),
+                color: badgeColor.withOpacity(0.60),
                 size: 10,
               ),
             ],
