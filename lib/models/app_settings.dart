@@ -40,7 +40,7 @@ class AppState extends ChangeNotifier {
   FlacInfo? _activeTrack;
 
   // AcoustiQ Developer Laboratory & QA Mode
-  bool _devModeEnabled = true;
+  bool _devModeEnabled = false;
   FlacInfo? _injectedMockTrack;
 
   List<FlacInfo> _sharedLibrary = [];
@@ -117,7 +117,7 @@ class AppState extends ChangeNotifier {
           _deviceModel = specs['model']?.toString() ?? '';
           _totalRamMb = (specs['totalRamMb'] as int?) ?? 0;
           final isLowRam = specs['isLowRam'] == true;
-          _isLowSpecDevice = isLowRam || _totalRamMb < 3500 || _deviceModel.toLowerCase().contains('acer');
+          _isLowSpecDevice = isLowRam || _totalRamMb < 3500;
         }
       } catch (_) {}
 
@@ -179,6 +179,7 @@ class AppState extends ChangeNotifier {
       _lyricsFontScale = (_prefs?.getDouble('lyrics_font_scale') ?? 1.0).clamp(0.7, 1.5);
       _lyricsCentered = _prefs?.getBool('lyrics_centered') ?? false;
       _lyricsOffsetMs = _prefs?.getInt('lyrics_offset_ms') ?? 0;
+      _devModeEnabled = _prefs?.getBool('dev_mode_enabled') ?? false;
       purgeMissingRecentFiles(notify: false);
       await _loadLibraryCache();
       notifyListeners();

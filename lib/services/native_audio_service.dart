@@ -18,7 +18,7 @@ class AudioSignalPath {
     this.channels = 2,
     this.driver = 'AAudio Low-Latency',
     this.endpoint = 'Internal Audio Hardware',
-    this.isBitPerfect = true,
+    this.isBitPerfect = false,
   });
 
   String get sampleRateStr => '${(sampleRate / 1000).toStringAsFixed(1)} kHz';
@@ -88,7 +88,7 @@ class NativeAudioService {
       'usbDacName': 'No USB DAC detected',
       'defaultDriver': 'AAudio Low-Latency',
       'activeDriver': 'AAudio',
-      'isBitPerfect': true,
+      'isBitPerfect': false,
       'sampleRate': 48000,
       'bitDepth': 16,
     };

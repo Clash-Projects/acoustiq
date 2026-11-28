@@ -1576,7 +1576,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           // 2. DEVELOPER & COMMUNITY (Clash Projects Ecosystem)
           buildSectionHeader('Developer & Community', subTextColor),
           ExpressiveGroup(
-            rowCount: 6,
+            rowCount: 7,
             itemBuilder: (context, index, position) {
               if (index == 0) {
                 return ExpressiveGroupRow(
@@ -1644,6 +1644,17 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 );
               } else if (index == 3) {
                 return ExpressiveGroupRow(
+                  icon: Icons.discord,
+                  iconColor: const Color(0xFF5865F2),
+                  iconBgColor: isDark ? const Color(0x305865F2) : const Color(0xFFE0E7FF),
+                  title: 'Discord Community',
+                  subtitle: 'Join Clash Projects on Discord',
+                  position: position,
+                  onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.discordCommunityUrl),
+                  trailing: Icon(Icons.open_in_new_rounded, size: 16, color: subTextColor),
+                );
+              } else if (index == 4) {
+                return ExpressiveGroupRow(
                   icon: Icons.auto_awesome_rounded,
                   iconColor: const Color(0xFFF59E0B),
                   iconBgColor: isDark ? const Color(0x30F59E0B) : const Color(0xFFFEF3C7),
@@ -1653,7 +1664,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                   onTap: () => AppUrlLauncher.openUrl(context, AppUpdateService.telegramMaterialYouUrl),
                   trailing: Icon(Icons.open_in_new_rounded, size: 16, color: subTextColor),
                 );
-              } else if (index == 4) {
+              } else if (index == 5) {
                 return ExpressiveGroupRow(
                   icon: Icons.bug_report_outlined,
                   iconColor: const Color(0xFFFBBF24),

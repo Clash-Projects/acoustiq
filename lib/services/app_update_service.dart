@@ -66,14 +66,14 @@ class AppUpdateService extends ChangeNotifier {
   static const String issuesUrl = 'https://github.com/Clash-Projects/acoustiq/issues';
   static const String telegramSupportUrl = 'https://t.me/clashprojects';
   static const String telegramMaterialYouUrl = 'https://t.me/MaterialYouApp';
-  static const String discordCommunityUrl = 'https://discord.gg/TMCEPSUNk2';
+  static const String discordCommunityUrl = 'https://discord.gg/DmyM2p2fMe';
   static const String lastWaveRepoUrl = 'https://github.com/Clash-Projects/LastWave-Native';
   static const String sernheisePlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.sernheise.app';
   static const String lyricifyPlayStoreUrl = 'https://play.google.com/store/apps/details?id=aman.lyricify';
   static const String sleepTrackerRepoUrl = 'https://github.com/duxtami/SleepTracker';
 
   static const String _apiEndpoint =
-      'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';
+      'https://api.github.com/repos/$repoOwner/$repoName/releases?per_page=10';
 
   UpdateStatus _status = UpdateStatus.idle;
   UpdateInfo? _latestUpdate;
@@ -114,7 +114,93 @@ class AppUpdateService extends ChangeNotifier {
     }
   }
 
-  /// Queries GitHub Releases API for latest public release
+  /// Extracts numeric build suffix from release APK filenames like `AcoustiQ-v1.1.0-build92.apk`.
+  static int? extractApkBuildNumber(String? apkName) {
+    if (apkName == null || apkName.isEmpty) return null;
+    final match = RegExp(r'build(\d+)', caseSensitive: false).firstMatch(apkName);
+    return match != null ? int.tryParse(match.group(1)!) : null;
+  }
+
+  /// Extracts semantic version string from tag names (`v1.2.0`) or APK filenames (`AcoustiQ-v1.1.0-build92.apk`).
+  static String? extractVersionCandidate(String tagName, String? apkName) {
+    final tagMatch = RegExp(r'(\d+(?:\.\d+)+)').firstMatch(tagName);
+    if (tagMatch != null) return tagMatch.group(1);
+    if (apkName != null) {
+      final apkMatch = RegExp(r'v?(\d+(?:\.\d+)+)', caseSensitive: false).firstMatch(apkName);
+      if (apkMatch != null) return apkMatch.group(1);
+    }
+    return null;
+  }
+
+  /// Parses GitHub `/releases` payload (array or single object) and picks the first newer release.
+  static UpdateInfo? pickNewerRelease(
+    dynamic payload, {
+    String currentVersion = AppUpdateService.currentVersion,
+    int currentBuild = AppUpdateService.currentBuild,
+  }) {
+    final List<Map<String, dynamic>> candidates = [];
+    if (payload is List) {
+      for (final item in payload) {
+        if (item is Map<String, dynamic>) candidates.add(item);
+      }
+    } else if (payload is Map<String, dynamic>) {
+      candidates.add(payload);
+    }
+
+    for (final data in candidates) {
+      if (data['draft'] == true) continue;
+      final tagName = (data['tag_name'] as String?) ?? '';
+      final releaseTitle = (data['name'] as String?) ?? 'AcoustiQ $tagName';
+      final releaseUrl = (data['html_url'] as String?) ?? githubRepoUrl;
+      final notes = (data['body'] as String?) ?? 'No release notes provided.';
+      final publishedStr = data['published_at'] as String?;
+      final publishedAt = publishedStr != null ? DateTime.tryParse(publishedStr) : null;
+
+      String? apkUrl;
+      String? apkName;
+      int? apkSize;
+      final assets = data['assets'] as List<dynamic>?;
+      if (assets != null) {
+        for (final asset in assets) {
+          if (asset is Map<String, dynamic>) {
+            final name = (asset['name'] as String?) ?? '';
+            if (name.toLowerCase().endsWith('.apk')) {
+              apkUrl = asset['browser_download_url'] as String?;
+              apkName = name;
+              apkSize = asset['size'] as int?;
+              break;
+            }
+          }
+        }
+      }
+
+      final parsedVersion = extractVersionCandidate(tagName, apkName);
+      if (parsedVersion == null) continue;
+      final apkBuild = extractApkBuildNumber(apkName);
+      final semverNewer = isNewerVersion(parsedVersion, currentVersion);
+      final sameVersionNewerBuild = !semverNewer &&
+          !isNewerVersion(currentVersion, parsedVersion) &&
+          apkBuild != null &&
+          apkBuild > currentBuild;
+
+      if (semverNewer || sameVersionNewerBuild) {
+        return UpdateInfo(
+          version: parsedVersion,
+          tagName: tagName,
+          title: releaseTitle,
+          notes: notes,
+          releaseUrl: releaseUrl,
+          apkDownloadUrl: apkUrl,
+          apkFileName: apkName,
+          apkSizeBytes: apkSize,
+          publishedAt: publishedAt,
+        );
+      }
+    }
+    return null;
+  }
+
+  /// Queries GitHub Releases API for latest public or nightly release
   Future<UpdateCheckResult> checkForUpdates() async {
     if (_status == UpdateStatus.checking) {
       return UpdateCheckResult(
@@ -141,54 +227,17 @@ class AppUpdateService extends ChangeNotifier {
       _lastCheckedAt = DateTime.now();
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(responseBody) as Map<String, dynamic>;
-        final tagName = (data['tag_name'] as String?) ?? '';
-        final cleanVersion = tagName.replaceAll(RegExp(r'^v'), '');
-        final releaseTitle = (data['name'] as String?) ?? 'AcoustiQ $tagName';
-        final releaseUrl = (data['html_url'] as String?) ?? githubRepoUrl;
-        final notes = (data['body'] as String?) ?? 'No release notes provided.';
-        final publishedStr = data['published_at'] as String?;
-        final publishedAt = publishedStr != null ? DateTime.tryParse(publishedStr) : null;
+        final decoded = jsonDecode(responseBody);
+        final update = pickNewerRelease(decoded);
 
-        // Find APK asset
-        String? apkUrl;
-        String? apkName;
-        int? apkSize;
-        final assets = data['assets'] as List<dynamic>?;
-        if (assets != null) {
-          for (final asset in assets) {
-            if (asset is Map<String, dynamic>) {
-              final name = (asset['name'] as String?) ?? '';
-              if (name.toLowerCase().endsWith('.apk')) {
-                apkUrl = asset['browser_download_url'] as String?;
-                apkName = name;
-                apkSize = asset['size'] as int?;
-                break;
-              }
-            }
-          }
-        }
-
-        final update = UpdateInfo(
-          version: cleanVersion,
-          tagName: tagName,
-          title: releaseTitle,
-          notes: notes,
-          releaseUrl: releaseUrl,
-          apkDownloadUrl: apkUrl,
-          apkFileName: apkName,
-          apkSizeBytes: apkSize,
-          publishedAt: publishedAt,
-        );
-
-        if (isNewerVersion(cleanVersion, currentVersion)) {
+        if (update != null) {
           _latestUpdate = update;
           _status = UpdateStatus.updateAvailable;
           notifyListeners();
           return UpdateCheckResult(
             status: _status,
             updateInfo: update,
-            message: 'New version available: $tagName',
+            message: 'New version available: ${update.tagName}',
           );
         } else {
           _latestUpdate = null;
