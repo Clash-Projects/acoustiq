@@ -105,7 +105,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
   // _handover: 0.0 (fully lifted lens) -> 1.0 (landing hand-off back to flat)
   double _handover = 1.0;
   double _glassPresence = 0.0;
-  bool _isFlat = true;
 
   // Under-damped Dual Springs for Lift
   double _liftX = 0.0;
@@ -306,7 +305,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       _squashModel.stop();
       _travelSign = 0.0;
       _travelSignEased = 0.0;
-      _isFlat = true;
       _currentPosition = _targetIndex.toDouble();
       _activeFromIndex = _targetIndex;
       _velocity = 0.0;
@@ -333,7 +331,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
       _material = 0.0;
       _handover = 1.0;
       _glassPresence = 0.0;
-      _isFlat = true;
       _ticker?.stop();
       setState(() {});
       return;
@@ -346,7 +343,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     _travelTarget = targetIndex.toDouble();
     final double span = _travelTarget - _travelFrom;
     _travelSign = span.abs() < 1e-6 ? 0.0 : span.sign;
-    _isFlat = false;
     if (!appState.isReducedMotion) {
       _squashModel.start();
     }
@@ -355,7 +351,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
 
   void _handleTapDown(TapDownDetails details) {
     _liftTarget = 1.0;
-    _isFlat = false;
     _ensureTicker();
   }
 
@@ -380,7 +375,6 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
     _travelFrom = _currentPosition;
     _dragTarget = _currentPosition;
     _velocity = 0.0;
-    _isFlat = false;
     _squashModel.start();
     _ensureTicker();
   }

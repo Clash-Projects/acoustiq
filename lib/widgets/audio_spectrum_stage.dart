@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -1760,58 +1759,6 @@ class _ForensicSpectrogramModalState extends State<_ForensicSpectrogramModal> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _infoCard({
-    required String title,
-    required IconData icon,
-    required Color accent,
-    required bool isDark,
-    required Color textColor,
-    required Color subTextColor,
-    required String content,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0x12FFFFFF) : const Color(0x08000000),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? const Color(0x1AFFFFFF) : const Color(0x10000000),
-          width: 0.8,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: accent),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            content,
-            style: TextStyle(
-              fontSize: 11.5,
-              height: 1.4,
-              color: isDark ? const Color(0xCCFFFFFF) : const Color(0xCC000000),
-            ),
-          ),
-        ],
       ),
     );
   }
