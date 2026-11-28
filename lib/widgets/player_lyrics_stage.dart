@@ -239,22 +239,10 @@ class _PlainLyricsView extends StatelessWidget {
     final textDirection = isRtl ? TextDirection.rtl : TextDirection.ltr;
     return Directionality(
       textDirection: textDirection,
-      child: ShaderMask(
-        shaderCallback: (bounds) => const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.white,
-            Colors.white,
-            Colors.transparent,
-          ],
-          stops: [0.0, 0.06, 0.88, 1.0],
-        ).createShader(bounds),
-        blendMode: BlendMode.dstIn,
+      child: _LyricsEdgeFadeMask(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(12, 22, 12, 72),
+          padding: const EdgeInsets.fromLTRB(12, 18, 12, 86),
           child: Column(
             crossAxisAlignment:
                 centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -300,6 +288,40 @@ class _PlainLyricsView extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Clips the scrollable lyrics viewport 6dp inside the [ShaderMask] bounds so
+/// Impeller/Skia fractional-DPR edge scanlines have no child pixels to leave unmasked.
+class _LyricsEdgeFadeMask extends StatelessWidget {
+  final Widget child;
+
+  const _LyricsEdgeFadeMask({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.transparent,
+            Colors.white,
+            Colors.white,
+            Colors.transparent,
+            Colors.transparent,
+          ],
+          stops: [0.0, 0.025, 0.08, 0.82, 0.93, 1.0],
+        ).createShader(bounds),
+        blendMode: BlendMode.dstIn,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: ClipRect(child: child),
         ),
       ),
     );
@@ -579,27 +601,15 @@ class _SyncedLyricsListState extends State<_SyncedLyricsList> {
           }
           return false;
         },
-        child: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.white,
-              Colors.white,
-              Colors.transparent,
-            ],
-            stops: [0.0, 0.08, 0.87, 1.0],
-          ).createShader(bounds),
-          blendMode: BlendMode.dstIn,
+        child: _LyricsEdgeFadeMask(
           child: SingleChildScrollView(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.fromLTRB(
               14,
-              widget.isFullscreen ? 44 : 26,
+              widget.isFullscreen ? 38 : 20,
               14,
-              widget.isFullscreen ? 140 : 96,
+              widget.isFullscreen ? 134 : 90,
             ),
             child: Column(
               crossAxisAlignment:

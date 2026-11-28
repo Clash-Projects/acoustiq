@@ -41,9 +41,9 @@ Future<T?> showAppGlassDialog<T>({
       final activeAccent = appState.getAccentColor(ctx);
       final resolvedConfirmColor = confirmColor ??
           (isDestructive ? AppColors.fakeCoral.withOpacity(0.9) : activeAccent);
-      final onAccentColor = (confirmColor != null || isDestructive)
+      final onAccentColor = isDestructive
           ? Colors.white
-          : AppColors.getOnAccentColor(activeAccent, isDark: isDark);
+          : AppColors.getOnAccentColor(resolvedConfirmColor, isDark: isDark);
 
       return Center(
         child: Dialog(

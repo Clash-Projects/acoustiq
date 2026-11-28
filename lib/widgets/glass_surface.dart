@@ -56,15 +56,30 @@ class GlassSurface extends StatelessWidget {
               ? (appState.amoledMode ? const Color(0xFF101214) : const Color(0xFF1E2228))
               : AppColors.lightSurface;
 
+          // Never paint raw translucent tintColor without backdrop blur (causes bleed-through),
+          // and cap opaque legacy tints to subtle glass-parity overlay opacity.
+          Color resolvedColor = solidBg;
+          if (tintColor != null) {
+            final tintAlpha = tintColor!.a < 0.99
+                ? tintColor!.a
+                : (style == GlassStyle.liquid
+                    ? (isDark ? 0.24 : 0.28)
+                    : (isDark ? 0.18 : 0.20));
+            resolvedColor = Color.alphaBlend(
+              tintColor!.withValues(alpha: tintAlpha),
+              solidBg,
+            );
+          }
+
           final solidBorder = isDark
-              ? Border.all(color: const Color(0x22FFFFFF), width: 0.8)
-              : Border.all(color: const Color(0xFFE4E7EC), width: 0.8);
+              ? Border.all(color: const Color(0x28FFFFFF), width: 0.9)
+              : Border.all(color: const Color(0xFFE4E7EC), width: 0.9);
 
           return Container(
             constraints: constraints,
             padding: padding,
             decoration: BoxDecoration(
-              color: tintColor ?? solidBg,
+              color: resolvedColor,
               borderRadius: borderRadius,
               border: borderless ? null : solidBorder,
               boxShadow: isDark

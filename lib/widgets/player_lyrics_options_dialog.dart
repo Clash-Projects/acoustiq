@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 import '../models/flac_info.dart';
+import '../ui/theme/colors.dart';
 import '../utils/lyrics_parser.dart';
 import 'app_snack_bar.dart';
 import 'glass_surface.dart';
@@ -179,16 +180,14 @@ class _HybridLyricsOptionsDialogState extends State<_HybridLyricsOptionsDialog> 
                         borderRadius: BorderRadius.circular(11),
                         style: GlassStyle.liquid,
                         borderless: false,
-                        tintColor: activeAccent,
+                        tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.14),
                         child: SizedBox(
                           width: 36,
                           height: 36,
                           child: Icon(
                             Icons.lyrics_rounded,
                             size: 18,
-                            color: activeAccent.computeLuminance() > 0.7
-                                ? Colors.white
-                                : activeAccent,
+                            color: activeAccent,
                           ),
                         ),
                       ),
@@ -328,7 +327,7 @@ class _HybridLyricsOptionsDialogState extends State<_HybridLyricsOptionsDialog> 
                             borderRadius: BorderRadius.circular(10),
                             style: GlassStyle.clear,
                             borderless: false,
-                            tintColor: activeAccent,
+                            tintColor: activeAccent.withOpacity(isDark ? 0.22 : 0.14),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 9,
                               vertical: 3,
@@ -338,7 +337,7 @@ class _HybridLyricsOptionsDialogState extends State<_HybridLyricsOptionsDialog> 
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: textColor,
+                                color: isDark ? Colors.white : activeAccent,
                               ),
                             ),
                           ),
@@ -598,21 +597,26 @@ class _HybridLyricsOptionsDialogState extends State<_HybridLyricsOptionsDialog> 
                       Navigator.of(context).pop();
                     },
                     borderRadius: BorderRadius.circular(16),
-                    child: GlassSurface(
-                      borderRadius: BorderRadius.circular(16),
-                      style: GlassStyle.liquid,
-                      borderless: false,
-                      tintColor: isDark ? Colors.white : activeAccent,
-                      child: SizedBox(
-                        height: 44,
-                        child: Center(
-                          child: Text(
-                            'Done',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                            ),
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: activeAccent,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(isDark ? 0.30 : 0.12),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.getOnAccentColor(activeAccent, isDark: isDark),
                           ),
                         ),
                       ),
@@ -697,29 +701,39 @@ class _GlassChipToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = appState.isCurrentDark(context);
     return LuminousFeedback(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: GlassSurface(
-        borderRadius: BorderRadius.circular(12),
-        style: selected ? GlassStyle.liquid : GlassStyle.clear,
-        borderless: false,
-        tintColor: selected ? accent : null,
-        child: SizedBox(
-          height: 36,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  color: selected
-                      ? (accent.computeLuminance() > 0.7 ? textColor : Colors.white)
-                      : subTextColor,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: selected
+              ? Border.all(
+                  color: accent.withOpacity(isDark ? 0.85 : 0.65),
+                  width: 1.3,
+                )
+              : null,
+        ),
+        child: GlassSurface(
+          borderRadius: BorderRadius.circular(12),
+          style: selected ? GlassStyle.liquid : GlassStyle.clear,
+          borderless: selected,
+          tintColor: selected ? accent.withOpacity(isDark ? 0.28 : 0.16) : null,
+          child: SizedBox(
+            height: 36,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: selected ? textColor : subTextColor,
+                  ),
                 ),
               ),
             ),

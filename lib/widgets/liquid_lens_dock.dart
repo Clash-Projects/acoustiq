@@ -578,19 +578,29 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                             : Container(
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? (appState.amoledMode ? const Color(0xFF0D0F12) : const Color(0xFF181B20))
+                                      ? (appState.amoledMode
+                                          ? const Color(0xFF14171D)
+                                          : const Color(0xFF20242C))
                                       : Colors.white,
                                   borderRadius: BorderRadius.circular(31),
                                   border: Border.all(
-                                    color: isDark ? const Color(0x24FFFFFF) : const Color(0x15000000),
+                                    color: isDark
+                                        ? const Color(0x36FFFFFF)
+                                        : const Color(0x20000000),
                                     width: 1.0,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(isDark ? 0.36 : 0.08),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 4),
+                                      color: Colors.black.withOpacity(isDark ? 0.55 : 0.12),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 5),
                                     ),
+                                    if (isDark)
+                                      const BoxShadow(
+                                        color: Color(0x12FFFFFF),
+                                        blurRadius: 1,
+                                        offset: Offset(0, -0.5),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -658,15 +668,28 @@ class _LiquidLensNavBarState extends State<LiquidLensNavBar>
                         top: pillTop,
                         width: dynamicPillWidth,
                         height: dynamicPillHeight,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: activeAccent.withOpacity(isDark ? 0.24 : 0.14),
-                            borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
-                            border: Border.all(
-                              color: activeAccent.withOpacity(isDark ? 0.50 : 0.35),
-                              width: 1.2,
-                            ),
-                          ),
+                        child: Builder(
+                          builder: (_) {
+                            final dockBase = isDark
+                                ? (appState.amoledMode
+                                    ? const Color(0xFF14171D)
+                                    : const Color(0xFF20242C))
+                                : Colors.white;
+                            final mattePillFill = Color.alphaBlend(
+                              activeAccent.withOpacity(isDark ? 0.28 : 0.15),
+                              dockBase,
+                            );
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: mattePillFill,
+                                borderRadius: BorderRadius.circular(dynamicPillHeight / 2),
+                                border: Border.all(
+                                  color: activeAccent.withOpacity(isDark ? 0.65 : 0.45),
+                                  width: 1.2,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
 
